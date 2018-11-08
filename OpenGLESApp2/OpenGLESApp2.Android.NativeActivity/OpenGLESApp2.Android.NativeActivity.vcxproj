@@ -124,13 +124,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ReferencePath>$(ReferencePath)</ReferencePath>
-    <IncludePath>c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master\;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master\;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
     <LibraryPath>
     </LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ReferencePath>$(ReferencePath)</ReferencePath>
-    <IncludePath>c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master\;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master\;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
     <LibraryPath>
     </LibraryPath>
   </PropertyGroup>
@@ -169,7 +169,7 @@
       <AdditionalOptions>-lm %(AdditionalOptions)</AdditionalOptions>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
-      <AdditionalDependencies>c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\libpng.a;c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\zlib-1.2.11\Android.Build\libz.a</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\libpng.a;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\zlib-1.2.11\Android.Build\libz.a</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -183,7 +183,7 @@
       <AdditionalOptions>-lm %(AdditionalOptions)</AdditionalOptions>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
-      <AdditionalDependencies>c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\libpng.a;c:\Users\Administrator\source\repos\OpenGL ES 2D\OpenGLESApp2\OpenGLESApp2.Shared\common\External\zlib-1.2.11\Android.Build\libz.a</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\libpng.a;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\zlib-1.2.11\Android.Build\libz.a</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

@@ -20,6 +20,7 @@ EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		OpenGLESApp2\OpenGLESApp2.Shared\OpenGLESApp2.Shared.vcxitems*{30d37933-77ce-4ae4-8b72-995fdcd1f0e7}*SharedItemsImports = 4
+		OpenGLESApp2\OpenGLESApp2.Shared\OpenGLESApp2.Shared.vcxitems*{37683b35-ef09-4e5f-8c86-56bda6baa822}*SharedItemsImports = 4
 		OpenGLESApp2\OpenGLESApp2.Shared\OpenGLESApp2.Shared.vcxitems*{a9445573-8f38-4dd8-b806-7696f41df59a}*SharedItemsImports = 9
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
