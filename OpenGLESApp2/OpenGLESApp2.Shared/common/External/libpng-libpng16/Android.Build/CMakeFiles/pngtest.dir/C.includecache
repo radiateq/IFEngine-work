@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/Users/Administrator/source/repos/External/libpng-libpng16/png.h
+pnglibconf.h
+C:/Users/Administrator/source/repos/External/libpng-libpng16/pnglibconf.h
+pngconf.h
+C:/Users/Administrator/source/repos/External/libpng-libpng16/pngconf.h
+
+C:/Users/Administrator/source/repos/External/libpng-libpng16/pngconf.h
+limits.h
+-
+stddef.h
+-
+stdio.h
+-
+setjmp.h
+-
+time.h
+-
+
+C:/Users/Administrator/source/repos/External/libpng-libpng16/pnglibconf.h
+
+C:/Users/Administrator/source/repos/External/libpng-libpng16/pngtest.c
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+png.h
+C:/Users/Administrator/source/repos/External/libpng-libpng16/png.h
+zlib.h
+C:/Users/Administrator/source/repos/External/libpng-libpng16/zlib.h
+time.h
+-
+
