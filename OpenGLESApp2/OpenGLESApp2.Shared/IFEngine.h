@@ -37,35 +37,39 @@ typedef struct{
  //UV
  ifTCounter UVmapping_cnt;
  ifTUVmapping *UVmapping;
-}ifTBodyDefinition;
+}ifTbodyDefinition;
 
 //Structure holding list of bodies
 typedef struct{
  ifTCounter bodies_cnt;
- ifTBodyDefinition *bodies;
-}ifTBodiesList;
+ ifTbodyDefinition *bodies;
+}ifTbodiesList;
 
 //General callback function, that accepts pointer to void and returns pointer to void
 typedef void* ifTcallback (void * );
 
-//Structure for holding event description
+//Structure for holding event data
 typedef struct{
- ifTCounter eventID;
+ ifTCounter eventID; 
  //Function executed when event happens that propagates events down the line
  ifTcallback sendEvent;
- //These are subscribers to 
+ //These are subscribers to event 
  ifTCounter subscribers_cnt;
+ //sendEvent will call all these functions one by one, whith subscribers_data as parameter
  ifTcallback *subscribers;
+ void *subscribers_data;
 }ifTevent;
 
-//Structure*3 holding list of callback IDs and their functions for defined*1 events (touch, user events, sensors, ...)
+//Structure for holding all events that get called by program
+typedef struct {
+ ifTCounter event_cnt;
+ ifTevent *events;
+}ifTeventRegistry;
 
 
-//Structure*2 holding event ID and list of callback functions called by event callback functions
 
-//Structure*4 holding all structures with callback functions for event callback functions*2 for certain entity (entitys supported events from list of defined*1 events)
+//Structure holding events body reacts to
 
-//Structure holding events this body reacts to
 
 //Functions for adding, removing, searching for a body in a list of bodies
 
@@ -73,5 +77,5 @@ typedef struct{
 
 //Function for presenting body to the screen (update, draw, ...)
 
-//Functions for propagating event down structure*3 down to struct*4 and then struct*2 taking all needed paths
+//Functions for propagating events
 
