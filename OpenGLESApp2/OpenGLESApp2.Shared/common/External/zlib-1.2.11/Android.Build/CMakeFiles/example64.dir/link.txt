@@ -1,1 +1,0 @@
-c:\Microsoft\AndroidNDK64\toolchain\bin\arm-linux-androideabi-gcc.exe --sysroot=c:/Microsoft/AndroidNDK64/toolchain/sysroot -march=armv7-a -marm -mfpu=neon -mfloat-abi=softfp -funwind-tables -no-canonical-prefixes -g  -Wl,--fix-cortex-a8  -fPIE -pie -Wl,--gc-sections -Wl,-z,nocopyreloc CMakeFiles/example64.dir/test/example.o  -o example64 libz.so 
