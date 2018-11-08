@@ -124,13 +124,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ReferencePath>$(ReferencePath)</ReferencePath>
-    <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master\;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
     <LibraryPath>
     </LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ReferencePath>$(ReferencePath)</ReferencePath>
-    <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master\;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
     <LibraryPath>
     </LibraryPath>
   </PropertyGroup>
