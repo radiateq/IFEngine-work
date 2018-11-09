@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <time.h>
 
+#include <list>
+
 #include <android/asset_manager.h> 
 #include <android/asset_manager_jni.h>
 
@@ -20,10 +22,10 @@ void *getAssetFileToBuffer(android_app* state, const char *pFileName, size_t &si
 template<typename Tptr_type> class RQTCAutoDelete {
  public:
  Tptr_type *managed_pointer;
- RQAutoDelete(Tptr_type *_managed_pointer = NULL) {
+ RQTCAutoDelete(Tptr_type *_managed_pointer = NULL) {
   managed_pointer = _managed_pointer;
  }
- ~RQAutoDelete() {
+ ~RQTCAutoDelete() {
   if(managed_pointer==NULL)
    return;
   delete managed_pointer;

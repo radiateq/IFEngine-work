@@ -13,7 +13,8 @@ public:
   Free();
  }
 private:
- virtual void Free() = 0;
+ void Free(){
+ }
  };
 
 class ifCB2WorldManager : Iifclass1 {
@@ -44,18 +45,38 @@ public:
 class ifCB2Body : Iifclass1 {
 public:
  ifCB2Body() {
+  World = NULL;
   body_def = NULL;
   body = NULL;
  }
  ~ifCB2Body() {
   Free();
  }
+ b2World *World;
+ ////////////////////////////////////
  b2BodyDef *body_def;
  b2Body *body;
- std::list<b2FixtureDef> shape;
+ S_listWrap_ptr<b2Shape, true> shape;
  std::list<b2FixtureDef> fixture;
+ ////////////////////////////////////
+ //After body_def, body, shape and fixture have been prepared this function will create a body and add it to the world 
+ void CreateBody(){
+  if(World&&!body){
+   body = World->CreateBody(body_def);
+   typename std::list<b2Shape*>::iterator iters = shape.begin();
+   for( typename std::list<b2FixtureDef>::iterator iter = fixture.begin();
+    iter != fixture.end();
+    iter++){
+    (*iter).shape = (*iters);
+    body->CreateFixture(&(*iter));
+    iters++;         
+   }
+  }
+ }
  void Free() {
-  World
+  if( World ){
+   World->DestroyBody(body);
+  }
   body = NULL;
   body_def = NULL;
   shape.clear();
@@ -67,30 +88,6 @@ class ifCB2BodyManager {
 public:
  ifCB2BodyManager() {
   B2WorldManager = NULL;
-
-
-
-
-  // Define the ground body.
-  b2BodyDef groundBodyDef;
-  groundBodyDef.position.Set(0.0f, -10.0f);
-
-  // Call the body factory which allocates memory for the ground body
-  // from a pool and creates the ground box shape (also from a pool).
-  // The body is also added to the world.
-  b2Body* groundBody = world.CreateBody(&groundBodyDef);
-
-  // Define the ground box shape.
-  b2PolygonShape groundBox;
-
-  // The extents are the half-widths of the box.
-  groundBox.SetAsBox(50.0f, 10.0f);
-
-  // Add the ground fixture to the ground body.
-  groundBody->CreateFixture(&groundBox, 0.0f);
-
-
-
 
 
 
@@ -107,11 +104,7 @@ public:
  }
 private:
  ifCB2WorldManager *B2WorldManager;
-
-
-
- b2Vec2 *Gravity;
- b2World *World;
+ ifCB2Body
  void Init() {
   Free();
   

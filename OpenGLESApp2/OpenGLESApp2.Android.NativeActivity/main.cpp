@@ -304,45 +304,7 @@ void android_main(struct android_app* state) {
 
 
  //       BOX 2D TEST START
-
-
-
-
- // Define the dynamic body. We set its position and call the body factory.
- b2BodyDef bodyDef;
- bodyDef.type = b2_dynamicBody;
- bodyDef.position.Set(20.0f, 400.0f);
- b2Body* body = world.CreateBody(&bodyDef);
-
- // Define another box shape for our dynamic body.
- b2PolygonShape dynamicBox;
- dynamicBox.SetAsBox(1.0f, 1.0f);
-
- // Define the dynamic body fixture.
- b2FixtureDef fixtureDef;
- fixtureDef.shape = &dynamicBox;
-
- // Set the box density to be non-zero, so it will be dynamic.
- fixtureDef.density = 0.1f;
-
- // Override the default friction.
- fixtureDef.friction = 0.3f;
-
- // Add the shape to the body.
- body->CreateFixture(&fixtureDef);
-
- // Prepare for simulation. Typically we use a time step of 1/60 of a
- // second (60Hz) and 10 iterations. This provides a high quality simulation
- // in most game scenarios.
- float32 timeStep = 1.0f / 200.0f;
- int32 velocityIterations = 6;
- int32 positionIterations = 2;
-
-
- // When the world destructor is called, all bodies and joints are freed. This can
- // create orphaned pointers, so be careful about your world management.
-
- //       BOX 2D TEST STOP
+  //       BOX 2D TEST STOP
 
 
 
@@ -390,22 +352,6 @@ void android_main(struct android_app* state) {
 
 		if (engine.EGL_initialized && engine.animating) {
 			// Done with events; draw next animation frame.
-
-
-   // Instruct the world to perform a single step of simulation.
-   // It is generally best to keep the time step and iterations fixed.
-   world.Step(timeStep, velocityIterations, positionIterations);
-
-   // Now print the position and angle of the body.
-   b2Vec2 position = body->GetPosition();
-   //float32 angle = body->GetAngle();
-
-   //Cube_Test_Update_User_Data.Animation_Direction_X = position.x;
-   //Cube_Test_Update_User_Data.Animation_Direction_Y = position.y;
-   //   printf("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
-
-
-
 
    CubeTest_update();
 
