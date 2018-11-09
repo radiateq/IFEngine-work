@@ -65,6 +65,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\Box2D-master\Box2D\Dynamics\Joints\b2WheelJoint.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\Box2D-master\Box2D\Rope\b2Rope.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\libpng-libpng16\png.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)IFBox2DAdapter.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEngine.h" />
   </ItemGroup>
   <ItemGroup>

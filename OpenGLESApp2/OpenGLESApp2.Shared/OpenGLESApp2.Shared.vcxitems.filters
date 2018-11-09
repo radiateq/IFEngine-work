@@ -289,6 +289,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\Box2D-master\Box2D\Rope\b2Rope.h">
       <Filter>Box 2D</Filter>
     </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)IFBox2DAdapter.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Box 2D">
