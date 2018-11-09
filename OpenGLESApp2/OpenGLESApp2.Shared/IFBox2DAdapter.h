@@ -17,7 +17,43 @@ private:
  }
  };
 
-class ifCB2WorldManager : Iifclass1 {
+
+class ifCB2GameManager {
+public:
+ ifCB2GameManager() {
+  velocityIterations = 8;   //how strongly to correct velocity
+  positionIterations = 3;   //how strongly to correct position
+
+  ResetClock();
+ }
+ void ResetClock() {
+  clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+  game_time_0 = temp_timespec;
+ }
+ void UpdateSim() {
+  clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+  //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
+  temp_int64 = timespec2us64(&temp_timespec) - timespec2us64(&game_time_0);
+  game_time_0 = temp_timespec;
+  timeStep = 1000.0f / (float)temp_int64;
+  //timeThen = timeNow;
+  World->Step(timeStep, velocityIterations, positionIterations);
+ }
+ void UpdateGraphics() {
+  //list all bodies and draw them 
+ }
+ float32 timeStep;
+ int32 velocityIterations;   //how strongly to correct velocity
+ int32 positionIterations;   //how strongly to correct position
+protected:
+ b2Vec2 *Gravity;
+ b2World *World;
+ struct timespec temp_timespec, game_time_0;
+ int64_t temp_int64;
+};
+
+
+class ifCB2WorldManager : public Iifclass1, public ifCB2GameManager {
 public:
  ifCB2WorldManager() {
   Gravity = NULL;
@@ -31,9 +67,6 @@ public:
   Gravity = new b2Vec2(gx,gy);
   World = new b2World(*Gravity);
  }
-private:
- b2Vec2 *Gravity;
- b2World *World;
  void Free() {
   IF_NULL_DELETE(Gravity)
   IF_NULL_DELETE(World)
@@ -44,8 +77,8 @@ public:
 
 class ifCB2Body : Iifclass1 {
 public:
- ifCB2Body() {
-  World = NULL;
+ ifCB2Body( b2World *_World = NULL) {
+  World = _World;
   body_def = NULL;
   body = NULL;
  }
@@ -84,41 +117,24 @@ public:
  }
 };
 
-class ifCB2BodyManager {
+class ifCB2BodyManager : public Iifclass1 {
 public:
  ifCB2BodyManager() {
-  B2WorldManager = NULL;
-
-
-
-
-
-
+  World = NULL;
  }
  ~ifCB2BodyManager() {
   Free();
  }
- void MakeWorld(ifCB2WorldManager *_B2WorldManager) {
-  Init();
-  B2WorldManager = _B2WorldManager;
- }
 private:
- ifCB2WorldManager *B2WorldManager;
- ifCB2Body
- void Init() {
-  Free();
-  
- }
- void Free() {  
-  IF_NULL_DELETE(Gravity)
-  IF_NULL_DELETE(World)
+ b2World *World;
+ S_listWrap_ptr<ifCB2Body> Bodies; 
+ void Free() {
  }
 public:
 
 };
-class ifCB2GameLoop {
 
-};
+
 
 
 

@@ -68,9 +68,7 @@ public:
 };
 
 
-//int main()
-//{
-// _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+//void Test4mleaks() {
 // S_listWrap_ptr<int, true> pointerlist;
 // int *findme = new int(1);
 // pointerlist.push_back(findme);
@@ -87,6 +85,16 @@ public:
 // pointerArraylist.push_back(new int[150]);
 // pointerArraylist.removeElement(findmea);
 // pointerArraylist.removeElement(*(pointerArraylist.begin()));
+//}
+//
+//int main()
+//{
+// _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+// while (!_kbhit()) {
+//  Test4mleaks();
+// }
+//
+//
 // return 0;
 //}
 
