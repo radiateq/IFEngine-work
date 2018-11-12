@@ -122,12 +122,7 @@
     </AntPackage>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Content Include="assets\colorfragmentshader.fragmentshader">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Content>
-    <Content Include="assets\colorvertexshader.vertexshader">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Content>
+    <Content Include="assets\RobotoMono-Regular.ttf" />
     <Content Include="assets\ugly.png" />
     <Content Include="res\values\strings.xml" />
     <AntBuildXml Include="build.xml" />

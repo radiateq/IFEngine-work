@@ -1,0 +1,10 @@
+C:/Users/Administrator/source/repos/IFEngine-backup-project-master/OpenGLESApp2/OpenGLESApp2.Shared/common/External/libfont-master/libfont-master/freetype2/Android.build/CMakeFiles/package.dir
+C:/Users/Administrator/source/repos/IFEngine-backup-project-master/OpenGLESApp2/OpenGLESApp2.Shared/common/External/libfont-master/libfont-master/freetype2/Android.build/CMakeFiles/freetype.dir
+C:/Users/Administrator/source/repos/IFEngine-backup-project-master/OpenGLESApp2/OpenGLESApp2.Shared/common/External/libfont-master/libfont-master/freetype2/Android.build/CMakeFiles/package_source.dir
+C:/Users/Administrator/source/repos/IFEngine-backup-project-master/OpenGLESApp2/OpenGLESApp2.Shared/common/External/libfont-master/libfont-master/freetype2/Android.build/CMakeFiles/install/strip.dir
+C:/Users/Administrator/source/repos/IFEngine-backup-project-master/OpenGLESApp2/OpenGLESApp2.Shared/common/External/libfont-master/libfont-master/freetype2/Android.build/CMakeFiles/dist.dir
+C:/Users/Administrator/source/repos/IFEngine-backup-project-master/OpenGLESApp2/OpenGLESApp2.Shared/common/External/libfont-master/libfont-master/freetype2/Android.build/CMakeFiles/install.dir
+C:/Users/Administrator/source/repos/IFEngine-backup-project-master/OpenGLESApp2/OpenGLESApp2.Shared/common/External/libfont-master/libfont-master/freetype2/Android.build/CMakeFiles/install/local.dir
+C:/Users/Administrator/source/repos/IFEngine-backup-project-master/OpenGLESApp2/OpenGLESApp2.Shared/common/External/libfont-master/libfont-master/freetype2/Android.build/CMakeFiles/edit_cache.dir
+C:/Users/Administrator/source/repos/IFEngine-backup-project-master/OpenGLESApp2/OpenGLESApp2.Shared/common/External/libfont-master/libfont-master/freetype2/Android.build/CMakeFiles/rebuild_cache.dir
+C:/Users/Administrator/source/repos/IFEngine-backup-project-master/OpenGLESApp2/OpenGLESApp2.Shared/common/External/libfont-master/libfont-master/freetype2/Android.build/CMakeFiles/list_install_components.dir

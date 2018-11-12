@@ -40,4 +40,5 @@
 #include "android_fopen.h"
  //Domestic Includes
 #include "RQ_NDK_Utils.h"
+#include "DrawText.h"
 

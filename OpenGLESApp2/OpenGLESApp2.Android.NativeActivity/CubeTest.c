@@ -140,17 +140,23 @@ textInt = png_texture_load("ugly.png", &twidth, &theight);
 
 }
 
-void CubeTest_tearDownGL()
-{
-}
-
-
-typedef struct{
+typedef struct {
  png_byte *png_file_data;
  png_size_t png_file_data_size;
  png_size_t png_file_data_position;
 } MEMORY_READER_STATE;
 MEMORY_READER_STATE memory_reader_state;
+
+
+void CubeTest_tearDownGL()
+{
+ if( memory_reader_state.png_file_data ){
+  free(memory_reader_state.png_file_data);
+  memory_reader_state.png_file_data = NULL;
+ }
+}
+
+
 void read_data_memory(png_structp png_ptr, png_bytep data, png_size_t length){
  //MEMORY_READER_STATE *mrs = (MEMORY_READER_STATE *)png_ptr;
  if(memory_reader_state.png_file_data_position >= memory_reader_state.png_file_data_size ){

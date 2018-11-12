@@ -124,13 +124,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ReferencePath>$(ReferencePath)</ReferencePath>
-    <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\freetype2\include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
     <LibraryPath>
     </LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ReferencePath>$(ReferencePath)</ReferencePath>
-    <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\freetype2\include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master;$(IncludePath)</IncludePath>
     <LibraryPath>
     </LibraryPath>
   </PropertyGroup>
@@ -169,7 +169,7 @@
       <AdditionalOptions>-lm %(AdditionalOptions)</AdditionalOptions>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
-      <AdditionalDependencies>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\libpng.a;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\zlib-1.2.11\Android.Build\libz.a</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\libpng.a;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\zlib-1.2.11\Android.Build\libz.a;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\freetype2\libfreetype.a</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -183,7 +183,7 @@
       <AdditionalOptions>-lm %(AdditionalOptions)</AdditionalOptions>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
-      <AdditionalDependencies>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\libpng.a;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\zlib-1.2.11\Android.Build\libz.a</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\libpng.a;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\zlib-1.2.11\Android.Build\libz.a;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\freetype2\libfreetype.a</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -227,105 +227,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Box2D.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2BroadPhase.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2Collision.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2Distance.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2DynamicTree.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2TimeOfImpact.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\Shapes\b2ChainShape.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\Shapes\b2CircleShape.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\Shapes\b2EdgeShape.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\Shapes\b2PolygonShape.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\Shapes\b2Shape.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2BlockAllocator.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2Draw.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2GrowableStack.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2Math.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2Settings.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2StackAllocator.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2Timer.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2Body.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2ContactManager.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2Fixture.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2Island.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2TimeStep.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2World.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2WorldCallbacks.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2ChainAndCircleContact.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2ChainAndPolygonContact.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2CircleContact.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2Contact.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2ContactSolver.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2EdgeAndCircleContact.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2EdgeAndPolygonContact.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2PolygonAndCircleContact.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2PolygonContact.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2DistanceJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2FrictionJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2GearJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2Joint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2MotorJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2MouseJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2PrismaticJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2PulleyJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2RevoluteJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2RopeJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2WeldJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2WheelJoint.h" />
-    <ClInclude Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Rope\b2Rope.h" />
     <ClInclude Include="android_fopen.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="android_native_app_glue.h" />
     <ClInclude Include="RQ_NDK_Utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2BroadPhase.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2CollideCircle.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2CollideEdge.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2CollidePolygon.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2Collision.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2Distance.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2DynamicTree.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\b2TimeOfImpact.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\Shapes\b2ChainShape.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\Shapes\b2CircleShape.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\Shapes\b2EdgeShape.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Collision\Shapes\b2PolygonShape.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2BlockAllocator.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2Draw.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2Math.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2Settings.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2StackAllocator.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Common\b2Timer.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2Body.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2ContactManager.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2Fixture.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2Island.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2World.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\b2WorldCallbacks.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2ChainAndCircleContact.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2ChainAndPolygonContact.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2CircleContact.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2Contact.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2ContactSolver.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2EdgeAndCircleContact.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2EdgeAndPolygonContact.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2PolygonAndCircleContact.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Contacts\b2PolygonContact.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2DistanceJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2FrictionJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2GearJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2Joint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2MotorJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2MouseJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2PrismaticJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2PulleyJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2RevoluteJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2RopeJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2WeldJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Dynamics\Joints\b2WheelJoint.cpp" />
-    <ClCompile Include="..\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D\Rope\b2Rope.cpp" />
     <ClCompile Include="android_fopen.c" />
     <ClCompile Include="android_native_app_glue.c" />
     <ClCompile Include="main.cpp" />

@@ -56,7 +56,7 @@ struct engine {
 	struct android_app *app;
 
 	ASensorManager *sensorManager, *sensorManager2;
-	const ASensor *accelerometerSensor, *gyroSensor;
+	const ASensor *accelerometerSensor, *sensor2;
 	ASensorEventQueue *sensorEventQueue, *sensorEventQueue2;
 
 	int animating;
@@ -292,12 +292,12 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 			ASensorEventQueue_setEventRate(engine->sensorEventQueue,
 				engine->accelerometerSensor, (1000L / 60) * 1000);
 		}
-  if (engine->gyroSensor != NULL) {
+  if (engine->sensor2 != NULL) {
    ASensorEventQueue_enableSensor(engine->sensorEventQueue2,
-    engine->gyroSensor);
+    engine->sensor2);
    // We'd like to get 60 events per second (in us).
    ASensorEventQueue_setEventRate(engine->sensorEventQueue2,
-    engine->gyroSensor, (1000L / 60) * 1000);
+    engine->sensor2, (1000L / 60) * 1000);
   }
   // Also stop animating.
   engine->animating = 1;
@@ -310,9 +310,9 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 			ASensorEventQueue_disableSensor(engine->sensorEventQueue,
 				engine->accelerometerSensor);
 		}
-  if (engine->gyroSensor != NULL) {
+  if (engine->sensor2 != NULL) {
    ASensorEventQueue_disableSensor(engine->sensorEventQueue2,
-    engine->gyroSensor );
+    engine->sensor2 );
   }
   // Also stop animating.
 		engine->animating = 0;
@@ -328,6 +328,12 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 * event loop for receiving input events and doing other things.
 */
 void android_main(struct android_app* state) {
+
+ if( !InitFreeType(state) ){
+  return;
+ }
+
+
  Cube_Test_Update_User_Data.state = state;
 
 	struct engine engine;
@@ -344,7 +350,7 @@ void android_main(struct android_app* state) {
 	engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager, state->looper, LOOPER_ID_USER, NULL, NULL);
 
  engine.sensorManager2 = ASensorManager_getInstance();
- engine.gyroSensor = ASensorManager_getDefaultSensor(engine.sensorManager2,	ASENSOR_TYPE_GYROSCOPE);
+ engine.sensor2 = ASensorManager_getDefaultSensor(engine.sensorManager2,	ASENSOR_TYPE_LIGHT);
  engine.sensorEventQueue2 = ASensorManager_createEventQueue(engine.sensorManager2, state->looper, LOOPER_ID_USER+1, NULL, NULL);
 
 
@@ -429,7 +435,7 @@ void android_main(struct android_app* state) {
 					}
 				}
 			} else if (ident == (LOOPER_ID_USER + 1)) {
-    if (engine.gyroSensor != NULL) {
+    if (engine.sensor2 != NULL) {
      ASensorEvent event;
      while (ASensorEventQueue_getEvents(engine.sensorEventQueue2,
       &event, 1) > 0) {

@@ -78,6 +78,7 @@ public:
     return (*iter);
    }
   }
+  return NULL;
  }
 };
 
