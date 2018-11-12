@@ -2,47 +2,54 @@
 
 #include <GLES/gl.h>
 
-
-
 //Unsigned integer type for holding count of objects
 typedef unsigned long int ifTCounter;
-
-
 
 //Structure holding list of functions that can be executed on body
 
 //Structures for holding multiple items related to body
-typedef struct{
- ifTCounter elements_cnt;
- unsigned int stride;
- GLfloat *elements;
-}ifTvertices, ifTcolors, ifTUVmapping;
-typedef struct{
- ifTCounter elements_cnt;
- unsigned int stride;
- GLubyte *elements;
-}ifTindices;
+//typedef struct{
+// ifTCounter elements_cnt;
+// unsigned int stride;
+// GLfloat *elements;
+//}ifTvertices, ifTcolors, ifTUVmapping;
+
+//typedef struct{
+// ifTCounter elements_cnt;
+// unsigned int stride;
+// GLubyte *elements;
+//}ifTindices;
 
 //Structure holding body shape, attributes and textures
 typedef struct{
  //Verices
  ifTCounter vertices_cnt;
- ifTvertices *vertices;
+ GLfloat *vertices;
  //Indexes
  ifTCounter indices_cnt;
- ifTindices *indices;
+ GLubyte *indices;
+ //
+ GLenum vertices_mode;
  //Color
  ifTCounter colors_cnt; 
- ifTcolors *colors;
+ GLfloat *colors;
  //UV
  ifTCounter UVmapping_cnt;
- ifTUVmapping *UVmapping;
+ GLfloat *UVmapping;
+ //Z coordinate is always same for body and is used for last transformation translate (z_pos,0,0,1) before drawing
+ GLfloat z_pos;
+ //matrix model
+ //GL_MODELVIEW, GL_TEXTURE
+ GLfloat modelview_matrix[16], texture_matrix[16];
+ //Texture name
+ GLuint texture_ID;
+ //Normals (included in box2d b2_shape if needed
 }ifTbodyDefinition;
 
 //Structure holding list of bodies
 typedef struct{
  ifTCounter bodies_cnt;
- ifTbodyDefinition *bodies;
+ ifTbodyDefinition **bodies;
 }ifTbodiesList;
 
 //General callback function, that accepts pointer to void and returns pointer to void
@@ -60,22 +67,24 @@ typedef struct{
  void *subscribers_data;
 }ifTevent;
 
-//Structure for holding all events that get called by program
+//Structure for holding all events 
 typedef struct {
  ifTCounter event_cnt;
  ifTevent *events;
 }ifTeventRegistry;
 
 
+extern ifTbodiesList BodiesList;
+//
 
-//Structure holding events body reacts to
+void Init_ifTbodyDefinition(ifTbodyDefinition *);
+void Clean_ifTbodyDefinition(ifTbodyDefinition *);
 
 
-//Functions for adding, removing, searching for a body in a list of bodies
+void PrepareDraw();
+void DrawBodies();
 
-//Functions for manipulating properties of body
 
-//Function for presenting body to the screen (update, draw, ...)
-
-//Functions for propagating events
-
+static bool IFEngine_Initialized = false;
+void Init();
+void CleanupBodies();

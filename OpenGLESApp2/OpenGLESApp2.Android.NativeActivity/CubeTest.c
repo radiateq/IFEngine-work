@@ -369,24 +369,11 @@ void CubeTest_update()
 }
 void CubeTest_prepare()
 {
- clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
- game_time_0 = temp_timespec; 
-
  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 
 
-void CopyFloat16ToMatrix(MatrixXf &mf, float *mfa) {
- for ( int cnt = 0; cnt < 16; cnt++ ) {
-  mf(cnt) = mfa[cnt];
- }
-}
-void CopyMatrix16ToFloat(MatrixXf &mf, float *mfa) {
- for (int cnt = 0; cnt < 16; cnt++) {
-  mfa[cnt] = mf(cnt);
- }
-}
 
 void CubeTest_draw()
 {

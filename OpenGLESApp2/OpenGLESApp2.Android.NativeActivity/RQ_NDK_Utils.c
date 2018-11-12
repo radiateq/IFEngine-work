@@ -43,4 +43,28 @@ void *getAssetFileToBuffer(android_app* state, const char *pFileName, size_t &si
  return pBuffer; 
 }
 
+void CopyFloat16ToMatrix(MatrixXf &mf, float *mfa) {
+ for (int cnt = 0; cnt < 16; cnt++) {
+  mf(cnt) = mfa[cnt];
+ }
+}
+void CopyMatrix16ToFloat(MatrixXf &mf, float *mfa) {
+ for (int cnt = 0; cnt < 16; cnt++) {
+  mfa[cnt] = mf(cnt);
+ }
+}
+
+void LoadIdentityMatrix(float *matrix4x4) {
+ //1000
+ //0100
+ //0010
+ //0001
+ memset(matrix4x4, 0.0, sizeof(float) * 16);
+ matrix4x4[0] = 1.0;
+ matrix4x4[5] = 1.0;
+ matrix4x4[10] = 1.0;
+ matrix4x4[15] = 1.0;
+}
+
+
 

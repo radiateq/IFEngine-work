@@ -14,6 +14,8 @@
 * limitations under the License.
 *
 */
+#define _CRTDBG_MAP_ALLOC  
+#include <stdlib.h>  
 
 //#include "Cube.h"
 
@@ -25,8 +27,16 @@
 
 #include "Cube_Test_Interface.h"
 
+#include "IFBox2DAdapter.h"
+
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "AndroidProject1.NativeActivity", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "AndroidProject1.NativeActivity", __VA_ARGS__))
+
+
+
+ifCB2Adapter IFAdapter;
+
+
 
 /**
 * Our saved state data.
@@ -46,7 +56,7 @@ struct engine {
 	struct android_app* app;
 
 	ASensorManager* sensorManager;
-	const ASensor* accelerometerSensor;
+	const ASensor* accelerometerSensor, gyroSensor;
 	ASensorEventQueue* sensorEventQueue;
 
 	int animating;
@@ -60,6 +70,44 @@ struct engine {
 
 
 TS_Cube_Test_Update_User_Data Cube_Test_Update_User_Data;
+
+
+
+void Init_IFAdapter(engine &engine) {
+ if (engine.EGL_initialized) {
+  //-------------------------------------------------------     IFEngine TEST
+  IFAdapter.MakeWorld(0.0f, 9.0f);
+  //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
+  IFAdapter.screenResolutionX = engine.width;
+  IFAdapter.screenResolutionY = engine.height;
+  IFAdapter.CalculateBox2DSizeFactor(10);
+  IFAdapter.OrderBody();
+  IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
+  IFAdapter.OrderedBody()->body_def->position.Set(engine.width / 20, engine.height / 20);
+  b2PolygonShape *polyShape = new b2PolygonShape;
+  b2Vec2 shapeCoords[8];
+  shapeCoords[0] = {  8.0,  12.5 };
+  shapeCoords[1] = { 10.0,   5.0 };
+  shapeCoords[2] = { 20.0,   2.5 };
+  shapeCoords[3] = { 30.0,   5.0 };
+  shapeCoords[4] = { 40.0,  12.5 };
+  shapeCoords[5] = { 30.0,  20.0 };
+  shapeCoords[6] = { 20.0,  27.0 };
+  shapeCoords[7] = { 10.0,  20.0 };
+  polyShape->Set(shapeCoords, 8);
+  b2FixtureDef *fixture = new b2FixtureDef;
+  fixture->shape = polyShape;
+  fixture->density = 10.1;
+  fixture->friction = 0.3;
+  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+  IFAdapter.MakeBody();  
+  //-------------------------------------------------------     IFEngine TEST
+ }
+}
+
+
+
+
 
 /**
 * Initialize an EGL context for the current display.
@@ -146,6 +194,7 @@ static int engine_init_display(struct engine* engine) {
 
 	// Initialize GL state.
 	CubeTest_setupGL(w, h);
+ Init_IFAdapter(*engine);
 
 	return 0;
 }
@@ -160,9 +209,11 @@ static void engine_draw_frame(struct engine* engine) {
 		return;
 	}
 
-	CubeTest_prepare();
+	//CubeTest_prepare();
+ PrepareDraw();
 
-	CubeTest_draw();
+	//CubeTest_draw();
+ DrawBodies();
 
 	eglSwapBuffers(engine->display, engine->surface);
 }
@@ -241,6 +292,13 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 			ASensorEventQueue_setEventRate(engine->sensorEventQueue,
 				engine->accelerometerSensor, (1000L / 60) * 1000);
 		}
+  if (engine->gyrosensor       https ://developer.android.com/guide/topics/sensors/sensors_motion                   != NULL) {
+   ASensorEventQueue_enableSensor(engine->sensorEventQueue,
+    engine->accelerometerSensor);
+   // We'd like to get 60 events per second (in us).
+   ASensorEventQueue_setEventRate(engine->sensorEventQueue,
+    engine->accelerometerSensor, (1000L / 60) * 1000);
+  }
   // Also stop animating.
   engine->animating = 1;
   engine_draw_frame(engine);
@@ -259,13 +317,13 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 	}
 }
 
+
 /**
 * This is the main entry point of a native application that is using
 * android_native_app_glue.  It runs in its own thread, with its own
 * event loop for receiving input events and doing other things.
 */
 void android_main(struct android_app* state) {
-
  Cube_Test_Update_User_Data.state = state;
 
 	struct engine engine;
@@ -283,9 +341,10 @@ void android_main(struct android_app* state) {
 	engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager,
 		state->looper, LOOPER_ID_USER, NULL, NULL);
 
-    p_user_data = &Cube_Test_Update_User_Data;
 
- //Cube_Test_Init(NULL);
+
+ p_user_data = &Cube_Test_Update_User_Data;
+
 
   
 
@@ -295,7 +354,6 @@ void android_main(struct android_app* state) {
 	}
 
 	engine.animating = 1;
-
 
 
 
@@ -339,6 +397,26 @@ void android_main(struct android_app* state) {
 						LOGI("accelerometer: x=%f y=%f z=%f",
 							event.acceleration.x, event.acceleration.y,
 							event.acceleration.z);
+///////////////////////////////////////////////           IF TEST CODE START
+      //IFAdapter.World->SetGravity( b2Vec2(-event.acceleration.x * 50.0, event.acceleration.y * 50.0 ) );
+ //case 'q':
+ // //apply gradual force upwards
+ // bodies[0]->ApplyForce(b2Vec2(0, 50), bodies[0]->GetWorldCenter());
+      IFAdapter.Bodies[0]->body->ApplyLinearImpulse(b2Vec2( event.acceleration.x * 50.0, -event.acceleration.y * 50.0), IFAdapter.Bodies[0]->body->GetWorldCenter(), true );
+ // break;
+ //case 'w':
+ // //apply immediate force upwards
+ // bodies[1]->ApplyLinearImpulse(b2Vec2(0, 50), bodies[1]->GetWorldCenter());
+ // break;
+ //case 'e':
+ // //teleport or 'warp' to new location
+ // bodies[2]->SetTransform(b2Vec2(10, 20), 0);
+ // break;
+ //default:
+ // //run default behaviour
+ // Test::Keyboard(key);
+///////////////////////////////////////////////           IF TEST CODE STOP
+
 					}
 				}
 			}
@@ -353,14 +431,9 @@ void android_main(struct android_app* state) {
 		if (engine.EGL_initialized && engine.animating) {
 			// Done with events; draw next animation frame.
 
-   CubeTest_update();
-
-
-
-
-			//if (engine.state.angle > 1) {
-			//	engine.state.angle = 0;
-			//}
+   
+   IFAdapter.UpdateSim();
+   IFAdapter.UpdateGraphics();   
 
 			// Drawing is throttled to the screen update rate, so there
 			// is no need to do timing here.
