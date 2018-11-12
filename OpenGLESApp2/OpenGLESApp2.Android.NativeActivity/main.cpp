@@ -53,11 +53,11 @@ struct saved_state {
 struct engine {
 	bool EGL_initialized;
 
-	struct android_app* app;
+	struct android_app *app;
 
-	ASensorManager* sensorManager;
-	const ASensor* accelerometerSensor, gyroSensor;
-	ASensorEventQueue* sensorEventQueue;
+	ASensorManager *sensorManager, *sensorManager2;
+	const ASensor *accelerometerSensor, *gyroSensor;
+	ASensorEventQueue *sensorEventQueue, *sensorEventQueue2;
 
 	int animating;
 	EGLDisplay display;
@@ -292,12 +292,12 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 			ASensorEventQueue_setEventRate(engine->sensorEventQueue,
 				engine->accelerometerSensor, (1000L / 60) * 1000);
 		}
-  if (engine->gyrosensor       https ://developer.android.com/guide/topics/sensors/sensors_motion                   != NULL) {
-   ASensorEventQueue_enableSensor(engine->sensorEventQueue,
-    engine->accelerometerSensor);
+  if (engine->gyroSensor != NULL) {
+   ASensorEventQueue_enableSensor(engine->sensorEventQueue2,
+    engine->gyroSensor);
    // We'd like to get 60 events per second (in us).
-   ASensorEventQueue_setEventRate(engine->sensorEventQueue,
-    engine->accelerometerSensor, (1000L / 60) * 1000);
+   ASensorEventQueue_setEventRate(engine->sensorEventQueue2,
+    engine->gyroSensor, (1000L / 60) * 1000);
   }
   // Also stop animating.
   engine->animating = 1;
@@ -310,7 +310,11 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 			ASensorEventQueue_disableSensor(engine->sensorEventQueue,
 				engine->accelerometerSensor);
 		}
-		// Also stop animating.
+  if (engine->gyroSensor != NULL) {
+   ASensorEventQueue_disableSensor(engine->sensorEventQueue2,
+    engine->gyroSensor );
+  }
+  // Also stop animating.
 		engine->animating = 0;
 		engine_draw_frame(engine);
 		break;
@@ -336,11 +340,12 @@ void android_main(struct android_app* state) {
 
 	// Prepare to monitor accelerometer
 	engine.sensorManager = ASensorManager_getInstance();
-	engine.accelerometerSensor = ASensorManager_getDefaultSensor(engine.sensorManager,
-		ASENSOR_TYPE_ACCELEROMETER);
-	engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager,
-		state->looper, LOOPER_ID_USER, NULL, NULL);
+	engine.accelerometerSensor = ASensorManager_getDefaultSensor(engine.sensorManager,	ASENSOR_TYPE_ACCELEROMETER);
+	engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager, state->looper, LOOPER_ID_USER, NULL, NULL);
 
+ engine.sensorManager2 = ASensorManager_getInstance();
+ engine.gyroSensor = ASensorManager_getDefaultSensor(engine.sensorManager2,	ASENSOR_TYPE_GYROSCOPE);
+ engine.sensorEventQueue2 = ASensorManager_createEventQueue(engine.sensorManager2, state->looper, LOOPER_ID_USER+1, NULL, NULL);
 
 
  p_user_data = &Cube_Test_Update_User_Data;
@@ -377,6 +382,29 @@ void android_main(struct android_app* state) {
 		int events;
 		struct android_poll_source* source;
 
+
+
+  ///////////////////////////////////////////////           IF TEST CODE START
+  //IFAdapter.World->SetGravity( b2Vec2(-event.acceleration.x * 50.0, event.acceleration.y * 50.0 ) );
+  //case 'q':
+  // //apply gradual force upwards
+  // bodies[0]->ApplyForce(b2Vec2(0, 50), bodies[0]->GetWorldCenter());
+  // break;
+  //case 'w':
+  // //apply immediate force upwards
+  // bodies[1]->ApplyLinearImpulse(b2Vec2(0, 50), bodies[1]->GetWorldCenter());
+  // break;
+  //case 'e':
+  // //teleport or 'warp' to new location
+  // bodies[2]->SetTransform(b2Vec2(10, 20), 0);
+  // break;
+  //default:
+  // //run default behaviour
+  // Test::Keyboard(key);
+  ///////////////////////////////////////////////           IF TEST CODE STOP
+  // Check if we are exiting.
+
+
 		// If not animating, we will block forever waiting for events.
 		// If animating, we loop until all events are read, then continue
 		// to draw the next frame of animation.
@@ -389,44 +417,50 @@ void android_main(struct android_app* state) {
 			}
 
 			// If a sensor has data, process it now.
-			if (ident == LOOPER_ID_USER) {
+			if (ident == LOOPER_ID_USER ) {
 				if (engine.accelerometerSensor != NULL) {
 					ASensorEvent event;
 					while (ASensorEventQueue_getEvents(engine.sensorEventQueue,
 						&event, 1) > 0) {
-						LOGI("accelerometer: x=%f y=%f z=%f",
-							event.acceleration.x, event.acceleration.y,
-							event.acceleration.z);
-///////////////////////////////////////////////           IF TEST CODE START
-      //IFAdapter.World->SetGravity( b2Vec2(-event.acceleration.x * 50.0, event.acceleration.y * 50.0 ) );
- //case 'q':
- // //apply gradual force upwards
- // bodies[0]->ApplyForce(b2Vec2(0, 50), bodies[0]->GetWorldCenter());
-      IFAdapter.Bodies[0]->body->ApplyLinearImpulse(b2Vec2( event.acceleration.x * 50.0, -event.acceleration.y * 50.0), IFAdapter.Bodies[0]->body->GetWorldCenter(), true );
- // break;
- //case 'w':
- // //apply immediate force upwards
- // bodies[1]->ApplyLinearImpulse(b2Vec2(0, 50), bodies[1]->GetWorldCenter());
- // break;
- //case 'e':
- // //teleport or 'warp' to new location
- // bodies[2]->SetTransform(b2Vec2(10, 20), 0);
- // break;
- //default:
- // //run default behaviour
- // Test::Keyboard(key);
-///////////////////////////////////////////////           IF TEST CODE STOP
-
+						//LOGI("accelerometer: x=%f y=%f z=%f",
+						//	event.acceleration.x, event.acceleration.y,
+						//	event.acceleration.z);
+       //IFAdapter.Bodies[0]->body->ApplyLinearImpulse(b2Vec2( event.acceleration.x * 50.0, -event.acceleration.y * 50.0), IFAdapter.Bodies[0]->body->GetWorldCenter(), true );
 					}
 				}
-			}
+			} else if (ident == (LOOPER_ID_USER + 1)) {
+    if (engine.gyroSensor != NULL) {
+     ASensorEvent event;
+     while (ASensorEventQueue_getEvents(engine.sensorEventQueue2,
+      &event, 1) > 0) {
+      //LOGI("gyro: x=%f",
+      // event.light);
+      IFAdapter.Bodies[0]->body->ApplyLinearImpulse(b2Vec2( event.light * 20.0, -event.light * 20.0), IFAdapter.Bodies[0]->body->GetWorldCenter(), true );
+     }
+    }
+   }
 
-			// Check if we are exiting.
+
+
+
 			if (state->destroyRequested != 0) {
 				engine_term_display(&engine);
 				return;
 			}
 		}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 		if (engine.EGL_initialized && engine.animating) {
 			// Done with events; draw next animation frame.
