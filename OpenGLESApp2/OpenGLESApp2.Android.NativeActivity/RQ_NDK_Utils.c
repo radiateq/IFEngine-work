@@ -66,5 +66,12 @@ void LoadIdentityMatrix(float *matrix4x4) {
  matrix4x4[15] = 1.0;
 }
 
+int32_t getDensityDpi(android_app* app) {
+ AConfiguration* config = AConfiguration_new();
+ AConfiguration_fromAssetManager(config, app->activity->assetManager);
+ int32_t density = AConfiguration_getDensity(config);
+ AConfiguration_delete(config);
+ return density;
+}
 
 

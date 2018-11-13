@@ -38,6 +38,8 @@
  //External Includes
 #include <png.h>
 #include "android_fopen.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
  //Domestic Includes
 #include "RQ_NDK_Utils.h"
 #include "DrawText.h"

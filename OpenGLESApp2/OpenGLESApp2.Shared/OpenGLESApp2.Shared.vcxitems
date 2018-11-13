@@ -69,6 +69,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)DrawText.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFBox2DAdapter.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEngine.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)IFEUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\CubeTest.c" />
@@ -121,5 +122,6 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)common\External\Box2D-master\Box2D\Rope\b2Rope.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)DrawText.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)IFEngine.c" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)IFEUtils.cpp" />
   </ItemGroup>
 </Project>

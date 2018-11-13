@@ -143,6 +143,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)common\External\Box2D-master\Box2D\Rope\b2Rope.cpp">
       <Filter>Box 2D</Filter>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)IFEUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\CubeTest.h" />
@@ -295,6 +296,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\freetype2\include\ft2build.h">
       <Filter>External</Filter>
     </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)IFEUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Box 2D">

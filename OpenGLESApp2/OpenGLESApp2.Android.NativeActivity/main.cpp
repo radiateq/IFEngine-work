@@ -329,9 +329,72 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 */
 void android_main(struct android_app* state) {
 
+
+ //               FREETYPE               SAMPLE START
  if( !InitFreeType(state) ){
   return;
  }
+ if (!SetFaceSize ){
+  return;
+ }
+ FT_UInt glyph_index = FT_Get_Char_Index(face, 65);
+ FT_Error error = FT_Load_Glyph(
+  face,          /* handle to face object */
+  glyph_index,   /* glyph index           */
+  FT_LOAD_DEFAULT);  /* load flags, see below */
+
+ //face->glyph->format describes glyph image  If it is not FT_GLYPH_FORMAT_BITMAP, convert it to a bitmap through FT_Render_Glyph.
+ //  error = FT_Render_Glyph(face->glyph,   /* glyph slot  */
+ //   render_mode); /* render mode */
+ //The parameter render_mode is a set of bit flags to specify how to render the glyph image.FT_RENDER_MODE_NORMAL, the default, renders an anti - aliased coverage bitmap with 256 gray levels(also called a pixmap), as this is the default.You can alternatively use FT_RENDER_MODE_MONO if you want to generate a 1 - bit monochrome bitmap.More values are available for the FT_Render_Mode enumeration value.
+
+ //you can access it directly through glyph->bitmap and position it through glyph->bitmap_left and glyph->bitmap_top
+
+
+ //error = FT_Set_Transform(
+  //face,       /* target face object    */
+  //&matrix,    /* pointer to 2x2 matrix */
+  //&delta);   /* pointer to 2d vector  */
+ //This function sets the current transformation for a given face object.Its second parameter is a pointer to an FT_Matrix structure that describes a 2×2 affine matrix.The third parameter is a pointer to an FT_Vector
+ //Coefficients of the matrix are otherwise in 16.16 fixed-point units
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ //... initialize library ...
+ // ... create face object ...
+ // ... set character size ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ //               FREETYPE               SAMPLE STOP
+
 
 
  Cube_Test_Update_User_Data.state = state;

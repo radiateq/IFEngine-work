@@ -123,4 +123,6 @@ void CopyMatrix16ToFloat(MatrixXf &mf, float *mfa);
 void LoadIdentityMatrix(float *matrix4x4);
 
 
+int32_t getDensityDpi(android_app* app);
+
 #endif
