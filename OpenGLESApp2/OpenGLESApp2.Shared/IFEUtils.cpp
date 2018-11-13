@@ -75,10 +75,13 @@ bool Triangulate::Snip(const Vector2dVector &contour, int u, int v, int w, int n
  return true;
 }
 
-bool Triangulate::Process(const Vector2dVector &contour, Vector2dVector &result)
-{
+bool Triangulate::Process(const Vector2dVector &contour, unsigned long int &indices_cnt, unsigned char *&indices){
  /* allocate and initialize list of Vertices in polygon */
-
+ if( indices != NULL ){
+  free(indices);
+  indices = NULL;
+ }
+ 
  int n = contour.size();
  if (n < 3) return false;
 
@@ -118,9 +121,15 @@ bool Triangulate::Process(const Vector2dVector &contour, Vector2dVector &result)
    a = V[u]; b = V[v]; c = V[w];
 
    /* output Triangle */
-   result.push_back(contour[a]);
-   result.push_back(contour[b]);
-   result.push_back(contour[c]);
+   indices = ( unsigned char * )( realloc( indices, indices_cnt + 3 ) );
+
+   indices[indices_cnt++] = a;
+   indices[indices_cnt++] = b;
+   indices[indices_cnt++] = c;
+
+   //result.push_back(contour[a]);
+   //result.push_back(contour[b]);
+   //result.push_back(contour[c]);
 
    m++;
 
@@ -132,12 +141,12 @@ bool Triangulate::Process(const Vector2dVector &contour, Vector2dVector &result)
   }
  }
 
-
-
  delete V;
 
  return true;
 }
+
+
 
 //
 //#include <stdio.h>
@@ -194,4 +203,37 @@ bool Triangulate::Process(const Vector2dVector &contour, Vector2dVector &result)
 //  printf("Triangle %d => (%0.0f,%0.0f) (%0.0f,%0.0f) (%0.0f,%0.0f)\n", i + 1, p1.GetX(), p1.GetY(), p2.GetX(), p2.GetY(), p3.GetX(), p3.GetY());
 // }
 //
+//}
+
+
+
+
+
+
+// To find orientation of ordered triplet (p1, p2, p3). 
+// The function returns following values 
+// 0 --> p, q and r are colinear 
+// 1 --> Clockwise 
+// 2 --> Counterclockwise 
+int orientation(const Vector2d &p1, const Vector2d &p2, const Vector2d &p3)
+{
+ // See 10th slides from following link for derivation 
+ // of the formula 
+ int val = (p2.y - p1.y) * (p3.x - p2.x) -
+  (p2.x - p1.x) * (p3.y - p2.y);
+
+ if (val == 0) return 0;  // colinear 
+
+ return (val > 0) ? 1 : 2; // clock or counterclock wise 
+}
+
+//// Driver program to test above functions 
+//int main()
+//{
+// Point p1 = { 0, 0 }, p2 = { 4, 4 }, p3 = { 1, 2 };
+// int o = orientation(p1, p2, p3);
+// if (o == 0)         cout << "Linear";
+// else if (o == 1)  cout << "Clockwise";
+// else              cout << "CounterClockwise";
+// return 0;
 //}

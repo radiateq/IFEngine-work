@@ -7,6 +7,8 @@
 #include <list>
 
 #include <IFEngine.h>
+#include <IFEUtils.h>
+
 //
 //class Iifclass1 {
 //public:
@@ -73,7 +75,7 @@ public:
 //vertices and vertices_mode OUT
 // - vertices must have 2*vertices_count elements available, storing x1,y1,x2,y2,...
 
- void BodyToVertices(unsigned int shape_index, ifTCounter &vertices_count, ifTCounter &indices_count, GLenum *vertices_mode = NULL, float *vertices = NULL, unsigned int *indices = NULL) {
+ void BodyToVertices(unsigned int shape_index, ifTCounter &vertices_count, ifTCounter &indices_count, GLenum *vertices_mode, float **vertices, unsigned char **indices) {
   //[b2_maxPolygonVertices]
   for (typename std::list<b2FixtureDef*>::iterator iter = fixture.begin();
    iter != fixture.end();
@@ -83,7 +85,7 @@ public:
     case b2Shape::e_chain:
     case b2Shape::e_edge:
      *vertices_mode = GL_LINE_LOOP;
-     if (vertices == NULL) {
+     if (*vertices == NULL) {
       break;
      }
      *vertices_mode = GL_LINES;
@@ -91,20 +93,25 @@ public:
     case b2Shape::e_polygon:
     {
      vertices_count = ((b2PolygonShape*)(*iter)->shape)->m_count * 2;
-     if( vertices == NULL ){
-      break;
+     if(*vertices!=NULL){
+      free(*vertices);
      }
+     *vertices = (GLfloat*)malloc(sizeof(*vertices[0]) * vertices_count);
      *vertices_mode = GL_TRIANGLES;
      unsigned int cntmax = vertices_count * 0.5;
      //looking for the left first then bottom coordinate
-     for (int cnt = 0; cnt < cntmax; cnt++) {
-      vertices[2 * cnt] = ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].x;
-      vertices[2 * cnt + 1] = ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].y;
+     Vector2dVector v2vertices;
+     for (ifTCounter cnt = 0; cnt < cntmax; cnt++) {
+      (*vertices)[2 * cnt] = ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].x;
+      (*vertices)[2 * cnt + 1] = ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].y;
+      v2vertices.push_back(Vector2d((*vertices)[2 * cnt], (*vertices)[2 * cnt + 1]));
      }
+     Triangulate::Process(v2vertices, indices_count, *indices);
+
      break;
     }
     case b2Shape::e_circle:
-     if (vertices == NULL) {
+     if (*vertices == NULL) {
       break;
      }
      *vertices_mode = GL_LINE_LOOP;
@@ -175,10 +182,7 @@ public:
    BodiesList.bodies[BodiesList.bodies_cnt] = (ifTbodyDefinition*)malloc(sizeof(ifTbodyDefinition));
    BodiesList.bodies[BodiesList.bodies_cnt] = work_body;
    Init_ifTbodyDefinition(work_body);
-   (*iter)->BodyToVertices(cnt, work_body->vertices_cnt, work_body->indices_cnt);
-   work_body->vertices = (GLfloat*)malloc(sizeof(work_body->vertices[0]) * work_body->vertices_cnt);
-   (*iter)->BodyToVertices(cnt, work_body->vertices_cnt, work_body->indices_cnt, &(work_body->vertices_mode), work_body->vertices, work_body->indices);
-
+   (*iter)->BodyToVertices(cnt, work_body->vertices_cnt, work_body->indices_cnt, &(work_body->vertices_mode), &(work_body->vertices), &(work_body->indices));
    (*iter)->OGL_body = work_body;
    work_body->colors_cnt = work_body->vertices_cnt * 2;
    work_body->colors = (GLfloat*)malloc(sizeof(GLfloat) * work_body->colors_cnt);

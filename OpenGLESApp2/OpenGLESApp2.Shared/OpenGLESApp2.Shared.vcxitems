@@ -17,6 +17,7 @@
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\CubeTest.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\Cube_Test_Interface.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)common\External\bitmap\bitmap_image.hpp" />
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\Box2D-master\Box2D\Box2D.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\Box2D-master\Box2D\Collision\b2BroadPhase.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\Box2D-master\Box2D\Collision\b2Collision.h" />

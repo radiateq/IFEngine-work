@@ -61,7 +61,7 @@ void DrawBodies() {
  glMatrixMode(GL_MODELVIEW);
  glEnableClientState(GL_VERTEX_ARRAY);
  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-          /*  remember to disable if not working simultaneously with   glEnableClientState(GL_TEXTURE_COORD_ARRAY);*/          glEnableClientState(GL_COLOR_ARRAY);
+ glEnableClientState(GL_COLOR_ARRAY);
 
  for( int bodies_count = 0; bodies_count < BodiesList.bodies_cnt; bodies_count++ ){
   ifTbodyDefinition *pifebody = BodiesList.bodies[bodies_count];
@@ -85,10 +85,7 @@ void DrawBodies() {
    //GLenum error = glGetError();
   }
 
-  if (pifebody->indices_cnt > 0) {
-   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, pifebody->indices);
-  }
-  
+ 
   glMatrixMode( GL_MODELVIEW );
   glLoadIdentity(); 
   glLoadMatrixf( pifebody->modelview_matrix );
