@@ -179,10 +179,10 @@ public:
   }  
   ifTbodyDefinition *work_body;
   for (unsigned int cnt = 0; cnt < (*iter)->fixture.size(); cnt++) {
-   work_body = (ifTbodyDefinition*)malloc(sizeof(ifTbodyDefinition));
-   BodiesList.bodies = (ifTbodyDefinition**)(realloc(BodiesList.bodies, sizeof(ifTbodyDefinition*) * BodiesList.bodies_cnt));
+   //work_body = (ifTbodyDefinition*)malloc(sizeof(ifTbodyDefinition));
+   BodiesList.bodies = (ifTbodyDefinition**)(realloc(BodiesList.bodies, sizeof(ifTbodyDefinition*) * (BodiesList.bodies_cnt + 1)));
    BodiesList.bodies[BodiesList.bodies_cnt] = (ifTbodyDefinition*)malloc(sizeof(ifTbodyDefinition));
-   BodiesList.bodies[BodiesList.bodies_cnt] = work_body;
+   work_body = BodiesList.bodies[BodiesList.bodies_cnt];
    Init_ifTbodyDefinition(work_body);
    (*iter)->BodyToVertices(cnt, work_body->vertices_cnt, work_body->indices_cnt, &(work_body->vertices_mode), &(work_body->vertices), &(work_body->indices));
    (*iter)->OGL_body = work_body;
