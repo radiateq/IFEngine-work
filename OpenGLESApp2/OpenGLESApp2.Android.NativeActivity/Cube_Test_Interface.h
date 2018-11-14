@@ -14,6 +14,7 @@ typedef struct {
  double Animation_Direction_Y;
  double screenWidth;
  double screenHeight;
+ GLuint CubeTexture;
 }TS_Cube_Test_Update_User_Data;
 
 

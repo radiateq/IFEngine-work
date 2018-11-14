@@ -141,7 +141,7 @@ bool Triangulate::Process(const Vector2dVector &contour, unsigned long int &indi
   }
  }
 
- delete V;
+ delete [] V;
 
  return true;
 }
@@ -237,3 +237,126 @@ int orientation(const Vector2d &p1, const Vector2d &p2, const Vector2d &p3)
 // else              cout << "CounterClockwise";
 // return 0;
 //}
+
+
+
+
+
+
+ //returns 0 if all went ok, non-0 if error
+//output image is always given in RGBA (with alpha channel), even if it's a BMP without alpha channel
+unsigned decodeBMP(std::vector<unsigned char>& image, unsigned& w, unsigned& h, const std::vector<unsigned char>& bmp)
+{
+ static const unsigned MINHEADER = 54; //minimum BMP header size
+
+ if (bmp.size() < MINHEADER) return -1;
+ if (bmp[0] != 'B' || bmp[1] != 'M') return 1; //It's not a BMP file if it doesn't start with marker 'BM'
+ unsigned pixeloffset = bmp[10] + 256 * bmp[11]; //where the pixel data starts
+ //read width and height from BMP header
+ w = bmp[18] + bmp[19] * 256;
+ h = bmp[22] + bmp[23] * 256;
+ //read number of channels from BMP header
+ if (bmp[28] != 24 && bmp[28] != 32) return 2; //only 24-bit and 32-bit BMPs are supported.
+ unsigned numChannels = bmp[28] / 8;
+
+ //The amount of scanline bytes is width of image times channels, with extra bytes added if needed
+ //to make it a multiple of 4 bytes.
+ unsigned scanlineBytes = w * numChannels;
+ if (scanlineBytes % 4 != 0) scanlineBytes = (scanlineBytes / 4) * 4 + 4;
+
+ unsigned dataSize = scanlineBytes * h;
+ if (bmp.size() < dataSize + pixeloffset) return 3; //BMP file too small to contain all pixels
+
+ image.resize(w * h * 4);
+
+ /*
+ There are 3 differences between BMP and the raw image buffer for LodePNG:
+ -it's upside down
+ -it's in BGR instead of RGB format (or BRGA instead of RGBA)
+ -each scanline has padding bytes to make it a multiple of 4 if needed
+ The 2D for loop below does all these 3 conversions at once.
+ */
+ for (unsigned y = 0; y < h; y++)
+  for (unsigned x = 0; x < w; x++)
+  {
+   //pixel start byte position in the BMP
+   unsigned bmpos = pixeloffset + (h - y - 1) * scanlineBytes + numChannels * x;
+   //pixel start byte position in the new raw image
+   unsigned newpos = 4 * y * w + 4 * x;
+   if (numChannels == 3)
+   {
+    image[newpos + 0] = bmp[bmpos + 2]; //R
+    image[newpos + 1] = bmp[bmpos + 1]; //G
+    image[newpos + 2] = bmp[bmpos + 0]; //B
+    image[newpos + 3] = 255;            //A
+   }
+   else
+   {
+    image[newpos + 0] = bmp[bmpos + 3]; //R
+    image[newpos + 1] = bmp[bmpos + 2]; //G
+    image[newpos + 2] = bmp[bmpos + 1]; //B
+    image[newpos + 3] = bmp[bmpos + 0]; //A
+   }
+  }
+ return 0;
+}
+
+void Setup_OpenGL(double width, double height) {
+ ((TS_Cube_Test_Update_User_Data*)p_user_data)->screenWidth = width;
+ ((TS_Cube_Test_Update_User_Data*)p_user_data)->screenHeight = height;
+ //// Initialize GL state for 3D
+ //glDisable(GL_DITHER);
+ //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
+ //glClearColor(1.0f, 0.41f, 0.71f, 1.0f);
+ //glEnable(GL_CULL_FACE);
+ //glShadeModel(GL_SMOOTH);
+ //glEnable(GL_DEPTH_TEST);
+
+ //glViewport(0, 0, width, height);
+ //GLfloat ratio = (GLfloat)width / height;
+ //glMatrixMode(GL_PROJECTION);
+ //glLoadIdentity();
+ //glFrustumf(-ratio, ratio, -1, 1, 1, 10);
+
+
+
+
+ // Initialize GL state for 2D
+ glDisable(GL_DITHER);
+ glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+ glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+ //glDisable(GL_CULL_FACE); //     ORIGINAL VALUE glEnable(GL_CULL_FACE);
+ glShadeModel(GL_SMOOTH);
+ //glDisable(GL_DEPTH_TEST); //     ORIGINAL VALUE glEnable(GL_DEPTH_TEST);
+
+
+
+ glDepthRangef(0.1, 1.0);
+ glViewport(0, 0, width, height);
+
+ glMatrixMode(GL_PROJECTION);
+ glLoadIdentity();
+
+ GLfloat ratio = (GLfloat)width / height;
+ if (ratio > 1.0f) {
+  ratio = (GLfloat)height / width;
+  glFrustumf(-1.0f, 1.0f, -ratio, ratio, 0.1f, 1000.0f);
+ }
+ else {
+  glFrustumf(-ratio, ratio, -1.0f, 1.0f, 0.1f, 1000.0f);
+ }
+}
+
+
+MEMORY_READER_STATE memory_reader_state;
+void read_data_memory(png_structp png_ptr, png_bytep data, png_size_t length) {
+ //MEMORY_READER_STATE *mrs = (MEMORY_READER_STATE *)png_ptr;
+ if (memory_reader_state.png_file_data_position >= memory_reader_state.png_file_data_size) {
+  return;
+ }
+ if ((memory_reader_state.png_file_data_position + length) > memory_reader_state.png_file_data_size) {
+  length = memory_reader_state.png_file_data_size - memory_reader_state.png_file_data_position;
+ }
+ memcpy(data, &memory_reader_state.png_file_data[memory_reader_state.png_file_data_position], length);
+ memory_reader_state.png_file_data_position += length;
+}

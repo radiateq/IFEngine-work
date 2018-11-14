@@ -23,11 +23,13 @@
  //System Includes
  //External Includes
  //Domestic Includes
-#include "./CubeTest.h"
+//#include "./CubeTest.h"
 
 #include "Cube_Test_Interface.h"
 
 #include "IFBox2DAdapter.h"
+
+#include "IFEUtils.h"
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "AndroidProject1.NativeActivity", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "AndroidProject1.NativeActivity", __VA_ARGS__))
@@ -75,6 +77,7 @@ TS_Cube_Test_Update_User_Data Cube_Test_Update_User_Data;
 
 void Init_IFAdapter(engine &engine) {
  if (engine.EGL_initialized) {
+  
   //-------------------------------------------------------     IFEngine TEST
   IFAdapter.MakeWorld(0.0f, 9.0f);
   //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
@@ -83,7 +86,6 @@ void Init_IFAdapter(engine &engine) {
   IFAdapter.CalculateBox2DSizeFactor(10);
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
-  IFAdapter.OrderedBody()->body_def->position.Set(engine.width / 20, engine.height / 20);
   b2PolygonShape *polyShape = new b2PolygonShape;
   b2Vec2 shapeCoords[8];
   shapeCoords[0] = {  8.0,  12.5 };
@@ -100,7 +102,70 @@ void Init_IFAdapter(engine &engine) {
   fixture->density = 10.1;
   fixture->friction = 0.3;
   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-  IFAdapter.MakeBody();  
+  ifCB2Body *first_body = IFAdapter.OrderedBody();
+  IFAdapter.MakeBody();
+  //Additional work on body  
+  SetFaceSize(1000, 1000);
+  char outstring[2] = {'#','\0'};  
+  first_body->OGL_body->texture_ID = DrawText(outstring, 4, 0);
+  //first_body->body_def->position.Set(engine.width / 20, engine.height / 20);
+
+
+//
+//
+//
+////////////////////////////second body
+  IFAdapter.OrderBody();
+  IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
+  //IFAdapter.OrderedBody()->body_def->position.Set(0, -100.0);
+  polyShape = new b2PolygonShape;
+  shapeCoords[0] = b2Vec2(0.0, 0.0);
+  shapeCoords[1] = b2Vec2( static_cast<float32>(engine.width) / 10.0, 0.0);
+  shapeCoords[2] = b2Vec2( static_cast<float32>(engine.width) / 10.0, 8.0);
+  shapeCoords[3] = b2Vec2(0.0, 8.0);
+  polyShape->Set(shapeCoords, 4);
+  fixture = new b2FixtureDef;
+  fixture->shape = polyShape;
+  fixture->density = 10.1;
+  fixture->friction = 0.3;
+  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+  first_body = IFAdapter.OrderedBody();
+  IFAdapter.MakeBody();
+  //Additional work on body  
+  //SetFaceSize(1000, 1000);
+  //char *outstring = { "#" };
+  int twidth, theight;  
+  ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+  first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+ // first_body->body_def->position.Set(0, -100.0);
+
+
+
+///////////////////////////third body
+  IFAdapter.OrderBody();
+  IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
+  IFAdapter.OrderedBody()->body_def->position.Set(0, -10.0);
+  polyShape = new b2PolygonShape;
+  shapeCoords[0] = b2Vec2(0.0, 0.0);
+  shapeCoords[1] = b2Vec2(static_cast<float32>(engine.width) / 10.0, 0.0);
+  shapeCoords[2] = b2Vec2(static_cast<float32>(engine.width) / 10.0, 8.0);
+  shapeCoords[3] = b2Vec2(0.0, 8.0);
+  polyShape->Set(shapeCoords, 4);
+  fixture = new b2FixtureDef;
+  fixture->shape = polyShape;
+  fixture->density = 10.1;
+  fixture->friction = 0.3;
+  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+  first_body = IFAdapter.OrderedBody();
+  IFAdapter.MakeBody();
+  //Additional work on body  
+  //SetFaceSize(1000, 1000);
+  //char *outstring = { "#" };
+  //int twidth, theight;
+  ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+  first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+ // first_body->body_def->position.Set(0, -100.0);
+
   //-------------------------------------------------------     IFEngine TEST
  }
 }
@@ -193,7 +258,8 @@ static int engine_init_display(struct engine* engine) {
 	engine->state.angle = 0;
 
 	// Initialize GL state.
-	CubeTest_setupGL(w, h);
+	//CubeTest_setupGL(w, h);
+ Setup_OpenGL(w,h);
  Init_IFAdapter(*engine);
 
 	return 0;
@@ -238,7 +304,7 @@ static void engine_term_display(struct engine* engine) {
 	engine->context = EGL_NO_CONTEXT;
 	engine->surface = EGL_NO_SURFACE;
 
-	CubeTest_tearDownGL();
+	//CubeTest_tearDownGL();
 }
 
 /**
@@ -329,67 +395,11 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 */
 void android_main(struct android_app* state) {
 
-
+ Init_IFEngine();
  //               FREETYPE               SAMPLE START
  if( !InitFreeType(state) ){
   return;
  }
- if (!SetFaceSize ){
-  return;
- }
- FT_UInt glyph_index = FT_Get_Char_Index(face, 65);
- FT_Error error = FT_Load_Glyph(
-  face,          /* handle to face object */
-  glyph_index,   /* glyph index           */
-  FT_LOAD_DEFAULT);  /* load flags, see below */
-
- //face->glyph->format describes glyph image  If it is not FT_GLYPH_FORMAT_BITMAP, convert it to a bitmap through FT_Render_Glyph.
- //  error = FT_Render_Glyph(face->glyph,   /* glyph slot  */
- //   render_mode); /* render mode */
- //The parameter render_mode is a set of bit flags to specify how to render the glyph image.FT_RENDER_MODE_NORMAL, the default, renders an anti - aliased coverage bitmap with 256 gray levels(also called a pixmap), as this is the default.You can alternatively use FT_RENDER_MODE_MONO if you want to generate a 1 - bit monochrome bitmap.More values are available for the FT_Render_Mode enumeration value.
-
- //you can access it directly through glyph->bitmap and position it through glyph->bitmap_left and glyph->bitmap_top
-
-
- //error = FT_Set_Transform(
-  //face,       /* target face object    */
-  //&matrix,    /* pointer to 2x2 matrix */
-  //&delta);   /* pointer to 2d vector  */
- //This function sets the current transformation for a given face object.Its second parameter is a pointer to an FT_Matrix structure that describes a 2×2 affine matrix.The third parameter is a pointer to an FT_Vector
- //Coefficients of the matrix are otherwise in 16.16 fixed-point units
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- //... initialize library ...
- // ... create face object ...
- // ... set character size ...
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

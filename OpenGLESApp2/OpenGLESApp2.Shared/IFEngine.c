@@ -16,7 +16,7 @@ void Init_ifTbodyDefinition(ifTbodyDefinition *_init_var){
  _init_var->vertices = NULL;
  _init_var->colors_cnt = 0;
  _init_var->indices_cnt = 0;
- _init_var->texture_ID = -1;
+ _init_var->texture_ID = GL_INVALID_VALUE;
  _init_var->UVmapping_cnt = 0;
  _init_var->vertices_cnt = 0;
  _init_var->vertices_mode = 0;
@@ -60,8 +60,6 @@ void DrawBodies() {
 
  glMatrixMode(GL_MODELVIEW);
  glEnableClientState(GL_VERTEX_ARRAY);
- glEnableClientState(GL_TEXTURE_COORD_ARRAY);
- glEnableClientState(GL_COLOR_ARRAY);
 
  for( int bodies_count = 0; bodies_count < BodiesList.bodies_cnt; bodies_count++ ){
   ifTbodyDefinition *pifebody = BodiesList.bodies[bodies_count];
@@ -73,14 +71,16 @@ void DrawBodies() {
   //GLfloat *vertices = new GLfloat[ 1 * 2];
   glVertexPointer(2, GL_FLOAT, sizeof(pifebody->vertices[0]) * 2, pifebody->vertices);
 
-  if( pifebody->colors_cnt > 0 ){
+  if(( pifebody->colors_cnt > 0 ) && (pifebody->UVmapping_cnt == 0) ){
    glEnableClientState(GL_COLOR_ARRAY);
    glColorPointer(4,GL_FLOAT,0, pifebody->colors);
   }
 
   if (pifebody->UVmapping_cnt > 0) {
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glEnable(GL_TEXTURE_2D);
    glBindTexture(GL_TEXTURE_2D, pifebody->texture_ID);
+   glActiveTexture(GL_TEXTURE0);
    glTexCoordPointer(2, GL_FLOAT, sizeof(GLfloat) * 2, pifebody->UVmapping);
    //GLenum error = glGetError();
   }
@@ -102,7 +102,9 @@ void DrawBodies() {
 
 }
 
-void Init(){
+void Init_IFEngine(){
+ if(!IFEngine_Initialized)
+  BodiesList.bodies = NULL;
  CleanupBodies();
  IFEngine_Initialized = true;
 }
@@ -111,11 +113,14 @@ void CleanupBodies(){
  if (IFEngine_Initialized) {
   IFEngine_Initialized = false;
   for( ifTCounter cnt = 0; cnt < BodiesList.bodies_cnt; cnt++ ){
+   glDeleteTextures(1, &BodiesList.bodies[cnt]->texture_ID);
    Clean_ifTbodyDefinition(BodiesList.bodies[cnt]);
    free(BodiesList.bodies[cnt]);
   }
+  if (BodiesList.bodies) {
+   free(*BodiesList.bodies);
+   BodiesList.bodies_cnt = 0;
+   BodiesList.bodies = NULL;
+  }
  }
- free(BodiesList.bodies);
- BodiesList.bodies_cnt = 0;
- *BodiesList.bodies = NULL;
 }

@@ -159,6 +159,8 @@ public:
    OrderPending = false;
    Bodies.back()->CreateBody();
    B2Bodies2GLBodies(Bodies.size() - 1);
+   ifCB2Body *work_body = Bodies.back();
+   DefaultUVMapping( work_body->OGL_body );
   }
  }
  void CancelOrder() {
@@ -190,19 +192,64 @@ public:
     work_body->colors[cnt1] = 1.0f;
    }
    BodiesList.bodies_cnt++;
-  }
+  }  
  }
  void B2Bodies2GLBodies(){
   for (ifTCounter cnt = 0; cnt < Bodies.size(); cnt++) {
    B2Bodies2GLBodies(cnt);
   }
  }
+ void DefaultUVMapping( ifTbodyDefinition *_OGL_body ){
+  
+//OGL_body->vertices_cnt
+//OGL_body->vertices
+  GLfloat minx = 10^30, miny = 10 ^ 30, maxx = -10 ^ 30, maxy = -10 ^ 30;
+  for( ifTCounter cnt = 0; cnt < _OGL_body->vertices_cnt; cnt++ ){
+   if( minx > _OGL_body->vertices[cnt] ){
+    minx = _OGL_body->vertices[cnt];
+   }
+   if (maxx < _OGL_body->vertices[cnt]) {
+    maxx = _OGL_body->vertices[cnt];
+   }
+   cnt++;
+   if (miny > _OGL_body->vertices[cnt]) {
+    miny = _OGL_body->vertices[cnt];
+   }
+   if (maxy < _OGL_body->vertices[cnt]) {
+    maxy = _OGL_body->vertices[cnt];
+   }
+  }
+
+  float min_maxx = abs( maxx - minx );
+  float min_maxy = abs( maxy - miny );
+  float normalization_scalar_x = min_maxx;
+  normalization_scalar_x = 1.0 / (normalization_scalar_x);
+  float normalization_scalar_y = min_maxy;
+  normalization_scalar_y = 1.0 / (normalization_scalar_y);
+
+  _OGL_body->UVmapping_cnt = 0;
+  if (_OGL_body->UVmapping != NULL) {
+   free(_OGL_body->UVmapping);
+  }
+
+  _OGL_body->UVmapping_cnt = _OGL_body->vertices_cnt;
+  _OGL_body->UVmapping = (GLfloat*)malloc(sizeof(_OGL_body->UVmapping[0])*_OGL_body->UVmapping_cnt);
+  for( ifTCounter cnt = 0; cnt < _OGL_body->UVmapping_cnt; cnt++ ){
+   _OGL_body->UVmapping[cnt] = ( _OGL_body->vertices[cnt] - minx ) * normalization_scalar_x;
+   cnt++;
+   _OGL_body->UVmapping[cnt] = ( _OGL_body->vertices[cnt] - miny ) * normalization_scalar_y;
+  }
+
+ }
+
  //void Add
  b2World *World;
  S_listWrap_ptr<ifCB2Body, true> Bodies;
 private:
  bool OrderPending;
  void Free() {
+  while(Bodies.size())
+   Bodies.removeElement(Bodies.back());
  }
 public:
 
@@ -302,7 +349,9 @@ public:
   Free();
  }
  void MakeWorld(float32 gx, float32 gy) {
+  ifCB2BodyManager::Init();
   Init();
+  Init_IFEngine();
   //Gravity = new b2Vec2(gx,gy);
   World = new b2World(b2Vec2(gx, gy));
  }

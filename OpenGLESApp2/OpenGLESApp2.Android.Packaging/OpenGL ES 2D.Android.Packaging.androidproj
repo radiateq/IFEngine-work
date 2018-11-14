@@ -123,7 +123,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <Content Include="assets\RobotoMono-Regular.ttf" />
-    <Content Include="assets\ugly.png" />
+    <Content Include="assets\testcube.png" />
     <Content Include="res\values\strings.xml" />
     <AntBuildXml Include="build.xml" />
     <AndroidManifest Include="AndroidManifest.xml" />

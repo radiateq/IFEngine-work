@@ -86,5 +86,5 @@ void DrawBodies();
 
 
 static bool IFEngine_Initialized = false;
-void Init();
+void Init_IFEngine();
 void CleanupBodies();
