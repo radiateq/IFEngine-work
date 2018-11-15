@@ -75,7 +75,7 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle) {
 
  slot = face->glyph;                /* a small shortcut */
 
- glEnable(GL_TEXTURE_2D);
+ glDisable(GL_TEXTURE_2D);
  glGenTextures(1, &texture);
  glActiveTexture(GL_TEXTURE0);
 

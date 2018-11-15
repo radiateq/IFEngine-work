@@ -105,8 +105,8 @@ public:
      //looking for the left first then bottom coordinate
      Vector2dVector v2vertices;
      for (ifTCounter cnt = 0; cnt < cntmax; cnt++) {
-      (*vertices)[2 * cnt] = IFA_box2D_factor * ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].x;
-      (*vertices)[2 * cnt + 1] = IFA_box2D_factor * ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].y;
+      (*vertices)[2 * cnt] = ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].x;
+      (*vertices)[2 * cnt + 1] = ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].y;
       v2vertices.push_back(Vector2d((*vertices)[2 * cnt], (*vertices)[2 * cnt + 1]));
      }
      Triangulate::Process(v2vertices, indices_count, *indices);
@@ -260,11 +260,11 @@ public:
 class ifCB2GameManager : public ifCB2BodyManager {
 public:
  ifCB2GameManager() {
-  velocityIterations = 8;   //how strongly to correct velocity
-  positionIterations = 3;   //how strongly to correct position
+  velocityIterations = 6;   //how strongly to correct velocity
+  positionIterations = 2;   //how strongly to correct position
   screenResolutionX = 1;
   screenResolutionY = 1;
-  CalculateBox2DSizeFactor(1);
+  CalculateBox2DSizeFactor(10);
   ResetClock();
  }
  void ResetClock() {
@@ -278,7 +278,7 @@ public:
   game_time_0 = temp_timespec;
   timeStep = 10000.0f / (float)temp_int64;
   //timeThen = timeNow;
-  IFA_World->Step( timeStep, velocityIterations, positionIterations );
+  IFA_World->Step( timeStep * 0.01, velocityIterations, positionIterations );
  }
  void UpdateGraphics() {
   //list all bodies and draw them 
@@ -292,9 +292,9 @@ public:
    
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
-   //glScalef(IFA_box2D_factor, IFA_box2D_factor, 1.0f);
-   glTranslatef(position.x, position.y, 0.0);
    glRotatef(angle, 0, 0, 1);
+   glScalef(IFA_box2D_factor, IFA_box2D_factor, 1.0f);
+   glTranslatef(position.x, position.y, 0.0);
    //   GLfloat body_matrix[16];
    //LoadIdentityMatrix(body_matrix);
    //b2trans2x2.p.x;

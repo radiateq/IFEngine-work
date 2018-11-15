@@ -322,9 +322,10 @@ void Setup_OpenGL(double width, double height) {
 
 
  // Initialize GL state for 2D
+ glDisable(GL_TEXTURE_2D);
  glDisable(GL_DITHER);
  glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
- glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+ glClearColor(0.4f, 0.6f, 0.35f, 1.0f);
  //glDisable(GL_CULL_FACE); //     ORIGINAL VALUE glEnable(GL_CULL_FACE);
  glShadeModel(GL_SMOOTH);
  //glDisable(GL_DEPTH_TEST); //     ORIGINAL VALUE glEnable(GL_DEPTH_TEST);
@@ -340,10 +341,10 @@ void Setup_OpenGL(double width, double height) {
  GLfloat ratio = (GLfloat)width / height;
  if (ratio > 1.0f) {
   ratio = (GLfloat)height / width;
-  glFrustumf(-1.0f, 1.0f, -ratio, ratio, 0.1f, 1000.0f);
+  glFrustumf(-1.0f, 1.0f, -ratio, ratio, 0.1f, 100.0f);
  }
  else {
-  glFrustumf(-ratio, ratio, -1.0f, 1.0f, 0.1f, 1000.0f);
+  glFrustumf(-ratio, ratio, -1.0f, 1.0f, 0.1f, 100.0f);
  }
 }
 

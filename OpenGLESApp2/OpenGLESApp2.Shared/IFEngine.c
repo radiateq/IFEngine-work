@@ -76,7 +76,14 @@ void DrawBodies() {
    glColorPointer(4,GL_FLOAT,0, pifebody->colors);
   }
 
-  if ((pifebody->UVmapping_cnt > 0)&&(pifebody->texture_ID!= GL_INVALID_VALUE)) {
+
+ 
+  glMatrixMode( GL_MODELVIEW );
+  glLoadIdentity(); 
+  glLoadMatrixf( pifebody->modelview_matrix );
+  glTranslatef( 0.0f, 0.0f, pifebody->z_pos );
+
+  if ((pifebody->UVmapping_cnt > 0) && (pifebody->texture_ID != GL_INVALID_VALUE)) {
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glEnable(GL_TEXTURE_2D);
    glBindTexture(GL_TEXTURE_2D, pifebody->texture_ID);
@@ -85,13 +92,6 @@ void DrawBodies() {
    //GLenum error = glGetError();
   }
 
- 
-  glMatrixMode( GL_MODELVIEW );
-  glLoadIdentity(); 
-  glLoadMatrixf( pifebody->modelview_matrix );
-  glTranslatef( 0.0f, 0.0f, pifebody->z_pos );
-
- 
   if (pifebody->indices_cnt > 0) {
    glDrawElements(pifebody->vertices_mode, pifebody->indices_cnt, GL_UNSIGNED_BYTE, pifebody->indices);
   } else {
