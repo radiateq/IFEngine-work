@@ -74,29 +74,74 @@ struct engine {
 TS_Cube_Test_Update_User_Data Cube_Test_Update_User_Data;
 
 
+GLuint TEST_textid;
+void TESTFN_AddRandomBody(engine &engine){
+ if (engine.EGL_initialized) {
+  double xxxx = drand48();
+  if((xxxx *1200)<1155)
+   return;
+  IFAdapter.OrderBody();
+  IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
+  IFAdapter.OrderedBody()->body_def->position.Set(drand48() * 10 - 5, drand48() * 50);
+  b2PolygonShape *polyShape = new b2PolygonShape;
+  b2Vec2 shapeCoords[8];
+
+  shapeCoords[0] = { 0.8,  1.25 };
+  shapeCoords[1] = { 1,   0.5 };
+  shapeCoords[2] = { 2,   0.25 };
+  shapeCoords[3] = { 3,   0.5 };
+  shapeCoords[4] = { 4,  1.2 };
+  shapeCoords[5] = { 3,  2.0 };
+  shapeCoords[6] = { 2,  2.7 };
+  shapeCoords[7] = { 1,  2 };
+
+  //shapeCoords[0] = { -1,  -1 };
+  //shapeCoords[1] = { 1,  -1 };
+  //shapeCoords[2] = { 1,   1 };
+  //shapeCoords[3] = { -1,   1 };
+  //shapeCoords[4] = { 4,  1 };
+  //shapeCoords[5] = { 3,  2 };
+  //shapeCoords[6] = { 2,  2 };
+  //shapeCoords[7] = { 1,  2 };
+
+  //shapeCoords[0] = {  8,  12.5 };
+  //shapeCoords[1] = { 10.0,   5.0 };
+  //shapeCoords[2] = { 20.0,   2.5 };
+  //shapeCoords[3] = { 30.0,   5.0 };
+  //shapeCoords[4] = { 40.0,  12.5 };
+  //shapeCoords[5] = { 30.0,  20.0 };
+  //shapeCoords[6] = { 20.0,  27.0 };
+  //shapeCoords[7] = { 10.0,  20.0 };
+  polyShape->Set(shapeCoords, 8);
+  b2FixtureDef *fixture = new b2FixtureDef;
+  fixture->shape = polyShape;
+  fixture->density = 1.1;
+  fixture->friction = 0.3;
+  fixture->restitution = 0.001;
+  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+  ifCB2Body *first_body = IFAdapter.OrderedBody();
+  IFAdapter.MakeBody();
+  //Additional work on body  
+  SetFaceSize(1000, 1000);
+  first_body->OGL_body->texture_ID = TEST_textid;
+ }
+}
 
 void Init_IFAdapter(engine &engine) {
  if (engine.EGL_initialized) {
-
-
-
-
   //static int counter = 0;
   //counter++;
-
-
-
   //-------------------------------------------------------     IFEngine TEST
-  IFAdapter.MakeWorld(0.0f, -9.0080f);
+  IFAdapter.MakeWorld(0.0f, -9.8080f);
   //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
   IFAdapter.screenResolutionX = engine.width;
   IFAdapter.screenResolutionY = engine.height;
-  IFAdapter.CalculateBox2DSizeFactor(40);
+  IFAdapter.CalculateBox2DSizeFactor(50);
 
 
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
-  IFAdapter.OrderedBody()->body_def->position.Set(-0.0,-10.0);
+  IFAdapter.OrderedBody()->body_def->position.Set(-0.0,5.0);
   b2PolygonShape *polyShape = new b2PolygonShape;
   b2Vec2 shapeCoords[8];
 
@@ -137,7 +182,7 @@ void Init_IFAdapter(engine &engine) {
   //Additional work on body  
   SetFaceSize(1000, 1000);
   char outstring[2] = {'#','\0'};  
-  first_body->OGL_body->texture_ID = DrawText(outstring, 4, 0);
+  TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 4, 0);
   //(engine.width / 20, engine.height / 20);
 
 
@@ -147,7 +192,7 @@ void Init_IFAdapter(engine &engine) {
 ////////////////////////////second body
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
-  IFAdapter.OrderedBody()->body_def->position.Set(-15.0, -20.0);
+  IFAdapter.OrderedBody()->body_def->position.Set(-3.0, -3.0);
   polyShape = new b2PolygonShape;
   shapeCoords[0] = b2Vec2(0.0, -0.4);
   shapeCoords[1] = b2Vec2( static_cast<float32>(engine.width) / 30.0, -0.4);
@@ -158,6 +203,7 @@ void Init_IFAdapter(engine &engine) {
   fixture->shape = polyShape;
   fixture->density = 10.1;
   fixture->friction = 0.3;
+  fixture->restitution = 0.01;
   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
   first_body = IFAdapter.OrderedBody();
   IFAdapter.MakeBody();
@@ -175,7 +221,7 @@ void Init_IFAdapter(engine &engine) {
 /////////////////////////third body
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
-  IFAdapter.OrderedBody()->body_def->position.Set(-1, 100.0);
+  IFAdapter.OrderedBody()->body_def->position.Set(-2, 10.0);
   polyShape = new b2PolygonShape;
   shapeCoords[0] = b2Vec2(0.0, 0.0);
   shapeCoords[1] = b2Vec2(static_cast<float32>(engine.width) / 100.0, 0.0);
@@ -184,8 +230,8 @@ void Init_IFAdapter(engine &engine) {
   polyShape->Set(shapeCoords, 4);
   fixture = new b2FixtureDef;
   fixture->shape = polyShape;
-  fixture->density = 10.1;
-  fixture->friction = 0.3;
+  fixture->density = 0.1;
+  fixture->friction = 0.0001;
   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
   first_body = IFAdapter.OrderedBody();
   IFAdapter.MakeBody();
@@ -538,7 +584,11 @@ void android_main(struct android_app* state) {
 						//LOGI("accelerometer: x=%f y=%f z=%f",
 						//	event.acceleration.x, event.acceleration.y,
 						//	event.acceleration.z);
-      // IFAdapter.Bodies[0]->body->ApplyLinearImpulse(b2Vec2( event.acceleration.x * 50.0, event.acceleration.y * 50.0), IFAdapter.Bodies[0]->body->GetWorldCenter(), true );
+      for( unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++){
+       if( IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody ){
+        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(-event.acceleration.x * 0.3, -event.acceleration.y * 0.3 ), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+       }
+      }
 					}
 				}
 			} else if (ident == (LOOPER_ID_USER + 1)) {
@@ -548,7 +598,12 @@ void android_main(struct android_app* state) {
       &event, 1) > 0) {
       //LOGI("gyro: x=%f",
       // event.light);
-     // IFAdapter.Bodies[0]->body->ApplyLinearImpulse(b2Vec2( event.light * 20.0, -event.light * 0.0), IFAdapter.Bodies[0]->body->GetWorldCenter(), true );
+      for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
+       if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
+        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0, event.light), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+       }
+      }
+      // IFAdapter.Bodies[0]->body->ApplyLinearImpulse(b2Vec2( event.light * 20.0, -event.light * 0.0), IFAdapter.Bodies[0]->body->GetWorldCenter(), true );
      }
     }
    }
@@ -583,6 +638,7 @@ void android_main(struct android_app* state) {
 
 			// Drawing is throttled to the screen update rate, so there
 			// is no need to do timing here.
+   TESTFN_AddRandomBody(engine);
 			engine_draw_frame(&engine);   
 		}
 	}

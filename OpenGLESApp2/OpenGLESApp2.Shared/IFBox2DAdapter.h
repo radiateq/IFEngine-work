@@ -263,8 +263,8 @@ public:
 class ifCB2GameManager : public ifCB2BodyManager {
 public:
  ifCB2GameManager() {
-  velocityIterations = 6000;   //how strongly to correct velocity
-  positionIterations = 2000;   //how strongly to correct position
+  velocityIterations = 300;   //how strongly to correct velocity
+  positionIterations = 100;   //how strongly to correct position
   screenResolutionX = 1;
   screenResolutionY = 1;
   CalculateBox2DSizeFactor(10);
@@ -298,15 +298,17 @@ public:
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
+
    glScalef(IFA_box2D_factor, IFA_box2D_factor, 1.0f);
    glTranslatef(position.x, position.y, 0.0);
-   glTranslatef(-(*iter)->body->GetLocalCenter().x, -(*iter)->body->GetLocalCenter().y, 0.0);
    glRotatef(angle, 0, 0, 1);
-   glTranslatef((*iter)->body->GetLocalCenter().x, (*iter)->body->GetLocalCenter().y, 0.0);
-   /*LOGI("x:%f, y:%f  angle:%f\t\tWorld x:%f, World y:%f\tLocal x:%f, Local y: %f",
+
+
+
+   LOGI("x:%f, y:%f  angle:%f\t\tWorld x:%f, World y:%f\tLocal x:%f, Local y: %f",
           position.x, position.y, angle,  
           (*iter)->body->GetWorldCenter().x, (*iter)->body->GetWorldCenter().y, 
-          (*iter)->body->GetLocalCenter().x, (*iter)->body->GetLocalCenter().y);*/
+          (*iter)->body->GetLocalCenter().x, (*iter)->body->GetLocalCenter().y);
    //   GLfloat body_matrix[16];
    //LoadIdentityMatrix(body_matrix);
    //b2trans2x2.p.x;
