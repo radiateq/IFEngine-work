@@ -8,6 +8,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)common\External\lodepng-master\lodepng.cpp">
       <Filter>External</Filter>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)IFBox2DAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\Cube_Test_Interface.h" />

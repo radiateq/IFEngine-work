@@ -77,29 +77,59 @@ TS_Cube_Test_Update_User_Data Cube_Test_Update_User_Data;
 
 void Init_IFAdapter(engine &engine) {
  if (engine.EGL_initialized) {
-  
+
+
+
+
+  //static int counter = 0;
+  //counter++;
+
+
+
   //-------------------------------------------------------     IFEngine TEST
-  IFAdapter.MakeWorld(0.0f, 9.0f);
+  IFAdapter.MakeWorld(0.0f, -9.0f);
   //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
   IFAdapter.screenResolutionX = engine.width;
   IFAdapter.screenResolutionY = engine.height;
-  IFAdapter.CalculateBox2DSizeFactor(10);
+  IFAdapter.CalculateBox2DSizeFactor(100);
+
+
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
+  IFAdapter.OrderedBody()->body_def->position.Set(-0.0,5.0);
   b2PolygonShape *polyShape = new b2PolygonShape;
   b2Vec2 shapeCoords[8];
-  shapeCoords[0] = {  8.0,  12.5 };
-  shapeCoords[1] = { 10.0,   5.0 };
-  shapeCoords[2] = { 20.0,   2.5 };
-  shapeCoords[3] = { 30.0,   5.0 };
-  shapeCoords[4] = { 40.0,  12.5 };
-  shapeCoords[5] = { 30.0,  20.0 };
-  shapeCoords[6] = { 20.0,  27.0 };
-  shapeCoords[7] = { 10.0,  20.0 };
-  polyShape->Set(shapeCoords, 8);
+
+  //shapeCoords[0] = { 0.8,  0.125 };
+  //shapeCoords[1] = { 0.1,   0.05 };
+  //shapeCoords[2] = { 0.2,   0.025 };
+  //shapeCoords[3] = { 0.30,   0.05 };
+  //shapeCoords[4] = { 0.40,  0.12 };
+  //shapeCoords[5] = { 0.30,  0.20 };
+  //shapeCoords[6] = { 0.20,  0.27 };
+  //shapeCoords[7] = { 0.10,  0.2 };
+
+  shapeCoords[0] = { -1,  -1 };
+  shapeCoords[1] = {  1,  -1 };
+  shapeCoords[2] = {  1,   1 };
+  shapeCoords[3] = { -1,   1 };
+  //shapeCoords[4] = { 4,  1 };
+  //shapeCoords[5] = { 3,  2 };
+  //shapeCoords[6] = { 2,  2 };
+  //shapeCoords[7] = { 1,  2 };
+
+  //shapeCoords[0] = {  8,  12.5 };
+  //shapeCoords[1] = { 10.0,   5.0 };
+  //shapeCoords[2] = { 20.0,   2.5 };
+  //shapeCoords[3] = { 30.0,   5.0 };
+  //shapeCoords[4] = { 40.0,  12.5 };
+  //shapeCoords[5] = { 30.0,  20.0 };
+  //shapeCoords[6] = { 20.0,  27.0 };
+  //shapeCoords[7] = { 10.0,  20.0 };
+  polyShape->Set(shapeCoords, 4);
   b2FixtureDef *fixture = new b2FixtureDef;
   fixture->shape = polyShape;
-  fixture->density = 10.1;
+  fixture->density = 0.1;
   fixture->friction = 0.3;
   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
   ifCB2Body *first_body = IFAdapter.OrderedBody();
@@ -108,63 +138,64 @@ void Init_IFAdapter(engine &engine) {
   SetFaceSize(1000, 1000);
   char outstring[2] = {'#','\0'};  
   first_body->OGL_body->texture_ID = DrawText(outstring, 4, 0);
-  //first_body->body_def->position.Set(engine.width / 20, engine.height / 20);
+  //(engine.width / 20, engine.height / 20);
 
 
 //
 //
 //
 ////////////////////////////second body
-  IFAdapter.OrderBody();
-  IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
-  //IFAdapter.OrderedBody()->body_def->position.Set(0, -100.0);
-  polyShape = new b2PolygonShape;
-  shapeCoords[0] = b2Vec2(0.0, 0.0);
-  shapeCoords[1] = b2Vec2( static_cast<float32>(engine.width) / 10.0, 0.0);
-  shapeCoords[2] = b2Vec2( static_cast<float32>(engine.width) / 10.0, 8.0);
-  shapeCoords[3] = b2Vec2(0.0, 8.0);
-  polyShape->Set(shapeCoords, 4);
-  fixture = new b2FixtureDef;
-  fixture->shape = polyShape;
-  fixture->density = 10.1;
-  fixture->friction = 0.3;
-  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-  first_body = IFAdapter.OrderedBody();
-  IFAdapter.MakeBody();
-  //Additional work on body  
-  //SetFaceSize(1000, 1000);
-  //char *outstring = { "#" };
-  int twidth, theight;  
-  ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
-  first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
- // first_body->body_def->position.Set(0, -100.0);
+ // IFAdapter.OrderBody();
+ // IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
+ // IFAdapter.OrderedBody()->body_def->position.Set(-1.0, -3.0);
+ // polyShape = new b2PolygonShape;
+ // shapeCoords[0] = b2Vec2(0.0, 0.0);
+ // shapeCoords[1] = b2Vec2( static_cast<float32>(engine.width) / 5.0, 0.0);
+ // shapeCoords[2] = b2Vec2( static_cast<float32>(engine.width) / 5.0, 8.0);
+ // shapeCoords[3] = b2Vec2(0.0, 8.0);
+ // polyShape->Set(shapeCoords, 4);
+ // fixture = new b2FixtureDef;
+ // fixture->shape = polyShape;
+ // fixture->density = 10.1;
+ // fixture->friction = 0.3;
+ // IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+ // first_body = IFAdapter.OrderedBody();
+ // IFAdapter.MakeBody();
+ // //Additional work on body  
+ // //SetFaceSize(1000, 1000);
+ // //char *outstring = { "#" };
+  int twidth, theight;
+  GLuint texint;  
+  texint = ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+ // first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+ //// first_body->body_def->position.Set(0, -100.0);
 
 
 
 ///////////////////////////third body
-  IFAdapter.OrderBody();
-  IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
-  IFAdapter.OrderedBody()->body_def->position.Set(0, -10.0);
-  polyShape = new b2PolygonShape;
-  shapeCoords[0] = b2Vec2(0.0, 0.0);
-  shapeCoords[1] = b2Vec2(static_cast<float32>(engine.width) / 10.0, 0.0);
-  shapeCoords[2] = b2Vec2(static_cast<float32>(engine.width) / 10.0, 8.0);
-  shapeCoords[3] = b2Vec2(0.0, 8.0);
-  polyShape->Set(shapeCoords, 4);
-  fixture = new b2FixtureDef;
-  fixture->shape = polyShape;
-  fixture->density = 10.1;
-  fixture->friction = 0.3;
-  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-  first_body = IFAdapter.OrderedBody();
-  IFAdapter.MakeBody();
-  //Additional work on body  
-  //SetFaceSize(1000, 1000);
-  //char *outstring = { "#" };
-  //int twidth, theight;
-  ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
-  first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
- // first_body->body_def->position.Set(0, -100.0);
+ // IFAdapter.OrderBody();
+ // IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
+ // IFAdapter.OrderedBody()->body_def->position.Set(-1, -0.0);
+ // polyShape = new b2PolygonShape;
+ // shapeCoords[0] = b2Vec2(0.0, 0.0);
+ // shapeCoords[1] = b2Vec2(static_cast<float32>(engine.width) / 10.0, 0.0);
+ // shapeCoords[2] = b2Vec2(static_cast<float32>(engine.width) / 10.0, 8.0);
+ // shapeCoords[3] = b2Vec2(0.0, 8.0);
+ // polyShape->Set(shapeCoords, 4);
+ // fixture = new b2FixtureDef;
+ // fixture->shape = polyShape;
+ // fixture->density = 10.1;
+ // fixture->friction = 0.3;
+ // IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+ // first_body = IFAdapter.OrderedBody();
+ // IFAdapter.MakeBody();
+ // //Additional work on body  
+ // //SetFaceSize(1000, 1000);
+ // //char *outstring = { "#" };
+ // //int twidth, theight;
+ // ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = texint;//IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+ // first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+ //// first_body->body_def->position.Set(0, -100.0);
 
   //-------------------------------------------------------     IFEngine TEST
  }

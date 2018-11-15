@@ -71,12 +71,12 @@ void DrawBodies() {
   //GLfloat *vertices = new GLfloat[ 1 * 2];
   glVertexPointer(2, GL_FLOAT, sizeof(pifebody->vertices[0]) * 2, pifebody->vertices);
 
-  if(( pifebody->colors_cnt > 0 ) && (pifebody->UVmapping_cnt == 0) ){
+  if(( pifebody->colors_cnt > 0 ) && ((pifebody->UVmapping_cnt == 0) || (pifebody->texture_ID == GL_INVALID_VALUE))){
    glEnableClientState(GL_COLOR_ARRAY);
    glColorPointer(4,GL_FLOAT,0, pifebody->colors);
   }
 
-  if (pifebody->UVmapping_cnt > 0) {
+  if ((pifebody->UVmapping_cnt > 0)&&(pifebody->texture_ID!= GL_INVALID_VALUE)) {
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
    glEnable(GL_TEXTURE_2D);
    glBindTexture(GL_TEXTURE_2D, pifebody->texture_ID);
@@ -118,7 +118,7 @@ void CleanupBodies(){
    free(BodiesList.bodies[cnt]);
   }
   if (BodiesList.bodies) {
-   free(*BodiesList.bodies);
+   free(BodiesList.bodies);
    BodiesList.bodies_cnt = 0;
    BodiesList.bodies = NULL;
   }

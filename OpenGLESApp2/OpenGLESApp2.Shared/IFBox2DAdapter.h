@@ -24,11 +24,15 @@
 // };
 
 
+extern b2World *IFA_World;
+//All box2D coordinates are multiplied by this factor. Typical value is arround 0.01
+extern float IFA_box2D_factor;
+
+
 
 class ifCB2Body {
 public:
- ifCB2Body(b2World *_World = NULL) {
-  World = _World;
+ ifCB2Body() {
   body_def = NULL;
   body = NULL;
  }
@@ -38,7 +42,6 @@ public:
  void Init() {
   Free();
  }
- b2World *World;
  ////////////////////////////////////
  b2BodyDef *body_def;
  b2Body *body;
@@ -48,8 +51,8 @@ public:
  ////////////////////////////////////
  //After body_def, body, shape and fixture have been prepared this function will create a body and add it to the world 
  void CreateBody() {
-  if (World && !body) {
-   body = World->CreateBody(body_def);
+  if (IFA_World && !body) {
+   body = IFA_World->CreateBody(body_def);
    typename std::list<b2Shape*>::iterator iters = shape.begin();
    for (typename std::list<b2FixtureDef*>::iterator iter = fixture.begin();
     iter != fixture.end();
@@ -102,8 +105,8 @@ public:
      //looking for the left first then bottom coordinate
      Vector2dVector v2vertices;
      for (ifTCounter cnt = 0; cnt < cntmax; cnt++) {
-      (*vertices)[2 * cnt] = ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].x;
-      (*vertices)[2 * cnt + 1] = ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].y;
+      (*vertices)[2 * cnt] = IFA_box2D_factor * ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].x;
+      (*vertices)[2 * cnt + 1] = IFA_box2D_factor * ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].y;
       v2vertices.push_back(Vector2d((*vertices)[2 * cnt], (*vertices)[2 * cnt + 1]));
      }
      Triangulate::Process(v2vertices, indices_count, *indices);
@@ -124,8 +127,8 @@ public:
   }  
  }
  void Free() {
-  if (World) {
-   World->DestroyBody(body);
+  if (IFA_World) {
+   IFA_World->DestroyBody(body);
   }
   body = NULL;
   IF_NULL_DELETE(body_def);
@@ -137,7 +140,6 @@ public:
 class ifCB2BodyManager : public ifCB2Body {
 public:
  ifCB2BodyManager() {
-  World = NULL;
   OrderPending = false;
  }
  ~ifCB2BodyManager() {
@@ -149,7 +151,6 @@ public:
  void OrderBody() {
   if (!OrderPending) {
    Bodies.push_back(new ifCB2Body);
-   Bodies.back()->World = World;
    Bodies.back()->body_def = new b2BodyDef;
    OrderPending = true;
   }
@@ -179,7 +180,6 @@ public:
   }  
   ifTbodyDefinition *work_body;
   for (unsigned int cnt = 0; cnt < (*iter)->fixture.size(); cnt++) {
-   //work_body = (ifTbodyDefinition*)malloc(sizeof(ifTbodyDefinition));
    BodiesList.bodies = (ifTbodyDefinition**)(realloc(BodiesList.bodies, sizeof(ifTbodyDefinition*) * (BodiesList.bodies_cnt + 1)));
    BodiesList.bodies[BodiesList.bodies_cnt] = (ifTbodyDefinition*)malloc(sizeof(ifTbodyDefinition));
    work_body = BodiesList.bodies[BodiesList.bodies_cnt];
@@ -243,7 +243,7 @@ public:
  }
 
  //void Add
- b2World *World;
+// b2World *World;
  S_listWrap_ptr<ifCB2Body, true> Bodies;
 private:
  bool OrderPending;
@@ -276,9 +276,9 @@ public:
   //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
   temp_int64 = timespec2us64(&temp_timespec) - timespec2us64( &game_time_0 );
   game_time_0 = temp_timespec;
-  timeStep = 1000.0f / (float)temp_int64;
+  timeStep = 10000.0f / (float)temp_int64;
   //timeThen = timeNow;
-  World->Step( timeStep, velocityIterations, positionIterations );
+  IFA_World->Step( timeStep, velocityIterations, positionIterations );
  }
  void UpdateGraphics() {
   //list all bodies and draw them 
@@ -288,13 +288,20 @@ public:
    //get body position and rotation
    b2Vec2 position = (*iter)->body->GetPosition();
    float32 angle = (*iter)->body->GetAngle();
-   //b2Transform b2trans2x2 = (*iter)->body->GetTransform();
+  // b2Transform b2trans2x2 = (*iter)->body->GetTransform();
    
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
-   glScalef(box2D_factor, box2D_factor, 1.0f );
-   glRotatef(angle, 0, 0, 1 );
-   glTranslatef(position.x * box2D_factor, - position.y * box2D_factor, 0.0 );
+   //glScalef(IFA_box2D_factor, IFA_box2D_factor, 1.0f);
+   glTranslatef(position.x, position.y, 0.0);
+   glRotatef(angle, 0, 0, 1);
+   //   GLfloat body_matrix[16];
+   //LoadIdentityMatrix(body_matrix);
+   //b2trans2x2.p.x;
+   //b2trans2x2.p.y;
+   //b2trans2x2.q.c;
+   //b2trans2x2.q.s;
+   //glLoadMatrixf(body_matrix);   
    glGetFloatv(GL_MODELVIEW_MATRIX, (*iter)->OGL_body->modelview_matrix);
    //printf("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
 
@@ -313,24 +320,22 @@ public:
    ScreenPixels = screenResolutionY;
   }
   //Part of screen used by 1 box2d unit
-  box2D_factor = 2.0 * ( pixels_per_box2d_unit / (float)ScreenPixels );
+  IFA_box2D_factor = 2.0 * ( pixels_per_box2d_unit / (float)ScreenPixels );
  }
  //This function transforms box2d coordinate to opengl es normalized coordinate where -1 is 0 on screen coordinates and 1 is the smaller of the resolutions
  float Coord_Box2D2OpenGLCoord(float _input_coord) {
-  return _input_coord * box2D_factor - 1.0f;
+  return _input_coord * IFA_box2D_factor - 1.0f;
  }
  //This function will transform box2d coordinates to absolute size in normalized opengl es coordinates
  float Size_Box2D2OpenGL(float _input_coord) {
-  return _input_coord * box2D_factor;
+  return _input_coord * IFA_box2D_factor;
  }
  float32 timeStep;
  int32 velocityIterations;   //how strongly to correct velocity
  int32 positionIterations;   //how strongly to correct position
  //Variables that determine scaling of box2d objects to our screen
  unsigned int screenResolutionX, screenResolutionY;//OpenGLES cooridinates are in range from -1 to 1 for width and heigth, where -1 is 0 in screen coordinates and 1 is las r/c pixel
- //All box2D coordinates are multiplied by this factor. Typical value is arround 0.0001
- float box2D_factor; 
- b2World *World;
+ //b2World *World;
  struct timespec temp_timespec, game_time_0;
  int64_t temp_int64;
 };
@@ -340,7 +345,7 @@ class ifCB2WorldManager :  public ifCB2GameManager {
 public:
  ifCB2WorldManager() {
   //Gravity = NULL;
-  World = NULL;
+  IFA_World = NULL;
  }
  ~ifCB2WorldManager() {
   Free();
@@ -353,11 +358,11 @@ public:
   Init();
   Init_IFEngine();
   //Gravity = new b2Vec2(gx,gy);
-  World = new b2World(b2Vec2(gx, gy));
+  IFA_World = new b2World(b2Vec2(gx, gy));
  }
  void Free() {
   //IF_NULL_DELETE(Gravity)
-  IF_NULL_DELETE(World)
+  IF_NULL_DELETE(IFA_World)
  }
 public:
 };
@@ -371,7 +376,6 @@ public:
  }
  void MakeWorld(float32 gx, float32 gy) {
   ifCB2WorldManager::MakeWorld(gx, gy);
-  ifCB2BodyManager::World = ifCB2WorldManager::World;
  }
 
 };
