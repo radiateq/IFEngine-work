@@ -2,6 +2,9 @@
 
 #include <GLES/gl.h>
 
+#include <android/log.h>
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "AndroidProject1.NativeActivity", __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "AndroidProject1.NativeActivity", __VA_ARGS__))
 
 #include <Box2D/Box2D.h>
 #include <list>
@@ -27,7 +30,7 @@
 extern b2World *IFA_World;
 //All box2D coordinates are multiplied by this factor. Typical value is arround 0.01
 extern float IFA_box2D_factor;
-
+extern float speedFactor;
 
 
 class ifCB2Body {
@@ -260,8 +263,8 @@ public:
 class ifCB2GameManager : public ifCB2BodyManager {
 public:
  ifCB2GameManager() {
-  velocityIterations = 6;   //how strongly to correct velocity
-  positionIterations = 2;   //how strongly to correct position
+  velocityIterations = 6000;   //how strongly to correct velocity
+  positionIterations = 2000;   //how strongly to correct position
   screenResolutionX = 1;
   screenResolutionY = 1;
   CalculateBox2DSizeFactor(10);
@@ -278,7 +281,7 @@ public:
   game_time_0 = temp_timespec;
   timeStep = 10000.0f / (float)temp_int64;
   //timeThen = timeNow;
-  IFA_World->Step( timeStep * 0.01, velocityIterations, positionIterations );
+  IFA_World->Step( timeStep * speedFactor, velocityIterations, positionIterations );
  }
  void UpdateGraphics() {
   //list all bodies and draw them 
@@ -287,14 +290,23 @@ public:
    
    //get body position and rotation
    b2Vec2 position = (*iter)->body->GetPosition();
-   float32 angle = (*iter)->body->GetAngle();
+   float32 angle = (*iter)->body->GetAngle() * (180.0 / 3.141593);
+   angle = angle - ceil(angle/360.0)*360;
   // b2Transform b2trans2x2 = (*iter)->body->GetTransform();
    
+
+
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
-   glRotatef(angle, 0, 0, 1);
    glScalef(IFA_box2D_factor, IFA_box2D_factor, 1.0f);
    glTranslatef(position.x, position.y, 0.0);
+   glTranslatef(-(*iter)->body->GetLocalCenter().x, -(*iter)->body->GetLocalCenter().y, 0.0);
+   glRotatef(angle, 0, 0, 1);
+   glTranslatef((*iter)->body->GetLocalCenter().x, (*iter)->body->GetLocalCenter().y, 0.0);
+   /*LOGI("x:%f, y:%f  angle:%f\t\tWorld x:%f, World y:%f\tLocal x:%f, Local y: %f",
+          position.x, position.y, angle,  
+          (*iter)->body->GetWorldCenter().x, (*iter)->body->GetWorldCenter().y, 
+          (*iter)->body->GetLocalCenter().x, (*iter)->body->GetLocalCenter().y);*/
    //   GLfloat body_matrix[16];
    //LoadIdentityMatrix(body_matrix);
    //b2trans2x2.p.x;

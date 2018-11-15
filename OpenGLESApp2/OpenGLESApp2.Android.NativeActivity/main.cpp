@@ -91,12 +91,12 @@ void Init_IFAdapter(engine &engine) {
   //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
   IFAdapter.screenResolutionX = engine.width;
   IFAdapter.screenResolutionY = engine.height;
-  IFAdapter.CalculateBox2DSizeFactor(30);
+  IFAdapter.CalculateBox2DSizeFactor(40);
 
 
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
-  IFAdapter.OrderedBody()->body_def->position.Set(-0.0,50.0);
+  IFAdapter.OrderedBody()->body_def->position.Set(-0.0,-10.0);
   b2PolygonShape *polyShape = new b2PolygonShape;
   b2Vec2 shapeCoords[8];
 
@@ -147,11 +147,11 @@ void Init_IFAdapter(engine &engine) {
 ////////////////////////////second body
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
-  IFAdapter.OrderedBody()->body_def->position.Set(-15.0, -0.0);
+  IFAdapter.OrderedBody()->body_def->position.Set(-15.0, -20.0);
   polyShape = new b2PolygonShape;
   shapeCoords[0] = b2Vec2(0.0, -0.4);
-  shapeCoords[1] = b2Vec2( static_cast<float32>(engine.width) / 50.0, -0.4);
-  shapeCoords[2] = b2Vec2( static_cast<float32>(engine.width) / 50.0, 0.4);
+  shapeCoords[1] = b2Vec2( static_cast<float32>(engine.width) / 30.0, -0.4);
+  shapeCoords[2] = b2Vec2( static_cast<float32>(engine.width) / 30.0, 0.4);
   shapeCoords[3] = b2Vec2(0.0, 0.4);
   polyShape->Set(shapeCoords, 4);
   fixture = new b2FixtureDef;
@@ -583,7 +583,7 @@ void android_main(struct android_app* state) {
 
 			// Drawing is throttled to the screen update rate, so there
 			// is no need to do timing here.
-			engine_draw_frame(&engine);
+			engine_draw_frame(&engine);   
 		}
 	}
 }
