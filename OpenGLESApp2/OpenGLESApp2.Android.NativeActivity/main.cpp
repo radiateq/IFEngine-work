@@ -78,27 +78,53 @@ GLuint TEST_textid;
 void TESTFN_AddRandomBody(engine &engine){
  if (engine.EGL_initialized) {
   double xxxx = drand48();
-  if((xxxx *1200)<1155)
+  if((xxxx *200)<10)
    return;
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
-  IFAdapter.OrderedBody()->body_def->position.Set(drand48() * 10 - 5, drand48() * 50);
   b2PolygonShape *polyShape = new b2PolygonShape;
   b2Vec2 shapeCoords[8];
+  b2FixtureDef *fixture = new b2FixtureDef;
 
-  shapeCoords[0] = { 0.8,  1.25 };
-  shapeCoords[1] = { 1,   0.5 };
-  shapeCoords[2] = { 2,   0.25 };
-  shapeCoords[3] = { 3,   0.5 };
-  shapeCoords[4] = { 4,  1.2 };
-  shapeCoords[5] = { 3,  2.0 };
-  shapeCoords[6] = { 2,  2.7 };
-  shapeCoords[7] = { 1,  2 };
+  if(drand48()>0.3){
+   IFAdapter.OrderedBody()->body_def->position.Set(drand48() * 10 - 5, drand48() * 50);
+   shapeCoords[0] = { 0.8,  1.25 };
+   shapeCoords[1] = { 1,   0.5 };
+   shapeCoords[2] = { 2,   0.25 };
+   shapeCoords[3] = { 3,   0.5 };
+   shapeCoords[4] = { 4,  1.2 };
+   shapeCoords[5] = { 3,  2.0 };
+   shapeCoords[6] = { 2,  2.7 };
+   shapeCoords[7] = { 1,  2 };
+   polyShape->Set(shapeCoords, 8);
+   fixture->shape = polyShape;
+   fixture->density = drand48()*5.0+1.0;
+   fixture->friction = drand48()*1.0;
+   fixture->restitution = ((drand48()>0.2)?drand48()*0.001:drand48()*2);
+  }else if(drand48()>0.6){
+   IFAdapter.OrderedBody()->body_def->position.Set(drand48() * 10 - 5, drand48() * 50);
+   shapeCoords[0] = { -1,  -1 };
+   shapeCoords[1] = { 1,  -1 };
+   shapeCoords[2] = { 1,   1 };
+   shapeCoords[3] = { -1,   1 };
+   polyShape->Set(shapeCoords, 4);
+   fixture->shape = polyShape;
+   fixture->density = 1.1;
+   fixture->friction = 0.3;
+   fixture->restitution = 0.001;
+  }else{
+   IFAdapter.OrderedBody()->body_def->position.Set(-drand48()*4.0, 0.0);
+   IFAdapter.OrderedBody()->body_def->angle = drand48()*360.0;
+   shapeCoords[0] = b2Vec2(0.0, 0.0);
+   shapeCoords[1] = b2Vec2(static_cast<float32>(engine.width) / 100.0, 0.0);
+   shapeCoords[2] = b2Vec2(static_cast<float32>(engine.width) / 100.0, 0.8);
+   shapeCoords[3] = b2Vec2(0.0, 0.8);
+   polyShape->Set(shapeCoords, 4);
+   fixture->shape = polyShape;
+   fixture->density = 0.1;
+   fixture->friction = 0.0001;
 
-  //shapeCoords[0] = { -1,  -1 };
-  //shapeCoords[1] = { 1,  -1 };
-  //shapeCoords[2] = { 1,   1 };
-  //shapeCoords[3] = { -1,   1 };
+  }
   //shapeCoords[4] = { 4,  1 };
   //shapeCoords[5] = { 3,  2 };
   //shapeCoords[6] = { 2,  2 };
@@ -112,18 +138,16 @@ void TESTFN_AddRandomBody(engine &engine){
   //shapeCoords[5] = { 30.0,  20.0 };
   //shapeCoords[6] = { 20.0,  27.0 };
   //shapeCoords[7] = { 10.0,  20.0 };
-  polyShape->Set(shapeCoords, 8);
-  b2FixtureDef *fixture = new b2FixtureDef;
-  fixture->shape = polyShape;
-  fixture->density = 1.1;
-  fixture->friction = 0.3;
-  fixture->restitution = 0.001;
   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
   ifCB2Body *first_body = IFAdapter.OrderedBody();
-  IFAdapter.MakeBody();
+  if( !IFAdapter.MakeBody() )
+   return; 
   //Additional work on body  
-  SetFaceSize(1000, 1000);
-  first_body->OGL_body->texture_ID = TEST_textid;
+  if( drand48()>0.5 ){
+   first_body->OGL_body->texture_ID = TEST_textid;
+  }else{
+   first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+  }
  }
 }
 
@@ -136,7 +160,7 @@ void Init_IFAdapter(engine &engine) {
   //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
   IFAdapter.screenResolutionX = engine.width;
   IFAdapter.screenResolutionY = engine.height;
-  IFAdapter.CalculateBox2DSizeFactor(50);
+  IFAdapter.CalculateBox2DSizeFactor(20*drand48()+3);
 
 
   IFAdapter.OrderBody();
@@ -178,13 +202,16 @@ void Init_IFAdapter(engine &engine) {
   fixture->friction = 0.3;
   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
   ifCB2Body *first_body = IFAdapter.OrderedBody();
-  IFAdapter.MakeBody();
-  //Additional work on body  
-  SetFaceSize(1000, 1000);
-  char outstring[2] = {'#','\0'};  
-  TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 4, 0);
-  //(engine.width / 20, engine.height / 20);
+  if (IFAdapter.MakeBody()){
+   //Additional work on body  
+   SetFaceSize(1000, 1000);
+   char outstring[2] = {'#','\0'};  
+   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 4, 0);
+   //(engine.width / 20, engine.height / 20);
+  }
 
+  int twidth, theight;
+  GLuint texint;
 
 //
 //
@@ -206,15 +233,14 @@ void Init_IFAdapter(engine &engine) {
   fixture->restitution = 0.01;
   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
   first_body = IFAdapter.OrderedBody();
-  IFAdapter.MakeBody();
-  //Additional work on body  
-  //SetFaceSize(1000, 1000);
-  //char *outstring = { "#" };
-  int twidth, theight;
-  GLuint texint;  
-  texint = ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
-  first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
- // first_body->body_def->position.Set(0, -100.0);
+  if (IFAdapter.MakeBody()) {
+   //Additional work on body  
+   //SetFaceSize(1000, 1000);
+   //char *outstring = { "#" };
+   texint = ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+   first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+   // first_body->body_def->position.Set(0, -100.0);
+  }
 
 
 
@@ -234,14 +260,15 @@ void Init_IFAdapter(engine &engine) {
   fixture->friction = 0.0001;
   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
   first_body = IFAdapter.OrderedBody();
-  IFAdapter.MakeBody();
-  //Additional work on body  
-  //SetFaceSize(1000, 1000);
-  //char *outstring = { "#" };
-  //int twidth, theight;
-  ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = texint;//IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
-  first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
- // first_body->body_def->position.Set(0, -100.0);
+  if (IFAdapter.MakeBody()) {
+   //Additional work on body  
+   //SetFaceSize(1000, 1000);
+   //char *outstring = { "#" };
+   //int twidth, theight;
+   ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = texint;//IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+   first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+   //first_body->body_def->position.Set(0, -100.0);
+  }
 
   //-------------------------------------------------------     IFEngine TEST
  }
@@ -482,15 +509,15 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 */
 void android_main(struct android_app* state) {
 
+ float last_y_acceleration = 0, last_light = 0;
+ size_t last_light_cnt = 120;
+ std::vector<float>avglight;
+
  Init_IFEngine();
  //               FREETYPE               SAMPLE START
  if( !InitFreeType(state) ){
   return;
  }
-
-
-
- //               FREETYPE               SAMPLE STOP
 
 
 
@@ -591,9 +618,10 @@ void android_main(struct android_app* state) {
 						//LOGI("accelerometer: x=%f y=%f z=%f",
 						//	event.acceleration.x, event.acceleration.y,
 						//	event.acceleration.z);
+      last_y_acceleration = event.acceleration.y;
       for( unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++){
        if( IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody ){
-        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(-event.acceleration.x * 0.3, -event.acceleration.y * 0.3 ), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(-event.acceleration.x * 1.0, (event.acceleration.z - event.acceleration.y) * 0.5 ), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
        }
       }
 					}
@@ -607,7 +635,12 @@ void android_main(struct android_app* state) {
       // event.light);
       for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
        if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
-        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0, event.light), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+        //IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0, event.light), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+        last_light = event.light - last_light;
+        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0, (last_light) * ((last_y_acceleration >0)?1:-1)), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+        avglight.push_back(last_light);
+        avglight.resize(last_light_cnt);
+        last_light = std::accumulate(avglight.begin(), avglight.end(), 0.0) / avglight.size();        
        }
       }
       // IFAdapter.Bodies[0]->body->ApplyLinearImpulse(b2Vec2( event.light * 20.0, -event.light * 0.0), IFAdapter.Bodies[0]->body->GetWorldCenter(), true );

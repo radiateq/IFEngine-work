@@ -75,6 +75,7 @@ typedef struct {
 
 
 extern ifTbodiesList BodiesList;
+extern ifTCounter IFE_max_bodies;
 //
 
 void Init_ifTbodyDefinition(ifTbodyDefinition *);

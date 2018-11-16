@@ -64,7 +64,7 @@ public:
     body->CreateFixture(*iter);
     iters++;
    }
-   shape.clear();
+   //shape.clear();
   }
   OGL_body = NULL;
  }
@@ -160,14 +160,19 @@ public:
    OrderPending = true;
   }
  }
- void MakeBody() {
+ bool MakeBody() {
   if (OrderPending) {
-   OrderPending = false;
    Bodies.back()->CreateBody();
-   B2Bodies2GLBodies(Bodies.size() - 1);
+   if( !B2Bodies2GLBodies(Bodies.size() - 1)){
+    //IFA_World->DestroyBody(body);
+    CancelOrder();
+    return false;
+   }
+   OrderPending = false;
    ifCB2Body *work_body = Bodies.back();
    DefaultUVMapping( work_body->OGL_body );
   }
+  return true;
  }
  void CancelOrder() {
   if (OrderPending) {
@@ -178,15 +183,17 @@ public:
  ifCB2Body* OrderedBody() {
   return  (OrderPending ? Bodies.back() : NULL);
  }
- void B2Bodies2GLBodies(ifTCounter ordinary_index) {
+ bool B2Bodies2GLBodies(ifTCounter ordinary_index) {
   typename std::list<ifCB2Body*>::iterator iter;  
   for (iter = Bodies.begin(); ordinary_index > 0; ordinary_index--) {
    iter++;
   }  
   if( (*iter)->OGL_body != NULL )
-   return;
+   return false;
+  if(IFE_max_bodies <= BodiesList.bodies_cnt)
+   return false;
   ifTbodyDefinition *work_body;
-  for (unsigned int cnt = 0; cnt < (*iter)->fixture.size(); cnt++) {
+  for (unsigned int cnt = 0; cnt < (*iter)->fixture.size(); cnt++) {   
    BodiesList.bodies = (ifTbodyDefinition**)(realloc(BodiesList.bodies, sizeof(ifTbodyDefinition*) * (BodiesList.bodies_cnt + 1)));
    BodiesList.bodies[BodiesList.bodies_cnt] = (ifTbodyDefinition*)malloc(sizeof(ifTbodyDefinition));
    work_body = BodiesList.bodies[BodiesList.bodies_cnt];
@@ -200,6 +207,7 @@ public:
    }
    BodiesList.bodies_cnt++;
   }  
+  return true;
  }
  void B2Bodies2GLBodies(){
   for (ifTCounter cnt = 0; cnt < Bodies.size(); cnt++) {
@@ -265,8 +273,8 @@ public:
 class ifCB2GameManager : public ifCB2BodyManager {
 public:
  ifCB2GameManager() {
-  velocityIterations = 300;   //how strongly to correct velocity
-  positionIterations = 100;   //how strongly to correct position
+  velocityIterations = 6;   //how strongly to correct velocity
+  positionIterations = 2;   //how strongly to correct position
   screenResolutionX = 1;
   screenResolutionY = 1;
   CalculateBox2DSizeFactor(10);
