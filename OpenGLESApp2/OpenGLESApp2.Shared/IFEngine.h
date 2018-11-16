@@ -83,6 +83,7 @@ void Clean_ifTbodyDefinition(ifTbodyDefinition *);
 
 void PrepareDraw();
 void DrawBodies();
+void RemoveBodies(ifTbodyDefinition **_body, ifTCounter _body_count = 1);
 
 
 static bool IFEngine_Initialized = false;

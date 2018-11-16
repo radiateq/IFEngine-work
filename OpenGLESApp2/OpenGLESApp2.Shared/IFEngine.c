@@ -1,5 +1,7 @@
 #include "IFEngine.h"
 
+#include <set>
+
 #include <Eigen/Dense>
 using Eigen::MatrixXf;
 
@@ -102,6 +104,37 @@ void DrawBodies() {
 
 }
 
+void RemoveBodies( ifTbodyDefinition **_body, ifTCounter _body_count){
+ bool realloc_bodies = false;
+ for (ifTCounter body_cnt = 0; body_cnt < _body_count; body_cnt++) {
+  for (ifTCounter cnt = 0; cnt < BodiesList.bodies_cnt; cnt++) {
+   if(_body[body_cnt] == BodiesList.bodies[cnt]){
+    bool delete_tex = false;//We might need this
+    for (ifTCounter cnt2 = 0; cnt2 < BodiesList.bodies_cnt; cnt2++) {
+     if((BodiesList.bodies[cnt2]->texture_ID == BodiesList.bodies[cnt]->texture_ID) && (cnt != cnt2)){
+      delete_tex = false;
+      break;
+     }
+    }
+    if(delete_tex){
+     glDeleteTextures(1, &BodiesList.bodies[cnt]->texture_ID);
+    }
+    Clean_ifTbodyDefinition(BodiesList.bodies[cnt]);
+    free(BodiesList.bodies[cnt]);
+    realloc_bodies = true;
+    BodiesList.bodies_cnt--;
+    for (ifTCounter cnt2 = cnt; cnt2 < BodiesList.bodies_cnt; cnt2++) {
+     BodiesList.bodies[cnt2] = BodiesList.bodies[cnt2+1];
+    }   
+    break; 
+   }
+  }
+ }
+ if(realloc_bodies){
+  BodiesList.bodies = (ifTbodyDefinition**)(realloc(BodiesList.bodies, sizeof(ifTbodyDefinition*) * BodiesList.bodies_cnt));
+ }
+}
+
 void Init_IFEngine(){
  if(!IFEngine_Initialized)
   BodiesList.bodies = NULL;
@@ -112,8 +145,12 @@ void Init_IFEngine(){
 void CleanupBodies(){
  if (IFEngine_Initialized) {
   IFEngine_Initialized = false;
+  std::set<GLuint> deleted_tex;
   for( ifTCounter cnt = 0; cnt < BodiesList.bodies_cnt; cnt++ ){
-   glDeleteTextures(1, &BodiesList.bodies[cnt]->texture_ID);
+   if(deleted_tex.end() == deleted_tex.find(BodiesList.bodies[cnt]->texture_ID)){
+    glDeleteTextures(1, &BodiesList.bodies[cnt]->texture_ID);
+    deleted_tex.insert(BodiesList.bodies[cnt]->texture_ID);
+   }
    Clean_ifTbodyDefinition(BodiesList.bodies[cnt]);
    free(BodiesList.bodies[cnt]);
   }

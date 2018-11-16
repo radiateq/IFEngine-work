@@ -38,7 +38,7 @@
 
 ifCB2Adapter IFAdapter;
 
-
+ifCB2BodyUtils B2BodyUtils(&IFAdapter);
 
 /**
 * Our saved state data.
@@ -352,8 +352,15 @@ static void engine_draw_frame(struct engine* engine) {
 		return;
 	}
 
-	//CubeTest_prepare();
+
+ //cleanup far bodies
+ B2BodyUtils.RemoveFarBodies();
+
+ TESTFN_AddRandomBody(*engine);
+
+
  PrepareDraw();
+
 
  IFAdapter.UpdateSim();
  IFAdapter.UpdateGraphics();
@@ -638,7 +645,6 @@ void android_main(struct android_app* state) {
 
 			// Drawing is throttled to the screen update rate, so there
 			// is no need to do timing here.
-   TESTFN_AddRandomBody(engine);
 			engine_draw_frame(&engine);   
 		}
 	}

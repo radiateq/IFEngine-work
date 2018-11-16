@@ -55,7 +55,7 @@ public:
  //After body_def, body, shape and fixture have been prepared this function will create a body and add it to the world 
  void CreateBody() {
   if (IFA_World && !body) {
-   body = IFA_World->CreateBody(body_def);
+   body = IFA_World->CreateBody(body_def);   
    typename std::list<b2Shape*>::iterator iters = shape.begin();
    for (typename std::list<b2FixtureDef*>::iterator iter = fixture.begin();
     iter != fixture.end();
@@ -66,6 +66,7 @@ public:
    }
    shape.clear();
   }
+  OGL_body = NULL;
  }
  //Called before CreateBody at least once
  void AddShapeAndFixture(b2Shape *_shape, b2FixtureDef *_fixture) {
@@ -129,7 +130,8 @@ public:
    shape_index--;
   }  
  }
- void Free() {
+ void Free() {  
+  RemoveBodies( &OGL_body );
   if (IFA_World) {
    IFA_World->DestroyBody(body);
   }
@@ -181,6 +183,8 @@ public:
   for (iter = Bodies.begin(); ordinary_index > 0; ordinary_index--) {
    iter++;
   }  
+  if( (*iter)->OGL_body != NULL )
+   return;
   ifTbodyDefinition *work_body;
   for (unsigned int cnt = 0; cnt < (*iter)->fixture.size(); cnt++) {
    BodiesList.bodies = (ifTbodyDefinition**)(realloc(BodiesList.bodies, sizeof(ifTbodyDefinition*) * (BodiesList.bodies_cnt + 1)));
@@ -243,8 +247,7 @@ public:
    _OGL_body->UVmapping[cnt] = ( _OGL_body->vertices[cnt] - miny ) * normalization_scalar_y;
   }
 
- }
-
+ } 
  //void Add
 // b2World *World;
  S_listWrap_ptr<ifCB2Body, true> Bodies;
@@ -257,7 +260,6 @@ private:
 public:
 
 };
-
 
 
 class ifCB2GameManager : public ifCB2BodyManager {
@@ -299,16 +301,17 @@ public:
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
-   glScalef(IFA_box2D_factor, IFA_box2D_factor, 1.0f);
+   //glScalef(IFA_box2D_factor * (drand48() * 0.5 + 0.8), IFA_box2D_factor * (drand48() * 0.5 + 0.8), 1.0f);
+   glScalef(IFA_box2D_factor , IFA_box2D_factor , 1.0f);
    glTranslatef(position.x, position.y, 0.0);
    glRotatef(angle, 0, 0, 1);
 
 
 
-   LOGI("x:%f, y:%f  angle:%f\t\tWorld x:%f, World y:%f\tLocal x:%f, Local y: %f",
-          position.x, position.y, angle,  
-          (*iter)->body->GetWorldCenter().x, (*iter)->body->GetWorldCenter().y, 
-          (*iter)->body->GetLocalCenter().x, (*iter)->body->GetLocalCenter().y);
+   //LOGI("x:%f, y:%f  angle:%f\t\tWorld x:%f, World y:%f\tLocal x:%f, Local y: %f",
+   //       position.x, position.y, angle,  
+   //       (*iter)->body->GetWorldCenter().x, (*iter)->body->GetWorldCenter().y, 
+   //       (*iter)->body->GetLocalCenter().x, (*iter)->body->GetLocalCenter().y);
    //   GLfloat body_matrix[16];
    //LoadIdentityMatrix(body_matrix);
    //b2trans2x2.p.x;
@@ -354,6 +357,29 @@ public:
  int64_t temp_int64;
 };
 
+
+class ifCB2BodyUtils {
+public:
+ ifCB2BodyUtils(ifCB2GameManager *_B2GameManager = NULL) {
+  B2GameManager = _B2GameManager;
+ }
+ void RemoveFarBodies( GLfloat cut_off_distance_in_screen_size = 2.0 ) {
+  GLfloat ratio_xy = ((float)B2GameManager->screenResolutionX / (float)B2GameManager->screenResolutionY);
+  if(ratio_xy < 1.0 )
+   ratio_xy = (float)B2GameManager->screenResolutionY / (float)B2GameManager->screenResolutionX;
+  typename std::list<ifCB2Body*>::iterator iter;
+  for (iter = B2GameManager->Bodies.begin(); iter != B2GameManager->Bodies.end(); iter++) {
+//double TEMPVAL= b2Distance((*iter)->body->GetPosition(), b2Vec2(0, 0));
+//TEMPVAL = TEMPVAL;
+   //This formula gives 2 times distance to the longer axis end of the screen before object is cut off
+   if ( (b2Distance((*iter)->body->GetPosition(), b2Vec2(0, 0)) * IFA_box2D_factor / (ratio_xy * cut_off_distance_in_screen_size)) > ratio_xy) {
+    delete (*iter);
+    B2GameManager->Bodies.erase(iter);
+   }
+  }
+ }
+ ifCB2GameManager *B2GameManager;
+};
 
 class ifCB2WorldManager :  public ifCB2GameManager {
 public:
