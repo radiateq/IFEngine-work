@@ -43,6 +43,8 @@ struct EchoAudioEngine {
 };
 static EchoAudioEngine engine;
 
+extern ICSLock EngineServiceBufferMutex;
+extern std::vector<sample_buf*> EngineServiceBuffer;
 bool EngineService(void *ctx, uint32_t msg, void *data);
 
 void createSLEngine(

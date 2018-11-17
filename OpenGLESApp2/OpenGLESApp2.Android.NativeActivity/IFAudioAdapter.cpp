@@ -4,6 +4,9 @@ using namespace IFAudioSLES;
 
 namespace IFAudioSLES {
 
+ ICSLock EngineServiceBufferMutex;
+ std::vector<sample_buf*> EngineServiceBuffer;
+
  void createSLEngine(
 jint sampleRate, jint framesPerBuf,
  jlong delayInMs, jfloat decay) {
@@ -53,6 +56,7 @@ jint sampleRate, jint framesPerBuf,
   engine.fastPathSampleRate_, engine.sampleChannels_, engine.bitsPerSample_,
   engine.echoDelay_, engine.echoDecay_);
  assert(engine.delayEffect_);
+
 }
 
 jboolean
@@ -187,11 +191,22 @@ bool EngineService(void *ctx, uint32_t msg, void *data) {
  }
  case ENGINE_SERVICE_MSG_RECORDED_AUDIO_AVAILABLE: {
   // adding audio delay effect
-  //sample_buf *buf = static_cast<sample_buf *>(data);
-  //assert(engine.fastPathFramesPerBuf_ ==
-  // buf->size_ / engine.sampleChannels_ / (engine.bitsPerSample_ / 8));
+  sample_buf *buf = static_cast<sample_buf *>(data);
+  assert(engine.fastPathFramesPerBuf_ ==
+   buf->size_ / engine.sampleChannels_ / (engine.bitsPerSample_ / 8));
   //engine.delayEffect_->process(reinterpret_cast<int16_t *>(buf->buf_),
   // engine.fastPathFramesPerBuf_);
+
+  //TODO NEVER RELEASE BUFFERS BUT ALWAYS ALTERNATE BETWEEN TWO OR CYCLE THREW MORE
+  sample_buf *new_buf = allocateSampleBufs(2, buf->size_);
+  uint32_t allocSize = (buf->size_ + 3) & ~3;
+  memcpy( new_buf->buf_, buf->buf_, allocSize);
+  new_buf->cap_ = buf->cap_;
+  new_buf->size_ = buf->size_;  
+  EngineServiceBufferMutex.EnterAndLock();
+  EngineServiceBuffer.push_back(new_buf);
+  EngineServiceBufferMutex.LeaveAndUnlock();
+
   break;
  }
  default:

@@ -9,7 +9,7 @@ using Eigen::MatrixXf;
 
 
 ifTbodiesList BodiesList;
-ifTCounter IFE_max_bodies = 200;
+ifTCounter IFE_max_bodies = 100;
 
 void Init_ifTbodyDefinition(ifTbodyDefinition *_init_var){ 
  _init_var->colors = NULL;

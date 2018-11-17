@@ -42,6 +42,7 @@
 #include "android_fopen.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include <unsupported/Eigen/FFT>
  //Domestic Includes
 #include "RQ_NDK_Utils.h"
 #include "DrawText.h"

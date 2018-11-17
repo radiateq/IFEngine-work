@@ -82,6 +82,104 @@ void TESTFN_AddRandomBody(engine &engine){
   double xxxx = drand48();
   if((xxxx *200)<10)
    return;
+
+
+
+/////////////////////////////////////AUDIO PART
+  IFAudioSLES::sample_buf *new_buf = nullptr;
+  IFAudioSLES::EngineServiceBufferMutex.EnterAndLock();
+  if(IFAudioSLES::EngineServiceBuffer.size()){
+   new_buf = IFAudioSLES::EngineServiceBuffer.back();
+   //while(IFAudioSLES::EngineServiceBuffer.size())
+   // IFAudioSLES::EngineServiceBuffer.pop_back();
+   IFAudioSLES::EngineServiceBuffer.clear();
+  }
+  IFAudioSLES::EngineServiceBufferMutex.LeaveAndUnlock();
+  if(new_buf == nullptr)
+   return;
+  uint32_t allocSize = (new_buf->size_ + 3) & ~3;
+  double average_value = 0;
+  static double prev_average_value = 0;
+  static unsigned int nMake = 0;
+  short sample_valueL, sample_valueR;
+  bool two_channels = false, LR_switch=true;
+  std::vector<float> timevec;
+  //when audio_db starts dropping from constant rise trigger set rising to false
+  //when audio_db starts rising set rising to true
+  float audio_db;
+  if (IFAudioSLES::engine.sampleChannels_ == 2) {
+   two_channels = true;
+  } 
+  for (int cnt = 0; cnt < allocSize; cnt++) {
+   if(LR_switch){
+    sample_valueL = new_buf->buf_[cnt];
+   }else{
+    sample_valueR = new_buf->buf_[cnt];
+   }   
+   timevec.push_back((float)new_buf->buf_[cnt] / 32767.0);
+   if (two_channels)
+    LR_switch = !LR_switch;
+   audio_db = 20 * (log10(abs(sample_valueL ) / 32767.0));
+   average_value+= audio_db;
+  }
+  //dBFS = 20 * log([sample level] / [max level])
+  //In a 16 bit system there are 2 ^ 16 = 65536 values.So this means values from - 32768 to + 32767. Excluding 0, let's say the minimum value is 1. So plugging this into the formula gives:
+  //dBFS = 20 * log(1 / 32767) = -90.3
+  
+
+  {
+
+   Eigen::FFT<float> fft;
+
+   std::vector<std::complex<float> > freqvec;
+
+   fft.fwd(freqvec, timevec);
+   int ssize = freqvec.size();
+    
+   for( int cntx = 0; cntx < freqvec.size(); cntx++){
+    float freq = (float)cntx*48000.0/2048.0;
+    float ampl = freqvec[cntx].real();
+    float phase = freqvec[cntx].imag();
+    if(freq>60 && freq<355){
+     if(ampl>0.8){
+      nMake+= (abs(ampl) -0.36)*10;
+     }
+    }else if (freq > 900 && freq < 1250 ) {
+     if(ampl >0.5){
+      for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
+       if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
+        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0.0, abs(ampl) * 100.0), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+       }
+      }
+     }
+    }else if(freq>2550){
+      break;
+    }
+    //nthbin[Hz]=n*sampleFreq/num(DFTPoints)
+   }
+
+   // manipulate freqvec
+   //fft.inv(timevec, freqvec);   
+   // stored "plans" get destroyed with fft destructor
+  }
+
+  allocSize = 2;//count of buffers to release
+  IFAudioSLES::releaseSampleBufs(new_buf, allocSize );
+  /////////////////////////////////////AUDIO PART
+  
+  average_value/=allocSize;
+
+  prev_average_value = average_value;
+
+  if(nMake==0)
+   return;
+  nMake--;
+
+
+
+
+
+
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
   b2PolygonShape *polyShape = new b2PolygonShape;
@@ -368,6 +466,13 @@ static int engine_init_display(struct engine* engine) {
  Setup_OpenGL(w,h);
  Init_IFAdapter(*engine);
 
+ IFAudioSLES::createSLEngine(48000, 1024, 1000, 1000);
+
+ IFAudioSLES::createSLBufferQueueAudioPlayer();
+ IFAudioSLES::createAudioRecorder();
+ IFAudioSLES::startPlay();
+
+
 	return 0;
 }
 
@@ -421,6 +526,12 @@ static void engine_term_display(struct engine* engine) {
 	engine->surface = EGL_NO_SURFACE;
 
 	//CubeTest_tearDownGL();
+
+ IFAudioSLES::stopPlay();
+ IFAudioSLES::deleteAudioRecorder();
+ IFAudioSLES::deleteSLBufferQueueAudioPlayer();
+
+
 }
 
 /**
@@ -514,23 +625,6 @@ void android_main(struct android_app* state) {
  float last_y_acceleration = 0, last_light = 0;
  size_t last_light_cnt = 30;
  std::vector<float>avglight;
-
-
-
-//////////////////////////////////// IFAudio TEST START 
- 
- IFAudioSLES::createSLEngine(44100,512,100,1000);
- 
-
-//////////////////////////////////// IFAudio TEST STOP
-
-
-
-
-
-
-
-
 
 
 

@@ -6,6 +6,9 @@
 
 #include <list>
 
+#include <queue>
+#include <pthread.h>
+
 #include <android/asset_manager.h> 
 #include <android/asset_manager_jni.h>
 
@@ -36,7 +39,7 @@ template<typename Tptr_type> class RQTCAutoDelete {
  ~RQTCAutoDelete() {
   if(managed_pointer==NULL)
    return;
-  delete managed_pointer;
+  delete [] managed_pointer;
   managed_pointer = NULL;
  }
 };
@@ -113,6 +116,119 @@ public:
 // return 0;
 //}
 
+
+template<typename TDataType_np, bool delete_pointers_on_destructor = false, bool pointer_array = false > class S_vectorWrap_ptr : public std::vector<TDataType_np*>
+{
+public:
+ ~S_vectorWrap_ptr()
+ {
+  if (delete_pointers_on_destructor)
+  {
+   TDataType_np *temp_var;
+   while (this->size() > 0)
+   {
+    temp_var = this->back();
+    if (pointer_array)
+     delete[] temp_var;
+    else
+     delete temp_var;
+    this->pop_back();
+   }
+  }
+
+ }
+};
+
+
+
+
+
+
+
+
+
+class ICSLock
+{
+public:
+ pthread_mutex_t mutex;
+ ICSLock()
+ {
+  pthread_mutex_init(&mutex, NULL);
+ }
+ ~ICSLock()
+ {
+  pthread_mutex_destroy(&mutex);
+ }
+ void EnterAndLock()
+ {
+  pthread_mutex_lock(&mutex);
+ }
+ bool TryEnteringAndLock()
+ {
+  if(pthread_mutex_trylock(&mutex)){
+   return false;
+  }
+  return true;
+ }
+ void LeaveAndUnlock()
+ {
+  pthread_mutex_unlock(&mutex);
+ }
+};
+
+struct SAutoICSLock
+{
+private:
+ ICSLock *pCSLock;
+public:
+ SAutoICSLock(ICSLock *_pCSLock, bool EnterLock = true)
+ {
+  if (EnterLock)
+   _pCSLock->EnterAndLock();
+  pCSLock = _pCSLock;
+ }
+ ~SAutoICSLock()
+ {
+  pCSLock->LeaveAndUnlock();
+ }
+};
+
+template<typename TDataType> class TC_THSafe_Queue : public std::queue<TDataType>, public ICSLock
+{
+#define DEF_TC_THSafe_Queue_LOCK SAutoICSLock AutoLock(this);
+#define OVERRIDE_QUEUE(FUNC_NAME,RET_VAL,PARAMT,PARAM) \
+	RET_VAL THS##FUNC_NAME(PARAMT) \
+	{ \
+		DEF_TC_THSafe_Queue_LOCK \
+        return this->FUNC_NAME(PARAM); \
+	}
+public:
+ //queue<TDataType> THSQueue;
+ //Returns a reference to the last and most recently added element at the back of the queue. 
+ OVERRIDE_QUEUE(back, TDataType&, , )
+  //Tests if the queue is empty.  
+  OVERRIDE_QUEUE(empty, bool, , )
+  //Returns a reference to the first element at the front of the queue. 
+  OVERRIDE_QUEUE(front, TDataType&, , )
+  //Removes an element from the front of the queue. 
+  OVERRIDE_QUEUE(pop, void, , )
+  //Adds an element to the back of the queue. 
+  OVERRIDE_QUEUE(push, void, const TDataType& val, val)
+  //Returns the number of elements in the queue. 
+  OVERRIDE_QUEUE(size, size_t, , )
+#undef DEF_TC_THSafe_Queue_LOCK
+#undef OVERRIDE_QUEUE
+};
+/*
+ Usage Example
+
+ TC_THSafe_Queue<int> THSStdInEventFIFO;
+ THSStdInEventFIFO.push(1);
+ THSStdInEventFIFO.THSpush(2);
+ cout << THSStdInEventFIFO.THSback() << endl;
+ cout << THSStdInEventFIFO.back() << endl;
+
+*/
 
 
 
