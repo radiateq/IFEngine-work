@@ -165,7 +165,7 @@
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
-      <LibraryDependencies>%(LibraryDependencies);GLESv1_CM;EGL</LibraryDependencies>
+      <LibraryDependencies>%(LibraryDependencies);GLESv1_CM;EGL;OpenSLES</LibraryDependencies>
       <AdditionalOptions>-lm %(AdditionalOptions)</AdditionalOptions>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
@@ -179,7 +179,7 @@
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
-      <LibraryDependencies>%(LibraryDependencies);GLESv1_CM;EGL</LibraryDependencies>
+      <LibraryDependencies>%(LibraryDependencies);GLESv1_CM;EGL;OpenSLES</LibraryDependencies>
       <AdditionalOptions>-lm %(AdditionalOptions)</AdditionalOptions>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
@@ -228,6 +228,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="android_fopen.h" />
+    <ClInclude Include="IFAudioAdapter.h" />
+    <ClInclude Include="IFAudioSLES.h" />
+    <ClInclude Include="IFAudioUtils.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="android_native_app_glue.h" />
     <ClInclude Include="RQ_NDK_Utils.h" />
@@ -235,6 +238,9 @@
   <ItemGroup>
     <ClCompile Include="android_fopen.c" />
     <ClCompile Include="android_native_app_glue.c" />
+    <ClCompile Include="IFAudioAdapter.cpp" />
+    <ClCompile Include="IFAudioSLES.cpp" />
+    <ClCompile Include="IFAudioUtils.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RQ_NDK_Utils.c" />
   </ItemGroup>

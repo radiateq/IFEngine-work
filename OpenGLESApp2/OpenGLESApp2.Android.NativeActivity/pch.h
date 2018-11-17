@@ -24,6 +24,7 @@
 
 #include <android/sensor.h>
 
+
 #include <android/log.h>
 #include "android_native_app_glue.h"
 
@@ -44,4 +45,5 @@
  //Domestic Includes
 #include "RQ_NDK_Utils.h"
 #include "DrawText.h"
+
 

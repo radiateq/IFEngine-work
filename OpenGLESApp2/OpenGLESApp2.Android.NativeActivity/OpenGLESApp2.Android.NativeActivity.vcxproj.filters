@@ -5,11 +5,17 @@
     <ClInclude Include="android_native_app_glue.h" />
     <ClInclude Include="android_fopen.h" />
     <ClInclude Include="RQ_NDK_Utils.h" />
+    <ClInclude Include="IFAudioSLES.h" />
+    <ClInclude Include="IFAudioUtils.h" />
+    <ClInclude Include="IFAudioAdapter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="android_native_app_glue.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="android_fopen.c" />
     <ClCompile Include="RQ_NDK_Utils.c" />
+    <ClCompile Include="IFAudioSLES.cpp" />
+    <ClCompile Include="IFAudioUtils.cpp" />
+    <ClCompile Include="IFAudioAdapter.cpp" />
   </ItemGroup>
 </Project>

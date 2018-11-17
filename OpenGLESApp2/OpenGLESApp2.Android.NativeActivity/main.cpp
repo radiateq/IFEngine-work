@@ -29,6 +29,8 @@
 
 #include "IFBox2DAdapter.h"
 
+#include "IFAudioAdapter.h"
+
 #include "IFEUtils.h"
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "AndroidProject1.NativeActivity", __VA_ARGS__))
@@ -510,8 +512,52 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 void android_main(struct android_app* state) {
 
  float last_y_acceleration = 0, last_light = 0;
- size_t last_light_cnt = 120;
+ size_t last_light_cnt = 30;
  std::vector<float>avglight;
+
+
+
+//////////////////////////////////// IFAudio TEST START 
+ 
+ IFAudioSLES::createSLEngine(44100,512,100,1000);
+ 
+
+ //createSLEngine( JNIEnv *env, jclass, jint, jint, jlong delayInMs, jfloat decay);
+ //JNIEXPORT void JNICALL Java_com_google_sample_echo_MainActivity_deleteSLEngine(
+ // JNIEnv *env, jclass type);
+ //JNIEXPORT jboolean JNICALL
+ // Java_com_google_sample_echo_MainActivity_createSLBufferQueueAudioPlayer(
+ //  JNIEnv *env, jclass);
+ //JNIEXPORT void JNICALL
+ // Java_com_google_sample_echo_MainActivity_deleteSLBufferQueueAudioPlayer(
+ //  JNIEnv *env, jclass type);
+
+ //JNIEXPORT jboolean JNICALL
+ // Java_com_google_sample_echo_MainActivity_createAudioRecorder(JNIEnv *env,
+ //  jclass type);
+ //JNIEXPORT void JNICALL
+ // Java_com_google_sample_echo_MainActivity_deleteAudioRecorder(JNIEnv *env,
+ //  jclass type);
+ //JNIEXPORT void JNICALL
+ // Java_com_google_sample_echo_MainActivity_startPlay(JNIEnv *env, jclass type);
+ //JNIEXPORT void JNICALL
+ // Java_com_google_sample_echo_MainActivity_stopPlay(JNIEnv *env, jclass type);
+ //JNIEXPORT jboolean JNICALL
+ // Java_com_google_sample_echo_MainActivity_configureEcho(JNIEnv *env, jclass type,
+ //  jint delayInMs,
+ //  jfloat decay);
+
+//////////////////////////////////// IFAudio TEST STOP
+
+
+
+
+
+
+
+
+
+
 
  Init_IFEngine();
  //               FREETYPE               SAMPLE START
