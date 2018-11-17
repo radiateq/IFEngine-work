@@ -55,117 +55,106 @@ jint sampleRate, jint framesPerBuf,
  assert(engine.delayEffect_);
 }
 
-//JNIEXPORT jboolean JNICALL
-//Java_com_google_sample_echo_MainActivity_configureEcho(JNIEnv *env, jclass type,
-// jint delayInMs,
-// jfloat decay) {
-// engine.echoDelay_ = delayInMs;
-// engine.echoDecay_ = decay;
-//
-// engine.delayEffect_->setDelayTime(delayInMs);
-// engine.delayEffect_->setDecayWeight(decay);
-// return JNI_FALSE;
-//}
-//
-//JNIEXPORT jboolean JNICALL
-//Java_com_google_sample_echo_MainActivity_createSLBufferQueueAudioPlayer(
-// JNIEnv *env, jclass type) {
-// SampleFormat sampleFormat;
-// memset(&sampleFormat, 0, sizeof(sampleFormat));
-// sampleFormat.pcmFormat_ = (uint16_t)engine.bitsPerSample_;
-// sampleFormat.framesPerBuf_ = engine.fastPathFramesPerBuf_;
-//
-// // SampleFormat.representation_ = SL_ANDROID_PCM_REPRESENTATION_SIGNED_INT;
-// sampleFormat.channels_ = (uint16_t)engine.sampleChannels_;
-// sampleFormat.sampleRate_ = engine.fastPathSampleRate_;
-//
-// engine.player_ = new AudioPlayer(&sampleFormat, engine.slEngineItf_);
-// assert(engine.player_);
-// if (engine.player_ == nullptr) return JNI_FALSE;
-//
-// engine.player_->SetBufQueue(engine.recBufQueue_, engine.freeBufQueue_);
-// engine.player_->RegisterCallback(EngineService, (void *)&engine);
-//
-// return JNI_TRUE;
-//}
-//
-//JNIEXPORT void JNICALL
-//Java_com_google_sample_echo_MainActivity_deleteSLBufferQueueAudioPlayer(
-// JNIEnv *env, jclass type) {
-// if (engine.player_) {
-//  delete engine.player_;
-//  engine.player_ = nullptr;
-// }
-//}
-//
-//JNIEXPORT jboolean JNICALL
-//Java_com_google_sample_echo_MainActivity_createAudioRecorder(JNIEnv *env,
-// jclass type) {
-// SampleFormat sampleFormat;
-// memset(&sampleFormat, 0, sizeof(sampleFormat));
-// sampleFormat.pcmFormat_ = static_cast<uint16_t>(engine.bitsPerSample_);
-//
-// // SampleFormat.representation_ = SL_ANDROID_PCM_REPRESENTATION_SIGNED_INT;
-// sampleFormat.channels_ = engine.sampleChannels_;
-// sampleFormat.sampleRate_ = engine.fastPathSampleRate_;
-// sampleFormat.framesPerBuf_ = engine.fastPathFramesPerBuf_;
-// engine.recorder_ = new AudioRecorder(&sampleFormat, engine.slEngineItf_);
-// if (!engine.recorder_) {
-//  return JNI_FALSE;
-// }
-// engine.recorder_->SetBufQueues(engine.freeBufQueue_, engine.recBufQueue_);
-// engine.recorder_->RegisterCallback(EngineService, (void *)&engine);
-// return JNI_TRUE;
-//}
-//
-//JNIEXPORT void JNICALL
-//Java_com_google_sample_echo_MainActivity_deleteAudioRecorder(JNIEnv *env,
-// jclass type) {
-// if (engine.recorder_) delete engine.recorder_;
-//
-// engine.recorder_ = nullptr;
-//}
-//
-//JNIEXPORT void JNICALL
-//Java_com_google_sample_echo_MainActivity_startPlay(JNIEnv *env, jclass type) {
-// engine.frameCount_ = 0;
-// /*
-//  * start player: make it into waitForData state
-//  */
-// if (SL_BOOLEAN_FALSE == engine.player_->Start()) {
+jboolean
+configureEcho(
+ jint delayInMs,
+ jfloat decay) {
+ engine.echoDelay_ = delayInMs;
+ engine.echoDecay_ = decay;
+
+ engine.delayEffect_->setDelayTime(delayInMs);
+ engine.delayEffect_->setDecayWeight(decay);
+ return JNI_FALSE;
+}
+
+jboolean createSLBufferQueueAudioPlayer() {
+ SampleFormat sampleFormat;
+ memset(&sampleFormat, 0, sizeof(sampleFormat));
+ sampleFormat.pcmFormat_ = (uint16_t)engine.bitsPerSample_;
+ sampleFormat.framesPerBuf_ = engine.fastPathFramesPerBuf_;
+
+ // SampleFormat.representation_ = SL_ANDROID_PCM_REPRESENTATION_SIGNED_INT;
+ sampleFormat.channels_ = (uint16_t)engine.sampleChannels_;
+ sampleFormat.sampleRate_ = engine.fastPathSampleRate_;
+
+ engine.player_ = new AudioPlayer(&sampleFormat, engine.slEngineItf_);
+ assert(engine.player_);
+ if (engine.player_ == nullptr) return JNI_FALSE;
+
+ engine.player_->SetBufQueue(engine.recBufQueue_, engine.freeBufQueue_);
+ engine.player_->RegisterCallback(EngineService, (void *)&engine);
+
+ return JNI_TRUE;
+}
+
+void deleteSLBufferQueueAudioPlayer() {
+ if (engine.player_) {
+  delete engine.player_;
+  engine.player_ = nullptr;
+ }
+}
+
+jboolean createAudioRecorder() {
+ SampleFormat sampleFormat;
+ memset(&sampleFormat, 0, sizeof(sampleFormat));
+ sampleFormat.pcmFormat_ = static_cast<uint16_t>(engine.bitsPerSample_);
+
+ // SampleFormat.representation_ = SL_ANDROID_PCM_REPRESENTATION_SIGNED_INT;
+ sampleFormat.channels_ = engine.sampleChannels_;
+ sampleFormat.sampleRate_ = engine.fastPathSampleRate_;
+ sampleFormat.framesPerBuf_ = engine.fastPathFramesPerBuf_;
+ engine.recorder_ = new AudioRecorder(&sampleFormat, engine.slEngineItf_);
+ if (!engine.recorder_) {
+  return JNI_FALSE;
+ }
+ engine.recorder_->SetBufQueues(engine.freeBufQueue_, engine.recBufQueue_);
+ engine.recorder_->RegisterCallback(EngineService, (void *)&engine);
+ return JNI_TRUE;
+}
+
+ void deleteAudioRecorder() {
+ if (engine.recorder_) delete engine.recorder_;
+
+ engine.recorder_ = nullptr;
+}
+
+void startPlay() {
+ engine.frameCount_ = 0;
+ /*
+  * start player: make it into waitForData state
+  */
+ if (SL_BOOLEAN_FALSE == engine.player_->Start()) {
 //  LOGE("====%s failed", __FUNCTION__);
-//  return;
-// }
-// engine.recorder_->Start();
-//}
+  return;
+ }
+ engine.recorder_->Start();
+}
 //
-//JNIEXPORT void JNICALL
-//Java_com_google_sample_echo_MainActivity_stopPlay(JNIEnv *env, jclass type) {
-// engine.recorder_->Stop();
-// engine.player_->Stop();
+void stopPlay() {
+ engine.recorder_->Stop();
+ engine.player_->Stop();
+
+ delete engine.recorder_;
+ delete engine.player_;
+ engine.recorder_ = NULL;
+ engine.player_ = NULL;
+}
 //
-// delete engine.recorder_;
-// delete engine.player_;
-// engine.recorder_ = NULL;
-// engine.player_ = NULL;
-//}
-//
-//JNIEXPORT void JNICALL Java_com_google_sample_echo_MainActivity_deleteSLEngine(
-// JNIEnv *env, jclass type) {
-// delete engine.recBufQueue_;
-// delete engine.freeBufQueue_;
-// releaseSampleBufs(engine.bufs_, engine.bufCount_);
-// if (engine.slEngineObj_ != NULL) {
-//  (*engine.slEngineObj_)->Destroy(engine.slEngineObj_);
-//  engine.slEngineObj_ = NULL;
-//  engine.slEngineItf_ = NULL;
-// }
-//
-// if (engine.delayEffect_) {
-//  delete engine.delayEffect_;
-//  engine.delayEffect_ = nullptr;
-// }
-//}
+void MainActivity_deleteSLEngine() {
+ delete engine.recBufQueue_;
+ delete engine.freeBufQueue_;
+ releaseSampleBufs(engine.bufs_, engine.bufCount_);
+ if (engine.slEngineObj_ != NULL) {
+  (*engine.slEngineObj_)->Destroy(engine.slEngineObj_);
+  engine.slEngineObj_ = NULL;
+  engine.slEngineItf_ = NULL;
+ }
+
+ if (engine.delayEffect_) {
+  delete engine.delayEffect_;
+  engine.delayEffect_ = nullptr;
+ }
+}
 //
 //uint32_t dbgEngineGetBufCount(void) {
 // uint32_t count = engine.player_->dbgGetDevBufCount();
@@ -189,27 +178,27 @@ jint sampleRate, jint framesPerBuf,
 ///*
 // * simple message passing for player/recorder to communicate with engine
 // */
-//bool EngineService(void *ctx, uint32_t msg, void *data) {
-// assert(ctx == &engine);
-// switch (msg) {
-// case ENGINE_SERVICE_MSG_RETRIEVE_DUMP_BUFS: {
-//  *(static_cast<uint32_t *>(data)) = dbgEngineGetBufCount();
-//  break;
-// }
-// case ENGINE_SERVICE_MSG_RECORDED_AUDIO_AVAILABLE: {
-//  // adding audio delay effect
-//  sample_buf *buf = static_cast<sample_buf *>(data);
-//  assert(engine.fastPathFramesPerBuf_ ==
-//   buf->size_ / engine.sampleChannels_ / (engine.bitsPerSample_ / 8));
-//  engine.delayEffect_->process(reinterpret_cast<int16_t *>(buf->buf_),
-//   engine.fastPathFramesPerBuf_);
-//  break;
-// }
-// default:
-//  assert(false);
-//  return false;
-// }
-//
-// return true;
-//}
+bool EngineService(void *ctx, uint32_t msg, void *data) {
+ assert(ctx == &engine);
+ switch (msg) {
+ case ENGINE_SERVICE_MSG_RETRIEVE_DUMP_BUFS: {
+  //*(static_cast<uint32_t *>(data)) = dbgEngineGetBufCount();
+  break;
+ }
+ case ENGINE_SERVICE_MSG_RECORDED_AUDIO_AVAILABLE: {
+  // adding audio delay effect
+  //sample_buf *buf = static_cast<sample_buf *>(data);
+  //assert(engine.fastPathFramesPerBuf_ ==
+  // buf->size_ / engine.sampleChannels_ / (engine.bitsPerSample_ / 8));
+  //engine.delayEffect_->process(reinterpret_cast<int16_t *>(buf->buf_),
+  // engine.fastPathFramesPerBuf_);
+  break;
+ }
+ default:
+  assert(false);
+  return false;
+ }
+
+ return true;
+}
 }

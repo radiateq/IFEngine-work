@@ -49,4 +49,24 @@ void createSLEngine(
  jint sampleRate, jint framesPerBuf,
  jlong delayInMs, jfloat decay);
 
+jboolean configureEcho(
+ jint delayInMs,
+ jfloat decay);
+
+jboolean createSLBufferQueueAudioPlayer();
+
+void deleteSLBufferQueueAudioPlayer();
+
+jboolean createAudioRecorder();
+
+void deleteAudioRecorder();
+
+void startPlay();
+
+void stopPlay();
+
+void MainActivity_deleteSLEngine();
+
+
 }
+
