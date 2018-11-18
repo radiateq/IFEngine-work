@@ -197,7 +197,10 @@ bool EngineService(void *ctx, uint32_t msg, void *data) {
   //engine.delayEffect_->process(reinterpret_cast<int16_t *>(buf->buf_),
   // engine.fastPathFramesPerBuf_);
 
-  //TODO NEVER RELEASE BUFFERS BUT ALWAYS ALTERNATE BETWEEN TWO OR CYCLE THREW MORE
+  //TODO:  NEVER RELEASE BUFFERS BUT ALWAYS ALTERNATE BETWEEN TWO OR CYCLE THREW MORE
+  //TODO: Determine sample frequency using jni
+  //TODO whenever using audio functions make sure audio is initialized
+  //TODO when creating/deleting, make sure to track if there is anything to delete or if we are running more than once
   sample_buf *new_buf = allocateSampleBufs(2, buf->size_);
   uint32_t allocSize = (buf->size_ + 3) & ~3;
   memcpy( new_buf->buf_, buf->buf_, allocSize);
