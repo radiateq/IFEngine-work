@@ -5,57 +5,58 @@ using namespace IFAudioSLES;
 namespace IFAudioSLES {
 
  ICSLock EngineServiceBufferMutex;
- std::vector<sample_buf*> EngineServiceBuffer;
+ std::queue<size_t> EngineServiceBuffer;
 
  void createSLEngine(
-jint sampleRate, jint framesPerBuf,
- jlong delayInMs, jfloat decay) {
- SLresult result;
- memset(&engine, 0, sizeof(engine));
+  ANativeActivity *activity,
+  int64_t echoDelay_, float echoDecay_ ) {
+  memset(&engine, 0, sizeof(engine));
+  UpdateDeviceAudioProperties(activity, engine.sample_rate, engine.frames_per_buffer);
+  SLresult result;
 
- engine.fastPathSampleRate_ = static_cast<SLmilliHertz>(sampleRate) * 1000;
- engine.fastPathFramesPerBuf_ = static_cast<uint32_t>(framesPerBuf);
- engine.sampleChannels_ = AUDIO_SAMPLE_CHANNELS;
- engine.bitsPerSample_ = SL_PCMSAMPLEFORMAT_FIXED_16;
+  engine.fastPathSampleRate_ = static_cast<SLmilliHertz>(engine.sample_rate) * 1000;
+  //engine.fastPathFramesPerBuf_ = static_cast<uint32_t>(engine.frames_per_buffer);
+  engine.sampleChannels_ = AUDIO_SAMPLE_CHANNELS;
+  engine.bitsPerSample_ = SL_PCMSAMPLEFORMAT_FIXED_16;
 
- result = slCreateEngine(&engine.slEngineObj_, 0, NULL, 0, NULL, NULL);
- SLASSERT(result);
+  result = slCreateEngine(&engine.slEngineObj_, 0, NULL, 0, NULL, NULL);
+  SLASSERT(result);
 
- result =
-  (*engine.slEngineObj_)->Realize(engine.slEngineObj_, SL_BOOLEAN_FALSE);
- SLASSERT(result);
+  result =
+   (*engine.slEngineObj_)->Realize(engine.slEngineObj_, SL_BOOLEAN_FALSE);
+  SLASSERT(result);
 
- result = (*engine.slEngineObj_)
-  ->GetInterface(engine.slEngineObj_, SL_IID_ENGINE,
-   &engine.slEngineItf_);
- SLASSERT(result);
+  result = (*engine.slEngineObj_)
+   ->GetInterface(engine.slEngineObj_, SL_IID_ENGINE,
+    &engine.slEngineItf_);
+  SLASSERT(result);
 
- // compute the RECOMMENDED fast audio buffer size:
- //   the lower latency required
- //     *) the smaller the buffer should be (adjust it here) AND
- //     *) the less buffering should be before starting player AFTER
- //        receiving the recorder buffer
- //   Adjust the bufSize here to fit your bill [before it busts]
- uint32_t bufSize = engine.fastPathFramesPerBuf_ * engine.sampleChannels_ *
-  engine.bitsPerSample_;
- bufSize = (bufSize + 7) >> 3;  // bits --> byte
- engine.bufCount_ = BUF_COUNT;
- engine.bufs_ = allocateSampleBufs(engine.bufCount_, bufSize);
- assert(engine.bufs_);
+  // compute the RECOMMENDED fast audio buffer size:
+  //   the lower latency required
+  //     *) the smaller the buffer should be (adjust it here) AND
+  //     *) the less buffering should be before starting player AFTER
+  //        receiving the recorder buffer
+  //   Adjust the bufSize here to fit your bill [before it busts]
+  uint32_t bufSize = engine.frames_per_buffer * engine.sampleChannels_ *
+   engine.bitsPerSample_;
+  bufSize = (bufSize + 7) >> 3;  // bits --> byte
+  engine.bufCount_ = BUF_COUNT;
+  engine.bufs_ = allocateSampleBufs(engine.bufCount_, bufSize);
+  assert(engine.bufs_);
 
- engine.freeBufQueue_ = new AudioQueue(engine.bufCount_);
- engine.recBufQueue_ = new AudioQueue(engine.bufCount_);
- assert(engine.freeBufQueue_ && engine.recBufQueue_);
- for (uint32_t i = 0; i < engine.bufCount_; i++) {
-  engine.freeBufQueue_->push(&engine.bufs_[i]);
- }
+  engine.freeBufQueue_ = new AudioQueue(engine.bufCount_);
+  engine.recBufQueue_ = new AudioQueue(engine.bufCount_);
+  assert(engine.freeBufQueue_ && engine.recBufQueue_);
+  for (uint32_t i = 0; i < engine.bufCount_; i++) {
+   engine.freeBufQueue_->push(&engine.bufs_[i]);
+  }
 
- engine.echoDelay_ = delayInMs;
- engine.echoDecay_ = decay;
- engine.delayEffect_ = new AudioDelay(
-  engine.fastPathSampleRate_, engine.sampleChannels_, engine.bitsPerSample_,
-  engine.echoDelay_, engine.echoDecay_);
- assert(engine.delayEffect_);
+  engine.echoDelay_ = echoDelay_;
+  engine.echoDecay_ = echoDecay_;
+  engine.delayEffect_ = new AudioDelay(
+   engine.fastPathSampleRate_, engine.sampleChannels_, engine.bitsPerSample_,
+   engine.echoDelay_, engine.echoDecay_);
+  assert(engine.delayEffect_);
 
 }
 
@@ -75,7 +76,7 @@ jboolean createSLBufferQueueAudioPlayer() {
  SampleFormat sampleFormat;
  memset(&sampleFormat, 0, sizeof(sampleFormat));
  sampleFormat.pcmFormat_ = (uint16_t)engine.bitsPerSample_;
- sampleFormat.framesPerBuf_ = engine.fastPathFramesPerBuf_;
+ sampleFormat.framesPerBuf_ = engine.frames_per_buffer;
 
  // SampleFormat.representation_ = SL_ANDROID_PCM_REPRESENTATION_SIGNED_INT;
  sampleFormat.channels_ = (uint16_t)engine.sampleChannels_;
@@ -106,7 +107,7 @@ jboolean createAudioRecorder() {
  // SampleFormat.representation_ = SL_ANDROID_PCM_REPRESENTATION_SIGNED_INT;
  sampleFormat.channels_ = engine.sampleChannels_;
  sampleFormat.sampleRate_ = engine.fastPathSampleRate_;
- sampleFormat.framesPerBuf_ = engine.fastPathFramesPerBuf_;
+ sampleFormat.framesPerBuf_ = engine.frames_per_buffer;
  engine.recorder_ = new AudioRecorder(&sampleFormat, engine.slEngineItf_);
  if (!engine.recorder_) {
   return JNI_FALSE;
@@ -192,22 +193,25 @@ bool EngineService(void *ctx, uint32_t msg, void *data) {
  case ENGINE_SERVICE_MSG_RECORDED_AUDIO_AVAILABLE: {
   // adding audio delay effect
   sample_buf *buf = static_cast<sample_buf *>(data);
-  assert(engine.fastPathFramesPerBuf_ ==
+  assert(engine.frames_per_buffer ==
    buf->size_ / engine.sampleChannels_ / (engine.bitsPerSample_ / 8));
   //engine.delayEffect_->process(reinterpret_cast<int16_t *>(buf->buf_),
   // engine.fastPathFramesPerBuf_);
 
   //TODO:  NEVER RELEASE BUFFERS BUT ALWAYS ALTERNATE BETWEEN TWO OR CYCLE THREW MORE
-  //TODO: Determine sample frequency using jni
-  //TODO whenever using audio functions make sure audio is initialized
   //TODO when creating/deleting, make sure to track if there is anything to delete or if we are running more than once
+  sample_buf *record_buffer;
+  uint32_t record_buffer_count;
+  uint32_t record_buffer_frame_size;
+
+
   sample_buf *new_buf = allocateSampleBufs(2, buf->size_);
   uint32_t allocSize = (buf->size_ + 3) & ~3;
   memcpy( new_buf->buf_, buf->buf_, allocSize);
   new_buf->cap_ = buf->cap_;
   new_buf->size_ = buf->size_;  
   EngineServiceBufferMutex.EnterAndLock();
-  EngineServiceBuffer.push_back(new_buf);
+  EngineServiceBuffer.push(new_buf);
   EngineServiceBufferMutex.LeaveAndUnlock();
 
   break;

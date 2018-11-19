@@ -105,6 +105,9 @@ void TESTFN_AddRandomBody(engine &engine){
   short sample_valueL, sample_valueR;
   bool two_channels = false, LR_switch=true;
   std::vector<float> timevec;
+
+  float treshold1 = -1000.0, treshold2 = -1000.0, treshold3 = -1000.0, treshold4 = -1000.0;
+
   //when audio_db starts dropping from constant rise trigger set rising to false
   //when audio_db starts rising set rising to true
   float audio_db;
@@ -123,8 +126,8 @@ void TESTFN_AddRandomBody(engine &engine){
    }else{
     timevec.push_back((((float)sample_valueL)) / 32767.0);
    }
-   audio_db = 20 * (log10(abs(sample_valueL ) / 32767.0));
-   average_value+= audio_db;
+   //audio_db = 20 * (log10(abs(sample_valueL ) / 32767.0));
+   //average_value+= audio_db;
   }
   //dBFS = 20 * log([sample level] / [max level])
   //In a 16 bit system there are 2 ^ 16 = 65536 values.So this means values from - 32768 to + 32767. Excluding 0, let's say the minimum value is 1. So plugging this into the formula gives:
@@ -140,22 +143,56 @@ void TESTFN_AddRandomBody(engine &engine){
    fft.fwd(freqvec, timevec);
    int ssize = freqvec.size();
     
-   static float treshold1 = -70.0, treshold2 = -10.0, treshold3 = -10.0, treshold4 = -15.0;
    for( int cntx = 0; cntx < freqvec.size(); cntx++){
     float freq = (float)cntx*48000.0/ (float)ssize;
-    float ampl = ((freqvec[cntx].real() >0)?20*log10(freqvec[cntx].real() / 2.0f):-1000.0);
+//    float ampl = ((freqvec[cntx].real() >0)?20*log10(freqvec[cntx].real() / 4.0f):-1000.0);
+//    float phase = freqvec[cntx].imag();
+    if(freqvec[cntx].real()<0){
+     continue;
+    }
+    if (freq > 60 && freq < 380) {
+     if (treshold1 < freqvec[cntx].real()) {
+      treshold1 = freqvec[cntx].real();
+     }
+    }else if (freq > 400 && freq < 1200){
+     if( treshold2 < freqvec[cntx].real()){
+      treshold2 = freqvec[cntx].real();
+     }
+    } else if (freq > 1550 && freq < 4000) {
+     if (treshold3 < freqvec[cntx].real()) {
+      treshold3 = freqvec[cntx].real();
+     }
+    }else if (freq > 1550 && freq < 4000) {
+     if (treshold4 < freqvec[cntx].real()) {
+      treshold4 = freqvec[cntx].real();
+     }
+    }
+   }
+   treshold1 = 20 * log10(treshold1 / 4.0f);
+   treshold1 -= 1;
+   treshold2 = 20 * log10(treshold2 / 4.0f);
+   treshold2 -= 1;
+   treshold3 = 20 * log10(treshold3 / 4.0f);
+   treshold3 -= 1;
+   treshold4 = 20 * log10(treshold4 / 4.0f);
+   treshold4 -= 1;
+   
+
+   for (int cntx = 0; cntx < freqvec.size(); cntx++) {
+    float freq = (float)cntx*48000.0 / (float)ssize;
+    float ampl = ((freqvec[cntx].real() > 0) ? 20 * log10(freqvec[cntx].real() / 4.0f) : -1000.0);
     float phase = freqvec[cntx].imag();
     if(freq>60 && freq<380){
      if(ampl> treshold1){      
       for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
        if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
-        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0.0, abs(ampl) * 2.0), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0.0, abs(ampl) * 0.4), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
        }
       }
      }
     }else if (freq > 400 && freq < 1200 ) {
      if(!nMake_added && ampl > treshold2){
-      nMake += 5;
+      nMake += 1;
       nMake_added = true;
      }     
     }
@@ -172,7 +209,7 @@ void TESTFN_AddRandomBody(engine &engine){
      if (ampl > treshold4) {
       for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
        if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
-        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(abs(ampl) * -30.0, 0.0), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(abs(ampl) * -3.0, 0.0), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
        }
       }
      }
@@ -492,7 +529,7 @@ static int engine_init_display(struct engine* engine) {
  Setup_OpenGL(w,h);
  Init_IFAdapter(*engine);
 
- IFAudioSLES::createSLEngine(48000, 2048, 500, 1000);
+ IFAudioSLES::createSLEngine(Cube_Test_Update_User_Data.state->activity, 100,1000);
 
  IFAudioSLES::createSLBufferQueueAudioPlayer();
  IFAudioSLES::createAudioRecorder();
@@ -640,102 +677,6 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 	}
 }
 
-void UpdateAudioProperties(ANativeActivity *activity) {
-
-
- //Attach current string to java virtual machine
- JavaVM* lJavaVM = Cube_Test_Update_User_Data.state->activity->vm;
- jobject lNativeActivity = Cube_Test_Update_User_Data.state->activity->clazz;
- JNIEnv* env = Cube_Test_Update_User_Data.state->activity->env;
- JavaVMAttachArgs lJavaVMAttachArgs;
- lJavaVMAttachArgs.version = JNI_VERSION_1_6;
- lJavaVMAttachArgs.name = "NativeThread";
- lJavaVMAttachArgs.group = NULL;
- jint lResult = lJavaVM->AttachCurrentThread(&env, &lJavaVMAttachArgs);
- if (lResult == JNI_ERR)
-  return;
-
-
- //Get context of the applications
- jclass context = env->FindClass("android/content/Context");
- //Get field ID of AUDIO context
- jfieldID audioServiceField = env->GetStaticFieldID(context, "AUDIO_SERVICE", "Ljava/lang/String;");
- jstring jstr = (jstring)env->GetStaticObjectField(context, audioServiceField);
- jmethodID getSystemServiceID = env->GetMethodID(context, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
- jobject audio_context = env->CallObjectMethod(lNativeActivity, getSystemServiceID, jstr);
-
-  
- //Get audio manager
- jclass AudioManager = env->FindClass("android/media/AudioManager");
- jobject oAudioManager = env->AllocObject(AudioManager);
- //Get volume from audio manager
- //jmethodID getStreamVolume = env->GetMethodID(AudioManager, "getStreamVolume", "(I)I");
- //jint stream = 3; //MUSIC_STREAM = 3
- //int volume = env->CallIntMethod(audio_context, getStreamVolume, stream);
- //Get sample rate
- //Get getProperty method access
- jmethodID getStreamProperty = env->GetMethodID(AudioManager, "getProperty", "(Ljava/lang/String;)Ljava/lang/String;");
- //Get static string of audio manager
- jfieldID audioServiceProp = env->GetStaticFieldID(AudioManager, "PROPERTY_OUTPUT_SAMPLE_RATE", "Ljava/lang/String;");
- jstring AM_prop_in_str = (jstring)env->GetStaticObjectField(AudioManager, audioServiceProp);
- //Get property with ID of static strings value
- jstring AM_prop_str = (jstring)(env->CallObjectMethod(audio_context, getStreamProperty, AM_prop_in_str));
- //Now convert the Java String to C++ char array 
- char *cstring;
- const char* cstr = env->GetStringUTFChars(AM_prop_str, 0);
- cstring = new char[strnlen(cstr, 1024) + 1];
- strncpy(cstring, cstr, sizeof(cstring));
- atoi -------------------------------                           store value to engine sample_rate
-                         move this function to audio utils
-                                     do not delete template code commented below
- //Cleanup
- delete[] cstring;
- //
- env->DeleteLocalRef(AM_prop_in_str);
- env->ReleaseStringUTFChars(AM_prop_str, cstr);
- env->DeleteLocalRef(AM_prop_str);
- //Get buffers
- audioServiceProp = env->GetStaticFieldID(AudioManager, "PROPERTY_OUTPUT_FRAMES_PER_BUFFER", "Ljava/lang/String;");
- AM_prop_in_str = (jstring)env->GetStaticObjectField(AudioManager, audioServiceProp);
- AM_prop_str = (jstring)(env->CallObjectMethod(audio_context, getStreamProperty, AM_prop_in_str));
- cstr = env->GetStringUTFChars(AM_prop_str, 0);
- // uint32_t buffer_size;
-
-
- lJavaVM->DetachCurrentThread();
-
- ///////////////////TEMPLATE CODE START
- //JavaVM* lJavaVM = Cube_Test_Update_User_Data.state->activity->vm;
- //JNIEnv* lJNIEnv = Cube_Test_Update_User_Data.state->activity->env;
-
- //JavaVMAttachArgs lJavaVMAttachArgs;
- //lJavaVMAttachArgs.version = JNI_VERSION_1_6;
- //lJavaVMAttachArgs.name = "NativeThread";
- //lJavaVMAttachArgs.group = NULL;
-
- //jint lResult = lJavaVM->AttachCurrentThread(&lJNIEnv, &lJavaVMAttachArgs);
- //if (lResult == JNI_ERR)
- // return;
-
-
- ////jobject lNativeActivity = Cube_Test_Update_User_Data.state->activity->clazz;
- //jobject lNativeActivity = Cube_Test_Update_User_Data.state->activity->clazz;
-
- //jclass ClassNativeActivityTest = lJNIEnv->GetObjectClass(Cube_Test_Update_User_Data.state->activity->clazz);
- //jclass ClassNativeActivity;
- //ClassNativeActivity = lJNIEnv->FindClass("Com/Sourcejni/Audioutils/Sourcejni");
- //if(ClassNativeActivity == NULL ){
- // return;
- //}
- //jfieldID fid = lJNIEnv->GetFieldID(ClassNativeActivity, "nativeSampleRate", "Ljava/lang/String;");
- //jstring jstr = (jstring)lJNIEnv-> GetObjectField(lNativeActivity, fid);
- //const char *nativeSampleRate = lJNIEnv->GetStringUTFChars(jstr, NULL);
- ////jmethodID _method = lJNIEnv->GetMethodID(ClassNativeActivity, "SendNotification", "()V");
- ////lJNIEnv->CallVoidMethod(lNativeActivity, _method);
-
- //lJavaVM->DetachCurrentThread();
-///////////////////TEMPLATE CODE STOP
-}
 /**
 * This is the main entry point of a native application that is using
 * android_native_app_glue.  It runs in its own thread, with its own
@@ -758,8 +699,7 @@ void android_main(struct android_app* state) {
  
 
  Cube_Test_Update_User_Data.state = state;
-
- JniCall();
+ 
 //Cube_Test_Update_User_Data.state->activity->env;
 
 	struct engine engine;

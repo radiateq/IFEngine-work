@@ -22,9 +22,12 @@ namespace IFAudioSLES {
 
 struct EchoAudioEngine {//EchoAudioEngine is original code I stole from but not related to project in general
  SLmilliHertz fastPathSampleRate_;
- uint32_t fastPathFramesPerBuf_;
+ //uint32_t fastPathFramesPerBuf_;
  uint16_t sampleChannels_;
  uint16_t bitsPerSample_;
+
+ jint sample_rate;
+ jint frames_per_buffer;
 
  SLObjectItf slEngineObj_;
  SLEngineItf slEngineItf_;
@@ -38,18 +41,24 @@ struct EchoAudioEngine {//EchoAudioEngine is original code I stole from but not 
  uint32_t bufCount_;
  uint32_t frameCount_;
 
- uint32_t sample_rate;
- uint32_t buffer_size;
+ sample_buf *record_buffer;
+ uint32_t record_buffer_count;
+ uint32_t record_buffer_frame_size;
+
+ int64_t echoDelay_;
+ float echoDecay_;
+ AudioDelay *delayEffect_;
+
 };
 static EchoAudioEngine engine;
 
 extern ICSLock EngineServiceBufferMutex;
-extern std::vector<sample_buf*> EngineServiceBuffer;
+extern std::queue<size_t> EngineServiceBuffer;
 bool EngineService(void *ctx, uint32_t msg, void *data);
 
 void createSLEngine(
- jint sampleRate, jint framesPerBuf,
- jlong delayInMs, jfloat decay);
+ ANativeActivity *activity,
+ int64_t echoDelay_, float echoDecay_);
 
 jboolean configureEcho(
  jint delayInMs,

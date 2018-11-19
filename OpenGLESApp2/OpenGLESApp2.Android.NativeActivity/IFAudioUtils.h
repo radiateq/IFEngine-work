@@ -316,4 +316,11 @@ private:
 };
 
 
+void UpdateDeviceAudioProperties(ANativeActivity *activity, jint &, jint &);
+
 }
+
+
+
+
+

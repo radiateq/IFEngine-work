@@ -19,53 +19,18 @@
 package com.sourcejni.audioutils;
 
 
-import android.Manifest;
-import android.app.Activity;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioRecord;
-import android.os.Bundle;
 
-public class sourcejni extends Activity{
+public class sourcejni {
 
     private String  nativeSampleRate;
-    private String  nativeSampleBufSize;
-
-
-    private boolean supportRecording;
 
    sourcejni( ) {
-
-           // initialize native audio system
-        queryNativeAudioParameters();
-
+   nativeSampleRate="test123";
 
     }
-
-
-    private void queryNativeAudioParameters() {
-        supportRecording = true;
-        AudioManager myAudioMgr = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        if(myAudioMgr == null) {
-            supportRecording = false;
-            return;
-        }
-        nativeSampleRate  =  myAudioMgr.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
-        nativeSampleBufSize = myAudioMgr.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
-
-        // hardcoded channel to mono: both sides -- C++ and Java sides
-        int recBufSize = AudioRecord.getMinBufferSize(
-                Integer.parseInt(nativeSampleRate),
-                AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_16BIT);
-        if (recBufSize == AudioRecord.ERROR ||
-                recBufSize == AudioRecord.ERROR_BAD_VALUE) {
-            supportRecording = false;
-        }
-    }
-
+   public void setStringAgain(){
+	   nativeSampleRate="321tset";
+   }
 
     /*
      * Loading our lib
