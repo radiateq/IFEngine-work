@@ -43,17 +43,21 @@ struct EchoAudioEngine {//EchoAudioEngine is original code I stole from but not 
 
  sample_buf *record_buffer;
  uint32_t record_buffer_count;
+ uint32_t record_buffer_write_pointer;
  uint32_t record_buffer_frame_size;
 
  int64_t echoDelay_;
  float echoDecay_;
  AudioDelay *delayEffect_;
 
+ bool audio_engine_playing;
 };
-static EchoAudioEngine engine;
+static bool audio_engine_created = false;
+
+extern EchoAudioEngine engine;
 
 extern ICSLock EngineServiceBufferMutex;
-extern std::queue<size_t> EngineServiceBuffer;
+extern std::queue<uint32_t> EngineServiceBuffer;
 bool EngineService(void *ctx, uint32_t msg, void *data);
 
 void createSLEngine(
@@ -78,6 +82,9 @@ void stopPlay();
 
 void deleteSLEngine();
 
+
+void BuildAudioEngine(ANativeActivity *);
+void TearDownAudioEngine();
 
 }
 

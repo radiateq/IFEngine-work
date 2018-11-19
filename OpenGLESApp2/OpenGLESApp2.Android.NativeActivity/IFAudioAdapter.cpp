@@ -4,12 +4,19 @@ using namespace IFAudioSLES;
 
 namespace IFAudioSLES {
 
+ EchoAudioEngine engine;
  ICSLock EngineServiceBufferMutex;
- std::queue<size_t> EngineServiceBuffer;
+ std::queue<uint32_t> EngineServiceBuffer;
 
  void createSLEngine(
   ANativeActivity *activity,
   int64_t echoDelay_, float echoDecay_ ) {
+  if(audio_engine_created){
+   stopPlay();
+
+   deleteSLEngine();
+  }
+
   memset(&engine, 0, sizeof(engine));
   UpdateDeviceAudioProperties(activity, engine.sample_rate, engine.frames_per_buffer);
   SLresult result;
@@ -40,6 +47,13 @@ namespace IFAudioSLES {
   uint32_t bufSize = engine.frames_per_buffer * engine.sampleChannels_ *
    engine.bitsPerSample_;
   bufSize = (bufSize + 7) >> 3;  // bits --> byte
+
+
+  engine.record_buffer_write_pointer = 0;
+  engine.record_buffer_frame_size = bufSize;
+  engine.record_buffer_count = 4;
+  engine.record_buffer = allocateSampleBufs(engine.record_buffer_count, engine.record_buffer_frame_size);
+
   engine.bufCount_ = BUF_COUNT;
   engine.bufs_ = allocateSampleBufs(engine.bufCount_, bufSize);
   assert(engine.bufs_);
@@ -57,6 +71,7 @@ namespace IFAudioSLES {
    engine.fastPathSampleRate_, engine.sampleChannels_, engine.bitsPerSample_,
    engine.echoDelay_, engine.echoDecay_);
   assert(engine.delayEffect_);
+
 
 }
 
@@ -121,9 +136,12 @@ jboolean createAudioRecorder() {
  if (engine.recorder_) delete engine.recorder_;
 
  engine.recorder_ = nullptr;
+
 }
 
 void startPlay() {
+ if(engine.audio_engine_playing)
+  return;
  engine.frameCount_ = 0;
  /*
   * start player: make it into waitForData state
@@ -132,20 +150,22 @@ void startPlay() {
 //  LOGE("====%s failed", __FUNCTION__);
   return;
  }
+ engine.audio_engine_playing = true;
  engine.recorder_->Start();
 }
 //
 void stopPlay() {
+ if (!engine.audio_engine_playing)
+  return;
+
  engine.recorder_->Stop();
  engine.player_->Stop();
 
- delete engine.recorder_;
- delete engine.player_;
- engine.recorder_ = NULL;
- engine.player_ = NULL;
+ engine.audio_engine_playing = false;
 }
 //
 void deleteSLEngine() {
+
  delete engine.recBufQueue_;
  delete engine.freeBufQueue_;
  releaseSampleBufs(engine.bufs_, engine.bufCount_);
@@ -154,6 +174,9 @@ void deleteSLEngine() {
   engine.slEngineObj_ = NULL;
   engine.slEngineItf_ = NULL;
  }
+
+ 
+ releaseSampleBufs(engine.record_buffer, engine.record_buffer_count);
 
  if (engine.delayEffect_) {
   delete engine.delayEffect_;
@@ -198,20 +221,20 @@ bool EngineService(void *ctx, uint32_t msg, void *data) {
   //engine.delayEffect_->process(reinterpret_cast<int16_t *>(buf->buf_),
   // engine.fastPathFramesPerBuf_);
 
-  //TODO:  NEVER RELEASE BUFFERS BUT ALWAYS ALTERNATE BETWEEN TWO OR CYCLE THREW MORE
-  //TODO when creating/deleting, make sure to track if there is anything to delete or if we are running more than once
-  sample_buf *record_buffer;
-  uint32_t record_buffer_count;
-  uint32_t record_buffer_frame_size;
-
-
-  sample_buf *new_buf = allocateSampleBufs(2, buf->size_);
-  uint32_t allocSize = (buf->size_ + 3) & ~3;
-  memcpy( new_buf->buf_, buf->buf_, allocSize);
-  new_buf->cap_ = buf->cap_;
-  new_buf->size_ = buf->size_;  
+  //TODO if audio stops playing restart audio stream with larger buffers
+  
   EngineServiceBufferMutex.EnterAndLock();
-  EngineServiceBuffer.push(new_buf);
+  uint32_t allocSize = (buf->size_ + 3) & ~3;
+  memcpy(engine.record_buffer[engine.record_buffer_write_pointer].buf_, buf->buf_, allocSize);
+  engine.record_buffer[engine.record_buffer_write_pointer].cap_ = buf->cap_;
+  engine.record_buffer[engine.record_buffer_write_pointer].size_ = buf->size_;
+  EngineServiceBuffer.push(engine.record_buffer_write_pointer);
+  if(EngineServiceBuffer.size()>=engine.record_buffer_count){
+   EngineServiceBuffer.pop();
+  }
+  engine.record_buffer_write_pointer++;
+  if (engine.record_buffer_write_pointer >= engine.record_buffer_count)
+   engine.record_buffer_write_pointer = 0;
   EngineServiceBufferMutex.LeaveAndUnlock();
 
   break;
@@ -223,4 +246,28 @@ bool EngineService(void *ctx, uint32_t msg, void *data) {
 
  return true;
 }
+
+
+void BuildAudioEngine(ANativeActivity *activity){
+ if (!audio_engine_created) {
+  TearDownAudioEngine();
+ }
+ IFAudioSLES::createSLEngine(activity, 100, 1000);
+ IFAudioSLES::createSLBufferQueueAudioPlayer();
+ IFAudioSLES::createAudioRecorder();
+
+ IFAudioSLES::startPlay();
+}
+void TearDownAudioEngine(){
+ if(!audio_engine_created){
+  return;
+ }
+ if(engine.audio_engine_playing){
+  IFAudioSLES::stopPlay();
+ }
+ IFAudioSLES::deleteAudioRecorder();
+ IFAudioSLES::deleteSLBufferQueueAudioPlayer();
+ IFAudioSLES::deleteSLEngine();
+}
+
 }
