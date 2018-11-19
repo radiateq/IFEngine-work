@@ -83,8 +83,10 @@ void TESTFN_AddRandomBody(engine &engine){
   if((xxxx *200)<80)
    return;
 
+
   IFAudioSLES::EngineServiceBufferMutex.EnterAndLock();
-  if(!IFAudioSLES::EngineServiceBuffer.empty()){
+  if(IFAudioSLES::audio_engine_created &&
+     !IFAudioSLES::EngineServiceBuffer.empty()){
  /////////////////////////////////////AUDIO PART
    //IFAudioSLES::sample_buf *new_buf = nullptr;
    unsigned int selected_buffer = -1;

@@ -98,7 +98,6 @@ jboolean createSLBufferQueueAudioPlayer() {
  sampleFormat.sampleRate_ = engine.fastPathSampleRate_;
 
  engine.player_ = new AudioPlayer(&sampleFormat, engine.slEngineItf_);
- assert(engine.player_);
  if (engine.player_ == nullptr) return JNI_FALSE;
 
  engine.player_->SetBufQueue(engine.recBufQueue_, engine.freeBufQueue_);
@@ -216,8 +215,10 @@ bool EngineService(void *ctx, uint32_t msg, void *data) {
  case ENGINE_SERVICE_MSG_RECORDED_AUDIO_AVAILABLE: {
   // adding audio delay effect
   sample_buf *buf = static_cast<sample_buf *>(data);
-  assert(engine.frames_per_buffer ==
-   buf->size_ / engine.sampleChannels_ / (engine.bitsPerSample_ / 8));
+  if( (engine.sampleChannels_ == 0) ||
+      (engine.bitsPerSample_ == 0) ||
+      (engine.frames_per_buffer != buf->size_ / engine.sampleChannels_ / (engine.bitsPerSample_ / 8)))
+   return false;
   //engine.delayEffect_->process(reinterpret_cast<int16_t *>(buf->buf_),
   // engine.fastPathFramesPerBuf_);
 
@@ -240,7 +241,6 @@ bool EngineService(void *ctx, uint32_t msg, void *data) {
   break;
  }
  default:
-  assert(false);
   return false;
  }
 
@@ -257,6 +257,8 @@ void BuildAudioEngine(ANativeActivity *activity){
  IFAudioSLES::createAudioRecorder();
 
  IFAudioSLES::startPlay();
+
+ audio_engine_created = true;
 }
 void TearDownAudioEngine(){
  if(!audio_engine_created){
@@ -268,6 +270,7 @@ void TearDownAudioEngine(){
  IFAudioSLES::deleteAudioRecorder();
  IFAudioSLES::deleteSLBufferQueueAudioPlayer();
  IFAudioSLES::deleteSLEngine();
+ audio_engine_created = false;
 }
 
 }

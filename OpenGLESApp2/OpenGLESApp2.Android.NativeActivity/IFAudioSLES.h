@@ -34,6 +34,7 @@ class AudioPlayer {
 public:
  explicit AudioPlayer(SampleFormat *sampleFormat, SLEngineItf engine);
  ~AudioPlayer();
+ void Clean();
  void SetBufQueue(AudioQueue *playQ, AudioQueue *freeQ);
  SLresult Start(void);
  void Stop(void);

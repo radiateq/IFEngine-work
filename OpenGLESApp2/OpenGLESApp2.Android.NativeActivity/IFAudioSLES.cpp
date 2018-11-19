@@ -86,12 +86,19 @@ AudioPlayer::AudioPlayer(SampleFormat *sampleFormat, SLEngineItf slEngine)
 
  result = (*slEngine)
   ->CreateOutputMix(slEngine, &outputMixObjectItf_, 0, NULL, NULL);
- SLASSERT(result);
+ //SLASSERT(result);
+ if(SL_RESULT_SUCCESS != (result)){
+  Clean();
+  return;
+ }
 
  // realize the output mix
  result =
   (*outputMixObjectItf_)->Realize(outputMixObjectItf_, SL_BOOLEAN_FALSE);
- SLASSERT(result);
+ if (SL_RESULT_SUCCESS != (result)) {
+  Clean();
+  return;
+ }
 
  // configure audio source
  SLDataLocator_AndroidSimpleBufferQueue loc_bufq = {
@@ -114,34 +121,55 @@ AudioPlayer::AudioPlayer(SampleFormat *sampleFormat, SLEngineItf slEngine)
  result = (*slEngine)->CreateAudioPlayer(
   slEngine, &playerObjectItf_, &audioSrc, &audioSnk,
   sizeof(ids) / sizeof(ids[0]), ids, req);
- SLASSERT(result);
+ if (SL_RESULT_SUCCESS != (result)) {
+  Clean();
+  return;
+ }
 
  // realize the player
  result = (*playerObjectItf_)->Realize(playerObjectItf_, SL_BOOLEAN_FALSE);
- SLASSERT(result);
+ if (SL_RESULT_SUCCESS != (result)) {
+  Clean();
+  return;
+ }
 
  // get the play interface
  result = (*playerObjectItf_)
   ->GetInterface(playerObjectItf_, SL_IID_PLAY, &playItf_);
- SLASSERT(result);
+ if (SL_RESULT_SUCCESS != (result)) {
+  Clean();
+  return;
+ }
 
  // get the buffer queue interface
  result = (*playerObjectItf_)
   ->GetInterface(playerObjectItf_, SL_IID_BUFFERQUEUE,
    &playBufferQueueItf_);
- SLASSERT(result);
+ if (SL_RESULT_SUCCESS != (result)) {
+  Clean();
+  return;
+ }
 
  // register callback on the buffer queue
  result = (*playBufferQueueItf_)
   ->RegisterCallback(playBufferQueueItf_, bqPlayerCallback, this);
- SLASSERT(result);
+ if (SL_RESULT_SUCCESS != (result)) {
+  Clean();
+  return;
+ }
 
  result = (*playItf_)->SetPlayState(playItf_, SL_PLAYSTATE_STOPPED);
- SLASSERT(result);
+ if (SL_RESULT_SUCCESS != (result)) {
+  Clean();
+  return;
+ }
 
  // create an empty queue to track deviceQueue
  devShadowQueue_ = new AudioQueue(DEVICE_SHADOW_BUFFER_QUEUE_LEN);
- assert(devShadowQueue_);
+ if( devShadowQueue_ == NULL){
+  Clean();
+  return;
+ }
 
  silentBuf_.cap_ = (format_pcm.containerSize >> 3) * format_pcm.numChannels *
   sampleInfo_.framesPerBuf_;
@@ -149,6 +177,7 @@ AudioPlayer::AudioPlayer(SampleFormat *sampleFormat, SLEngineItf slEngine)
  memset(silentBuf_.buf_, 0, silentBuf_.cap_);
  silentBuf_.size_ = silentBuf_.cap_;
 
+ 
 #ifdef ENABLE_LOG
  std::string name = "play";
  logFile_ = new AndroidLog(name);
@@ -163,6 +192,10 @@ AudioPlayer::~AudioPlayer() {
  if (playerObjectItf_ != NULL) {
   (*playerObjectItf_)->Destroy(playerObjectItf_);
  }
+ Clean();
+}
+
+void AudioPlayer::Clean(){
  // Consume all non-completed audio buffers
  sample_buf *buf = NULL;
  while (devShadowQueue_->front(&buf)) {
