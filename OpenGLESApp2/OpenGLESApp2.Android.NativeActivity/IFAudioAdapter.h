@@ -20,7 +20,7 @@
 
 namespace IFAudioSLES {
 
-struct EchoAudioEngine {
+struct EchoAudioEngine {//EchoAudioEngine is original code I stole from but not related to project in general
  SLmilliHertz fastPathSampleRate_;
  uint32_t fastPathFramesPerBuf_;
  uint16_t sampleChannels_;
@@ -37,9 +37,9 @@ struct EchoAudioEngine {
  sample_buf *bufs_;
  uint32_t bufCount_;
  uint32_t frameCount_;
- int64_t echoDelay_;
- float echoDecay_;
- AudioDelay *delayEffect_;
+
+ uint32_t sample_rate;
+ uint32_t buffer_size;
 };
 static EchoAudioEngine engine;
 
@@ -67,7 +67,7 @@ void startPlay();
 
 void stopPlay();
 
-void MainActivity_deleteSLEngine();
+void deleteSLEngine();
 
 
 }

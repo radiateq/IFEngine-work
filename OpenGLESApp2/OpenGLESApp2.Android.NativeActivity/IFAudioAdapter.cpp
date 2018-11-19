@@ -144,7 +144,7 @@ void stopPlay() {
  engine.player_ = NULL;
 }
 //
-void MainActivity_deleteSLEngine() {
+void deleteSLEngine() {
  delete engine.recBufQueue_;
  delete engine.freeBufQueue_;
  releaseSampleBufs(engine.bufs_, engine.bufCount_);

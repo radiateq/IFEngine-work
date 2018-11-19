@@ -134,6 +134,10 @@
       <Project>{30d37933-77ce-4ae4-8b72-995fdcd1f0e7}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <JavaCompile Include="assets\sourcejni.java" />
+    <JavaCompile Include="src\com\sourcejni\audioutils\sourcejni.java" />
+  </ItemGroup>
   <Import Project="$(AndroidTargetsPath)\Android.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>
