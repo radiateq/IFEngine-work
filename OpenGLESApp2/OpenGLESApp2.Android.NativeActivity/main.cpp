@@ -25,13 +25,11 @@
  //Domestic Includes
 //#include "./CubeTest.h"
 
-#include "Cube_Test_Interface.h"
-
+#include "IFGlobals.h"
 #include "IFBox2DAdapter.h"
-
 #include "IFAudioAdapter.h"
-
 #include "IFEUtils.h"
+#include "IFGameEditor.h"
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "AndroidProject1.NativeActivity", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "AndroidProject1.NativeActivity", __VA_ARGS__))
@@ -73,12 +71,60 @@ struct engine {
 };
 
 
-TS_Cube_Test_Update_User_Data Cube_Test_Update_User_Data;
+TS_User_Data User_Data;
 
 
 GLuint TEST_textid;
 void TESTFN_AddRandomBody(engine &engine){
  if (engine.EGL_initialized) {
+
+  if (IFGameEditor::GetTouchEvent()){
+   int touchx,touchy;
+   IFGameEditor::GetTouchEvent(&touchx, &touchy);
+
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
+   b2PolygonShape *polyShape = new b2PolygonShape;
+   b2Vec2 shapeCoords[8];
+   b2FixtureDef *fixture = new b2FixtureDef;
+
+   //IFAdapter.OrderedBody()->body_def->position.Set(touchx*IFA_box2D_factor, touchy*IFA_box2D_factor);
+
+   //Go backwards from viewport to frustrum to transformation coordinates
+   //               this is reversed viewport matrix for x
+   float screenx = ((float)engine.width - 2.0f* (float)touchx)/(-(float)engine.width);
+   //                this is reversed frustum matrix
+   screenx = (left*screenx+left*(zDefaultLayer)-right*screenx+right*(zDefaultLayer))/(2*znear);
+   //                this is reverse transformation matrix
+   screenx /= IFA_box2D_factor;
+
+   IFAdapter.OrderedBody()->body_def->position.Set(-screenx, -10.0f);
+   shapeCoords[0] = { -1,  -1 };
+   shapeCoords[1] = { 1,  -1 };
+   shapeCoords[2] = { 1,   1 };
+   shapeCoords[3] = { -1,   1 };
+   polyShape->Set(shapeCoords, 4);
+   fixture->shape = polyShape;
+   fixture->density = 1.1;
+   fixture->friction = 0.3;
+   fixture->restitution = 0.001;
+
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+   ifCB2Body *first_body = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   //Additional work on body  
+   if (drand48() > 0.5) {
+    first_body->OGL_body->texture_ID = TEST_textid;
+   }
+   else {
+    first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+   }
+   return;
+  }
+ 
+ 
+
   double xxxx = drand48();
   if((xxxx *200)<80)
    return;
@@ -316,7 +362,7 @@ void TESTFN_AddRandomBody(engine &engine){
   if( drand48()>0.5 ){
    first_body->OGL_body->texture_ID = TEST_textid;
   }else{
-   first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+   first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
   }
  }
 }
@@ -407,8 +453,8 @@ void Init_IFAdapter(engine &engine) {
    //Additional work on body  
    //SetFaceSize(1000, 1000);
    //char *outstring = { "#" };
-   texint = ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
-   first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+   texint = ((TS_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+   first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
    // first_body->body_def->position.Set(0, -100.0);
   }
 
@@ -435,8 +481,8 @@ void Init_IFAdapter(engine &engine) {
    //SetFaceSize(1000, 1000);
    //char *outstring = { "#" };
    //int twidth, theight;
-   ((TS_Cube_Test_Update_User_Data*)p_user_data)->CubeTexture = texint;//IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
-   first_body->OGL_body->texture_ID = Cube_Test_Update_User_Data.CubeTexture; //DrawText(outstring, 4, 0);
+   ((TS_User_Data*)p_user_data)->CubeTexture = texint;//IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+   first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
    //first_body->body_def->position.Set(0, -100.0);
   }
 
@@ -537,7 +583,7 @@ static int engine_init_display(struct engine* engine) {
 
  Init_IFAdapter(*engine);
 
- IFAudioSLES::BuildAudioEngine(Cube_Test_Update_User_Data.state->activity);
+ IFAudioSLES::BuildAudioEngine(User_Data.state->activity);
 
 	return 0;
 }
@@ -608,8 +654,9 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event) 
   case AINPUT_EVENT_TYPE_MOTION:
    engine->state.x = AMotionEvent_getX(event, 0);
    engine->state.y = AMotionEvent_getY(event, 0);
-   Cube_Test_Update_User_Data.Animation_Direction_X = engine->state.x;
-   Cube_Test_Update_User_Data.Animation_Direction_Y = engine->state.y;
+   User_Data.Touch_Input_X = engine->state.x;
+   User_Data.Touch_Input_Y = engine->state.y;
+   User_Data.Event_Indicator_Touch_Input++;
    return 1;
  };
 	return 0;
@@ -698,9 +745,9 @@ void android_main(struct android_app* state) {
 
  
 
- Cube_Test_Update_User_Data.state = state;
+ User_Data.state = state;
  
-//Cube_Test_Update_User_Data.state->activity->env;
+//User_Data.state->activity->env;
 
 	struct engine engine;
 
@@ -720,7 +767,7 @@ void android_main(struct android_app* state) {
  engine.sensorEventQueue2 = ASensorManager_createEventQueue(engine.sensorManager2, state->looper, LOOPER_ID_USER+1, NULL, NULL);
 
 
- p_user_data = &Cube_Test_Update_User_Data;
+ p_user_data = &User_Data;
 
 
   

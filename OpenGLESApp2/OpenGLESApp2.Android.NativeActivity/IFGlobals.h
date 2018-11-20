@@ -10,12 +10,13 @@ typedef struct {
  //Current shader global program object (glCreateProgram ret val)
  GLuint program_object; 
  struct android_app* state;
- double Animation_Direction_X;
- double Animation_Direction_Y;
+ double Touch_Input_X;
+ double Touch_Input_Y;
+ unsigned int Event_Indicator_Touch_Input;
  double screenWidth;
  double screenHeight;
  GLuint CubeTexture;
-}TS_Cube_Test_Update_User_Data;
+}TS_User_Data;
 
 
 

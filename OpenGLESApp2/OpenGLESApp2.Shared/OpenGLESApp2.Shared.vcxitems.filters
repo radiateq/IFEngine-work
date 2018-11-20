@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\Cube_Test_Interface.c" />
     <ClCompile Include="$(MSBuildThisFileDirectory)IFEngine.c" />
     <ClCompile Include="$(MSBuildThisFileDirectory)DrawText.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)IFEUtils.cpp" />
@@ -9,9 +8,10 @@
       <Filter>External</Filter>
     </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)IFBox2DAdapter.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)IFGameEditor.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\IFGlobals.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\Cube_Test_Interface.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEngine.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\libpng-libpng16\png.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFBox2DAdapter.h" />
@@ -29,6 +29,8 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\Box2D-master\Box2D\Box2D\Box2D.h">
       <Filter>External</Filter>
     </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)IFGameEditor.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\IFGlobals.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="External">

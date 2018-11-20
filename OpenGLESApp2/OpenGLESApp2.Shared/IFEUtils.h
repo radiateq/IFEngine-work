@@ -3,11 +3,13 @@
 #include <GLES/gl.h>
 #include <GLES/egl.h>
 
-#include "../OpenGLESApp2.Android.NativeActivity/Cube_Test_Interface.h"
+#include "../OpenGLESApp2.Android.NativeActivity/IFGlobals.h"
 
 #include <vector>  // Include STL vector class.
 
 //#include <Eigen/Dense>
+extern GLfloat ratio;
+extern GLfloat left, right, top, bottom, znear, zfar;
 
 class Vector2d
 {
@@ -109,7 +111,7 @@ public:
   //}
 
 
-  memory_reader_state.png_file_data = (png_byte*)getAssetFileToBuffer(((TS_Cube_Test_Update_User_Data*)p_user_data)->state, file_name, memory_reader_state.png_file_data_size);
+  memory_reader_state.png_file_data = (png_byte*)getAssetFileToBuffer(((TS_User_Data*)p_user_data)->state, file_name, memory_reader_state.png_file_data_size);
   memory_reader_state.png_file_data_position = 0;
   if (memory_reader_state.png_file_data == NULL)
   {

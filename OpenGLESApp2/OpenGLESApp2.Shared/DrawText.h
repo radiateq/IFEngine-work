@@ -86,7 +86,7 @@ GLuint png_texture_load(const char * file_name, int * width, int * height)
  //}
 
 
- memory_reader_state.png_file_data = (png_byte*)getAssetFileToBuffer(((TS_Cube_Test_Update_User_Data*)p_user_data)->state,"ugly.png", memory_reader_state.png_file_data_size);
+ memory_reader_state.png_file_data = (png_byte*)getAssetFileToBuffer(((TS_User_Data*)p_user_data)->state,"ugly.png", memory_reader_state.png_file_data_size);
  memory_reader_state.png_file_data_position = 0;
  if (memory_reader_state.png_file_data == NULL)
  {

@@ -279,8 +279,8 @@ void UpdateDeviceAudioProperties(ANativeActivity *activity, jint &_sample_rate, 
  lJavaVM->DetachCurrentThread();
 
  ///////////////////TEMPLATE CODE START
- //JavaVM* lJavaVM = Cube_Test_Update_User_Data.state->activity->vm;
- //JNIEnv* lJNIEnv = Cube_Test_Update_User_Data.state->activity->env;
+ //JavaVM* lJavaVM = User_Data.state->activity->vm;
+ //JNIEnv* lJNIEnv = User_Data.state->activity->env;
 
  //JavaVMAttachArgs lJavaVMAttachArgs;
  //lJavaVMAttachArgs.version = JNI_VERSION_1_6;
@@ -292,10 +292,10 @@ void UpdateDeviceAudioProperties(ANativeActivity *activity, jint &_sample_rate, 
  // return;
 
 
- ////jobject lNativeActivity = Cube_Test_Update_User_Data.state->activity->clazz;
- //jobject lNativeActivity = Cube_Test_Update_User_Data.state->activity->clazz;
+ ////jobject lNativeActivity = User_Data.state->activity->clazz;
+ //jobject lNativeActivity = User_Data.state->activity->clazz;
 
- //jclass ClassNativeActivityTest = lJNIEnv->GetObjectClass(Cube_Test_Update_User_Data.state->activity->clazz);
+ //jclass ClassNativeActivityTest = lJNIEnv->GetObjectClass(User_Data.state->activity->clazz);
  //jclass ClassNativeActivity;
  //ClassNativeActivity = lJNIEnv->FindClass("Com/Sourcejni/Audioutils/Sourcejni");
  //if(ClassNativeActivity == NULL ){

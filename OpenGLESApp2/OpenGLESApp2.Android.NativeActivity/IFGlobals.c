@@ -1,4 +1,4 @@
-#include "Cube_Test_Interface.h"
+#include "IFGlobals.h"
 
 
 Tp_Cube_Test_Init pCube_Test_Init = NULL;

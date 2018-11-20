@@ -7,6 +7,9 @@
 
 static const float EPSILON = 0.0000000001f;
 
+GLfloat ratio;
+GLfloat left, right, top, bottom, znear, zfar;
+
 float Triangulate::Area(const Vector2dVector &contour)
 {
 
@@ -302,8 +305,8 @@ unsigned decodeBMP(std::vector<unsigned char>& image, unsigned& w, unsigned& h, 
 }
 
 void Setup_OpenGL(double width, double height) {
- ((TS_Cube_Test_Update_User_Data*)p_user_data)->screenWidth = width;
- ((TS_Cube_Test_Update_User_Data*)p_user_data)->screenHeight = height;
+ ((TS_User_Data*)p_user_data)->screenWidth = width;
+ ((TS_User_Data*)p_user_data)->screenHeight = height;
  //// Initialize GL state for 3D
  //glDisable(GL_DITHER);
  //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
@@ -329,7 +332,7 @@ void Setup_OpenGL(double width, double height) {
  //glDisable(GL_CULL_FACE); //     ORIGINAL VALUE glEnable(GL_CULL_FACE);
  glShadeModel(GL_SMOOTH);
  //glDisable(GL_DEPTH_TEST); //     ORIGINAL VALUE glEnable(GL_DEPTH_TEST);
-
+ glEnable(GL_NORMALIZE);
 
 
  glDepthRangef(0.1, 1.0);
@@ -338,14 +341,25 @@ void Setup_OpenGL(double width, double height) {
  glMatrixMode(GL_PROJECTION);
  glLoadIdentity();
 
- GLfloat ratio = (GLfloat)width / height;
+ ratio = (GLfloat)width / (GLfloat)height;
  if (ratio > 1.0f) {
-  ratio = (GLfloat)height / width;
-  glFrustumf(-1.0f, 1.0f, -ratio, ratio, 0.1f, 100.0f);
+  ratio = (GLfloat)height / (GLfloat)width;
+  left = -1.0;
+  right = 1.0;
+  bottom = -ratio;
+  top = ratio;
  }
  else {
-  glFrustumf(-ratio, ratio, -1.0f, 1.0f, 0.1f, 100.0f);
+  left = -ratio;
+  right = ratio;
+  bottom = -1.0;
+  top = 1.0;
  }
+ znear = 0.1;
+ zfar = 100;
+
+ glFrustumf(left, right, bottom, top, znear, zfar);
+
 }
 
 

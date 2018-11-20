@@ -31,6 +31,7 @@ extern b2World *IFA_World;
 //All box2D coordinates are multiplied by this factor. Typical value is arround 0.01
 extern float IFA_box2D_factor;
 extern float speedFactor;
+extern GLfloat zDefaultLayer;
 
 
 class ifCB2Body {
@@ -200,6 +201,7 @@ public:
    Init_ifTbodyDefinition(work_body);
    (*iter)->BodyToVertices(cnt, work_body->vertices_cnt, work_body->indices_cnt, &(work_body->vertices_mode), &(work_body->vertices), &(work_body->indices));
    (*iter)->OGL_body = work_body;
+   work_body->z_pos = zDefaultLayer;
    work_body->colors_cnt = work_body->vertices_cnt * 2;
    work_body->colors = (GLfloat*)malloc(sizeof(GLfloat) * work_body->colors_cnt);
    for( ifTCounter cnt1 = 0; cnt1 < work_body->colors_cnt; cnt1++ ){
@@ -277,7 +279,7 @@ public:
   positionIterations = 2;   //how strongly to correct position
   screenResolutionX = 1;
   screenResolutionY = 1;
-  CalculateBox2DSizeFactor(10);
+  CalculateBox2DSizeFactor(40);
   ResetClock();
  }
  void ResetClock() {
@@ -311,7 +313,7 @@ public:
 
    //glScalef(IFA_box2D_factor * (drand48() * 0.5 + 0.8), IFA_box2D_factor * (drand48() * 0.5 + 0.8), 1.0f);
    glScalef(IFA_box2D_factor , IFA_box2D_factor , 1.0f);
-   glTranslatef(position.x, position.y, 0.0);
+   glTranslatef(position.x, position.y, (*iter)->OGL_body->z_pos);
    glRotatef(angle, 0, 0, 1);
 
 

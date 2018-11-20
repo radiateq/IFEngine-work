@@ -5,3 +5,5 @@ b2World *IFA_World;
 float IFA_box2D_factor;
 
 float speedFactor = 0.2f;
+
+GLfloat zDefaultLayer = -0.5;

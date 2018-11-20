@@ -80,10 +80,9 @@ void DrawBodies() {
 
 
  
-  glMatrixMode( GL_MODELVIEW );
+  //glMatrixMode( GL_MODELVIEW );
   glLoadIdentity(); 
   glLoadMatrixf( pifebody->modelview_matrix );
-  glTranslatef( 0.0f, 0.0f, pifebody->z_pos );
 
   if ((pifebody->UVmapping_cnt > 0) && (pifebody->texture_ID != GL_INVALID_VALUE)) {
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
