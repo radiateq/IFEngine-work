@@ -5,7 +5,7 @@ using namespace IFAudioSLES;
 namespace IFAudioSLES {
 
  EchoAudioEngine engine;
- ICSLock EngineServiceBufferMutex;
+ RQNDKUtils::ICSLock EngineServiceBufferMutex;
  std::queue<uint32_t> EngineServiceBuffer;
 
  void createSLEngine(

@@ -1,6 +1,9 @@
 #include "RQ_NDK_Utils.h"
 
 
+namespace RQNDKUtils {
+
+
 int64_t timespec2ms64(struct timespec *pt) {
  return (((int64_t)(*pt).tv_sec) * 1000000000LL + (*pt).tv_nsec) / 1000000;
 }
@@ -74,4 +77,4 @@ int32_t getDensityDpi(android_app* app) {
  return density;
 }
 
-
+}

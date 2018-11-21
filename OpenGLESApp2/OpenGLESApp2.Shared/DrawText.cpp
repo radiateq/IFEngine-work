@@ -14,7 +14,7 @@ int           n;
 bool InitFreeType(struct android_app* state){
 
  size_t size;
- FT_Byte *buffer  = (FT_Byte*)getAssetFileToBuffer( state, "RobotoMono-Regular.ttf", size);
+ FT_Byte *buffer  = (FT_Byte*)RQNDKUtils::getAssetFileToBuffer( state, "RobotoMono-Regular.ttf", size);
  
  if (buffer == NULL){
   return false;
@@ -30,7 +30,7 @@ bool InitFreeType(struct android_app* state){
   &face);
  if (error) { return false; }
 
- deviceDPI = getDensityDpi(state);
+ deviceDPI = RQNDKUtils::getDensityDpi(state);
 
  return true;
 }

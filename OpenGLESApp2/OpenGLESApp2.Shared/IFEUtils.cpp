@@ -7,8 +7,10 @@
 
 static const float EPSILON = 0.0000000001f;
 
-GLfloat ratio;
+namespace IFEUtils {
+GLfloat ratio, zvnear, zvfar;
 GLfloat left, right, top, bottom, znear, zfar;
+}
 
 float Triangulate::Area(const Vector2dVector &contour)
 {
@@ -328,37 +330,38 @@ void Setup_OpenGL(double width, double height) {
  glDisable(GL_TEXTURE_2D);
  glDisable(GL_DITHER);
  glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
- glClearColor(0.6f, 0.2f, 0.35f, 1.0f);
+ glClearColor(0.35f, 0.2f, 0.65f, 1.0f);
  //glDisable(GL_CULL_FACE); //     ORIGINAL VALUE glEnable(GL_CULL_FACE);
  glShadeModel(GL_SMOOTH);
  //glDisable(GL_DEPTH_TEST); //     ORIGINAL VALUE glEnable(GL_DEPTH_TEST);
  glEnable(GL_NORMALIZE);
 
-
- glDepthRangef(0.1, 1.0);
+ IFEUtils::zvnear = 0.0;
+ IFEUtils::zvfar = 1.0;
+ glDepthRangef(IFEUtils::zvnear, IFEUtils::zvfar);
  glViewport(0, 0, width, height);
 
  glMatrixMode(GL_PROJECTION);
  glLoadIdentity();
 
- ratio = (GLfloat)width / (GLfloat)height;
- if (ratio > 1.0f) {
-  ratio = (GLfloat)height / (GLfloat)width;
-  left = -1.0;
-  right = 1.0;
-  bottom = -ratio;
-  top = ratio;
+ IFEUtils::ratio = (GLfloat)width / (GLfloat)height;
+ if (IFEUtils::ratio > 1.0f) {
+  IFEUtils::ratio = (GLfloat)height / (GLfloat)width;
+  IFEUtils::left = -1.0;
+  IFEUtils::right = 1.0;
+  IFEUtils::bottom = -IFEUtils::ratio;
+  IFEUtils::top = IFEUtils::ratio;
  }
  else {
-  left = -ratio;
-  right = ratio;
-  bottom = -1.0;
-  top = 1.0;
+  IFEUtils::left = -IFEUtils::ratio;
+  IFEUtils::right = IFEUtils::ratio;
+  IFEUtils::bottom = -1.0;
+  IFEUtils::top = 1.0;
  }
- znear = 0.1;
- zfar = 100;
+ IFEUtils::znear = 0.1;
+ IFEUtils::zfar = 100;
 
- glFrustumf(left, right, bottom, top, znear, zfar);
+ glFrustumf(IFEUtils::left, IFEUtils::right, IFEUtils::bottom, IFEUtils::top, IFEUtils::znear, IFEUtils::zfar);
 
 }
 

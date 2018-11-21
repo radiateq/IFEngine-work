@@ -56,7 +56,7 @@ static bool audio_engine_created = false;
 
 extern EchoAudioEngine engine;
 
-extern ICSLock EngineServiceBufferMutex;
+extern RQNDKUtils::ICSLock EngineServiceBufferMutex;
 extern std::queue<uint32_t> EngineServiceBuffer;
 bool EngineService(void *ctx, uint32_t msg, void *data);
 

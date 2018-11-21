@@ -23,8 +23,8 @@ void Init_ifTbodyDefinition(ifTbodyDefinition *_init_var){
  _init_var->vertices_cnt = 0;
  _init_var->vertices_mode = 0;
  _init_var->z_pos = -0.5;
- LoadIdentityMatrix( _init_var->texture_matrix );
- LoadIdentityMatrix( _init_var->modelview_matrix );
+ RQNDKUtils::LoadIdentityMatrix( _init_var->texture_matrix );
+ RQNDKUtils::LoadIdentityMatrix( _init_var->modelview_matrix );
  //_init_var->modelview_matrix
 }
 void Clean_ifTbodyDefinition(ifTbodyDefinition *_init_var){

@@ -20,6 +20,8 @@ using Eigen::MatrixXf;
 #define IF_NULL_DELETE(PARAM) if( NULL != PARAM ) { delete PARAM; PARAM = NULL; }
 #define IF_NULL_DELETE_ARRAY(PARAM) if( NULL != PARAM ) { delete [] PARAM; PARAM = NULL; }
 
+namespace RQNDKUtils {
+
 
 int64_t timespec2ms64(struct timespec *pt);
 int64_t timespec2us64(struct timespec *pt);
@@ -241,4 +243,72 @@ void LoadIdentityMatrix(float *matrix4x4);
 
 int32_t getDensityDpi(android_app* app);
 
+
+struct SRangeScale
+{
+ SRangeScale()
+ {
+  SetRange(0, 1);
+ }
+ SRangeScale(double _RangeMin, double _RangeMax)
+ {
+  SetRange(_RangeMin, _RangeMax);
+ }
+ void SetRange(double _RangeMin, double _RangeMax)
+ {
+  RangeMin = _RangeMin;
+  RangeMax = _RangeMax;
+ }
+ double Scale(double Value, double ValueMin, double ValueMax)
+ {
+  return ((RangeMax - RangeMin) / (ValueMax - ValueMin)) * Value;
+ }
+ double ScaleAndClip(double Value, double ValueMin, double ValueMax)
+ {
+  double Result = ((RangeMax - RangeMin) / (ValueMax - ValueMin)) * Value;
+  if (RangeMin > Result)
+   Result = RangeMin;
+  else if (RangeMax < Result)
+   Result = RangeMax;
+  return Result;
+ }
+ double RangeMin;
+ double RangeMax;
+};
+
+struct SRangeScale2
+{
+ SRangeScale2()
+ {
+  SetRange(0, 1);
+ }
+ SRangeScale2(double _RangeMin, double _RangeMax)
+ {
+  SetRange(_RangeMin, _RangeMax);
+ }
+ void SetRange(double _RangeMin, double _RangeMax)
+ {
+  RangeMin = _RangeMin;
+  RangeMax = _RangeMax;
+ }
+ double Scale(double Value, double ValueMin, double ValueMax)
+ {
+  //double Result = RangeMin + ( ( RangeMax - RangeMin ) / ( ValueMax - ValueMin ) ) * ( Value - ValueMin );
+  return (RangeMin + ((RangeMax - RangeMin) / (ValueMax - ValueMin)) * (Value - ValueMin));
+ }
+ double ScaleAndClip(double Value, double ValueMin, double ValueMax)
+ {
+  double Result = RangeMin + ((RangeMax - RangeMin) / (ValueMax - ValueMin)) * (Value - ValueMin);
+  if (RangeMin > Result)
+   Result = RangeMin;
+  else if (RangeMax < Result)
+   Result = RangeMax;
+  return Result;
+ }
+ double RangeMin;
+ double RangeMax;
+};
+
+
+}
 #endif

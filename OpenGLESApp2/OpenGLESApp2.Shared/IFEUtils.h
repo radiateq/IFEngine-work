@@ -7,9 +7,11 @@
 
 #include <vector>  // Include STL vector class.
 
+namespace IFEUtils{
 //#include <Eigen/Dense>
-extern GLfloat ratio;
+extern GLfloat ratio, zvnear, zvfar;
 extern GLfloat left, right, top, bottom, znear, zfar;
+}
 
 class Vector2d
 {
@@ -111,7 +113,7 @@ public:
   //}
 
 
-  memory_reader_state.png_file_data = (png_byte*)getAssetFileToBuffer(((TS_User_Data*)p_user_data)->state, file_name, memory_reader_state.png_file_data_size);
+  memory_reader_state.png_file_data = (png_byte*)RQNDKUtils::getAssetFileToBuffer(((TS_User_Data*)p_user_data)->state, file_name, memory_reader_state.png_file_data_size);
   memory_reader_state.png_file_data_position = 0;
   if (memory_reader_state.png_file_data == NULL)
   {

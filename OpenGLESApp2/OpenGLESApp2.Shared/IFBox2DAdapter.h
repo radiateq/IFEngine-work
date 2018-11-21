@@ -49,8 +49,8 @@ public:
  ////////////////////////////////////
  b2BodyDef *body_def;
  b2Body *body;
- S_listWrap_ptr<b2Shape, true> shape;
- S_listWrap_ptr<b2FixtureDef, true> fixture;
+ RQNDKUtils::S_listWrap_ptr<b2Shape, true> shape;
+ RQNDKUtils::S_listWrap_ptr<b2FixtureDef, true> fixture;
  ifTbodyDefinition *OGL_body;
  ////////////////////////////////////
  //After body_def, body, shape and fixture have been prepared this function will create a body and add it to the world 
@@ -260,7 +260,7 @@ public:
  } 
  //void Add
 // b2World *World;
- S_listWrap_ptr<ifCB2Body, true> Bodies;
+ RQNDKUtils::S_listWrap_ptr<ifCB2Body, true> Bodies;
 private:
  bool OrderPending;
  void Free() {
@@ -289,7 +289,7 @@ public:
  void UpdateSim() {
   clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
   //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
-  temp_int64 = timespec2us64(&temp_timespec) - timespec2us64( &game_time_0 );
+  temp_int64 = RQNDKUtils::timespec2us64(&temp_timespec) - RQNDKUtils::timespec2us64( &game_time_0 );
   game_time_0 = temp_timespec;
   timeStep = 10000.0f / (float)temp_int64;
   //timeThen = timeNow;
