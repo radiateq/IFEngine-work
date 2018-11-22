@@ -31,6 +31,9 @@
     </ClInclude>
     <ClInclude Include="$(MSBuildThisFileDirectory)IFGameEditor.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\IFGlobals.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)common\External\fann-master\src\include\fann.h">
+      <Filter>External</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="External">

@@ -406,7 +406,7 @@ void Init_IFAdapter(engine &engine) {
   //static int counter = 0;
   //counter++;
   //-------------------------------------------------------     IFEngine TEST
-  IFAdapter.MakeWorld(0.0f, -9.8080f);
+  IFAdapter.MakeWorld(0.0f, -0.00f);
   //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
   IFAdapter.screenResolutionX = engine.width;
   IFAdapter.screenResolutionY = engine.height;
@@ -762,7 +762,18 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 * android_native_app_glue.  It runs in its own thread, with its own
 * event loop for receiving input events and doing other things.
 */
+#include "fann.h"
+#include "floatfann.h"
 void android_main(struct android_app* state) {
+
+
+
+
+
+
+
+
+
 
  float last_y_acceleration = 0, last_light = 0;
  size_t last_light_cnt = 30;
@@ -818,8 +829,54 @@ void android_main(struct android_app* state) {
 
 
 
- //       BOX 2D TEST START
-  //       BOX 2D TEST STOP
+ //       ---------------------------------------------------------------------              FANN TEST START
+ const unsigned int num_input = 2;
+ const unsigned int num_output = 1;
+ const unsigned int num_layers = 3;
+ const unsigned int num_neurons_hidden = 3;
+ const float desired_error = (const float) 0.001;
+ const unsigned int max_epochs = 500000;
+ const unsigned int epochs_between_reports = 1000;
+
+ struct fann *ann = fann_create_standard(num_layers, num_input,
+  num_neurons_hidden, num_output);
+
+ fann_set_activation_function_hidden(ann, FANN_SIGMOID_SYMMETRIC);
+ fann_set_activation_function_output(ann, FANN_SIGMOID_SYMMETRIC);
+
+ char *path_buffer = (char*)malloc(strlen(User_Data.state->activity->internalDataPath)+256);
+ strcpy(path_buffer, User_Data.state->activity->internalDataPath);
+ strcpy(&path_buffer[strlen(User_Data.state->activity->internalDataPath)], "/xor.data");
+ FILE *train_file = fopen(path_buffer, "w");
+ if (train_file) {
+  fprintf(train_file, "4 2 1\r\n- 1 - 1\r\n- 1\r\n- 1 1\r\n1\r\n1 - 1\r\n1\r\n1 1\r\n- 1");
+  fclose(train_file);
+ }
+
+ fann_train_on_file(ann, path_buffer, max_epochs,
+  epochs_between_reports, desired_error);
+
+ strcpy(&path_buffer[strlen(User_Data.state->activity->internalDataPath)], "/xor_float.net");
+ fann_save(ann, path_buffer);
+
+ fann_destroy(ann);
+
+
+ //--------------------------train over
+
+ fann_type *calc_out;
+ fann_type input[2];
+
+ struct fann *annr = fann_create_from_file(path_buffer);
+
+ input[0] = -1;
+ input[1] = 1;
+ calc_out = fann_run(annr, input);
+
+ LOGI("xor test (%f,%f) -> %f\n", input[0], input[1], calc_out[0]);
+
+ fann_destroy(ann);
+ //       ---------------------------------------------------------------------              FANN TEST STOP
 
 
 
