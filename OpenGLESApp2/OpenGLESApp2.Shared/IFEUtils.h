@@ -312,7 +312,7 @@ unsigned decodeBMP(std::vector<unsigned char>& image, unsigned& w, unsigned& h, 
 
 
 
-
+void Window2ObjectCoordinates(float &x_inout, float &y_inout, float z, float w, float h);
 
 
 

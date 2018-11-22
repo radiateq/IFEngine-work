@@ -373,16 +373,16 @@ public:
  ifCB2BodyUtils(ifCB2GameManager *_B2GameManager = NULL) {
   B2GameManager = _B2GameManager;
  }
- void RemoveFarBodies( GLfloat cut_off_distance_in_screen_size = 2.0 ) {
-  GLfloat ratio_xy = ((float)B2GameManager->screenResolutionX / (float)B2GameManager->screenResolutionY);
-  if(ratio_xy < 1.0 )
-   ratio_xy = (float)B2GameManager->screenResolutionY / (float)B2GameManager->screenResolutionX;
+ void RemoveFarBodies( GLfloat cut_off_distance_in_screen_size = 2.0 ) {  
   typename std::list<ifCB2Body*>::iterator iter;
   for (iter = B2GameManager->Bodies.begin(); iter != B2GameManager->Bodies.end(); iter++) {
-//double TEMPVAL= b2Distance((*iter)->body->GetPosition(), b2Vec2(0, 0));
-//TEMPVAL = TEMPVAL;
-   //This formula gives 2 times distance to the longer axis end of the screen before object is cut off
-   if ( (b2Distance((*iter)->body->GetPosition(), b2Vec2(0, 0)) * IFA_box2D_factor / (ratio_xy * cut_off_distance_in_screen_size)) > ratio_xy) {
+
+   float maxx = B2GameManager->screenResolutionX;
+   float maxy = B2GameManager->screenResolutionY;
+   Window2ObjectCoordinates(maxx, maxy, (*iter)->OGL_body->z_pos, maxx, maxy);
+   float cut_off_distance = b2Distance(b2Vec2(0, 0), b2Vec2(maxx / IFA_box2D_factor, maxy / IFA_box2D_factor)) * cut_off_distance_in_screen_size ;
+
+   if (b2Distance((*iter)->body->GetPosition(), b2Vec2(0, 0)) > cut_off_distance) {
     delete (*iter);
     B2GameManager->Bodies.erase(iter);
    }

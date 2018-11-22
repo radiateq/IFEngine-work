@@ -6,4 +6,4 @@ float IFA_box2D_factor;
 
 float speedFactor = 0.2f;
 
-GLfloat zDefaultLayer = -10.5;
+GLfloat zDefaultLayer = -10.0;

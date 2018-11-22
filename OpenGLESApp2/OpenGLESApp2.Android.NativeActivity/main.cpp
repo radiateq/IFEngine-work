@@ -95,42 +95,44 @@ void TESTFN_AddRandomBody(engine &engine){
 
    //IFAdapter.OrderedBody()->body_def->position.Set(touchx*IFA_box2D_factor, touchy*IFA_box2D_factor);
 
-   //Go backwards from viewport to frustrum to transformation coordinates
-   // First calculate z because we need it to calculate x and y
-   //Since z is known and does not exist in screen coordinates we calculate it as OpenGL ES would
-   //RQNDKUtils::SRangeScale2 zRange(IFEUtils::zvnear, IFEUtils::zvfar);
-   float zCoord = -zDefaultLayer;
-   //zCoord = zRange.ScaleAndClip(zCoord, IFEUtils::znear, IFEUtils::zfar);
-   //      then frustum matrix   
-   zCoord = (zCoord*(IFEUtils::zfar + IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear) + (zCoord*(IFEUtils::zfar* IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear);
-   //      perspective division
-   //zCoord /= -zCoord;
-//   zCoord = ((IFEUtils::zvfar - IFEUtils::zvnear) / 2.0)*zCoord + (IFEUtils::zvnear + IFEUtils::zvfar) / 2.0;
-
- 
-   //               this is result of viewport matrix for x, backwards
-   float screenx;
-   //                find center of viewport
-   float ox = (float)engine.width * 0.5;
-   //                viewport size in pixels
-   float px = engine.width;
-   //                send back through window
-   screenx = 2.0*(ox- touchx)/px;
-   //                this is result of frustum matrix for x, backwards
-   screenx = (IFEUtils::left*screenx+ IFEUtils::left*(zCoord)-IFEUtils::right*screenx+ IFEUtils::right*(zCoord))/(2* IFEUtils::znear);
-   //                this is reverse transformation matrix
-   screenx  = (screenx * -zDefaultLayer) / IFA_box2D_factor;
-   //Same for y
-   float screeny;// = ((float)engine.height - 2.0f* (float)touchy) / (-(float)engine.height);
-   float oy = (float)engine.height * 0.5;
-   float py = engine.height;
-   screeny = 2.0*(oy - touchy) / py;
-   //                this is reversed frustum matrix
-   screeny = (IFEUtils::bottom*screeny + IFEUtils::bottom * (zCoord)-IFEUtils::top * screeny + IFEUtils::top * (zCoord)) / (2 * IFEUtils::znear);
-   //                this is reverse transformation matrix
-   screeny = (screeny*zDefaultLayer)/IFA_box2D_factor;
-
-   IFAdapter.OrderedBody()->body_def->position.Set(screenx, screeny);
+//   //Go backwards from viewport to frustrum to transformation coordinates
+//   // First calculate z because we need it to calculate x and y
+//   //Since z is known and does not exist in screen coordinates we calculate it as OpenGL ES would
+//   //RQNDKUtils::SRangeScale2 zRange(IFEUtils::zvnear, IFEUtils::zvfar);
+//   float zCoord = -zDefaultLayer;
+//   //zCoord = zRange.ScaleAndClip(zCoord, IFEUtils::znear, IFEUtils::zfar);
+//   //      then frustum matrix   
+//   zCoord = (zCoord*(IFEUtils::zfar + IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear) + (zCoord*(IFEUtils::zfar* IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear);
+//   //      perspective division
+//   //zCoord /= -zCoord;
+////   zCoord = ((IFEUtils::zvfar - IFEUtils::zvnear) / 2.0)*zCoord + (IFEUtils::zvnear + IFEUtils::zvfar) / 2.0;
+//
+// 
+//   //               this is result of viewport matrix for x, backwards
+//   float screenx;
+//   //                find center of viewport
+//   float ox = (float)engine.width * 0.5;
+//   //                viewport size in pixels
+//   float px = engine.width;
+//   //                send back through window
+//   screenx = 2.0*(ox- touchx)/px;
+//   //                this is result of frustum matrix for x, backwards
+//   screenx = (IFEUtils::left*screenx+ IFEUtils::left*(zCoord)-IFEUtils::right*screenx+ IFEUtils::right*(zCoord))/(2* IFEUtils::znear);
+//   //                this is reverse transformation matrix
+//   screenx  = (screenx * -zDefaultLayer) / IFA_box2D_factor;
+//   //Same for y
+//   float screeny;// = ((float)engine.height - 2.0f* (float)touchy) / (-(float)engine.height);
+//   float oy = (float)engine.height * 0.5;
+//   float py = engine.height;
+//   screeny = 2.0*(oy - touchy) / py;
+//   //                this is reversed frustum matrix
+//   screeny = (IFEUtils::bottom*screeny + IFEUtils::bottom * (zCoord)-IFEUtils::top * screeny + IFEUtils::top * (zCoord)) / (2 * IFEUtils::znear);
+//   //                this is reverse transformation matrix
+//   screeny = (screeny*zDefaultLayer)/IFA_box2D_factor;
+   float screenx = touchx;
+   float screeny = touchy;
+   Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height );
+   IFAdapter.OrderedBody()->body_def->position.Set(screenx/ IFA_box2D_factor, screeny/ IFA_box2D_factor);
    shapeCoords[0] = { -10,  -10 };
    shapeCoords[1] = { 10,  -10 };
    shapeCoords[2] = { 10,   10 };
@@ -408,9 +410,7 @@ void Init_IFAdapter(engine &engine) {
   //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
   IFAdapter.screenResolutionX = engine.width;
   IFAdapter.screenResolutionY = engine.height;
-  IFAdapter.CalculateBox2DSizeFactor(30*drand48()+10
-);
-
+  IFAdapter.CalculateBox2DSizeFactor(400*drand48()+50);
 
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;

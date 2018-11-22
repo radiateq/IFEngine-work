@@ -378,3 +378,40 @@ void read_data_memory(png_structp png_ptr, png_bytep data, png_size_t length) {
  memcpy(data, &memory_reader_state.png_file_data[memory_reader_state.png_file_data_position], length);
  memory_reader_state.png_file_data_position += length;
 }
+
+
+void Window2ObjectCoordinates(float &x_inout, float &y_inout, float z, float w, float h){
+ //Go backwards from viewport to frustrum to transformation coordinates
+   // First calculate z because we need it to calculate x and y
+   //Since z is known and does not exist in screen coordinates we calculate it as OpenGL ES would
+   //RQNDKUtils::SRangeScale2 zRange(IFEUtils::zvnear, IFEUtils::zvfar);
+ float zCoord = -z;
+ //zCoord = zRange.ScaleAndClip(zCoord, IFEUtils::znear, IFEUtils::zfar);
+ //      then frustum matrix   
+ zCoord = (zCoord*(IFEUtils::zfar + IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear) + (zCoord*(IFEUtils::zfar* IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear);
+ //      perspective division
+ //zCoord /= -zCoord;
+//   zCoord = ((IFEUtils::zvfar - IFEUtils::zvnear) / 2.0)*zCoord + (IFEUtils::zvnear + IFEUtils::zvfar) / 2.0;
+
+
+   //               this is result of viewport matrix for x, backwards
+ float screenxy;
+ //                find center of viewport
+ float oxy = (float)w * 0.5;
+ //                viewport size in pixels
+ float pxy = w;
+ //                send back through window
+ screenxy = 2.0*(oxy - x_inout) / pxy;
+ //                this is result of frustum matrix for x, backwards
+ screenxy = (IFEUtils::left*screenxy + IFEUtils::left*(zCoord)-IFEUtils::right*screenxy + IFEUtils::right*(zCoord)) / (2 * IFEUtils::znear);
+ //                this is reverse transformation matrix
+ x_inout = (screenxy * -z);// LET THE USER DEAL WITH MODEL VIEW - / IFA_box2D_factor;
+ //Same for y
+ oxy = (float)h  * 0.5;
+ pxy = h;
+ screenxy = 2.0*(oxy - y_inout) / pxy;
+ //                this is reversed frustum matrix
+ screenxy = (IFEUtils::bottom*screenxy + IFEUtils::bottom * (zCoord)-IFEUtils::top * screenxy + IFEUtils::top * (zCoord)) / (2 * IFEUtils::znear);
+ //                this is reverse transformation matrix
+ y_inout = (screenxy*z);
+}
