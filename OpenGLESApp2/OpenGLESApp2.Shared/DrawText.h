@@ -21,7 +21,7 @@ extern int           n;
 
 bool InitFreeType(struct android_app* state);
 bool SetFaceSize(FT_F26Dot6  char_width, FT_F26Dot6  char_height );
-GLuint DrawText( char *_text, FT_UInt _target_height, double _angle);
+GLuint DrawText( char *_text, FT_UInt _target_height, double _angle, float *u = NULL, float *v = NULL );
 
 inline int next_p2(int a);
 

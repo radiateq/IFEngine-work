@@ -9,7 +9,7 @@ using Eigen::MatrixXf;
 
 
 ifTbodiesList BodiesList;
-ifTCounter IFE_max_bodies = 50;
+ifTCounter IFE_max_bodies = 150;
 
 void Init_ifTbodyDefinition(ifTbodyDefinition *_init_var){ 
  _init_var->colors = NULL;
@@ -59,8 +59,8 @@ void PrepareDraw(){
 }
 
 void DrawBodies() {
-
- glMatrixMode(GL_MODELVIEW);
+ 
+ //glMatrixMode(GL_MODELVIEW);
  glEnableClientState(GL_VERTEX_ARRAY);
 
  for( int bodies_count = 0; bodies_count < BodiesList.bodies_cnt; bodies_count++ ){
@@ -69,7 +69,7 @@ void DrawBodies() {
   //pifebody->indices;
 
   //load vertices
-  glFrontFace(GL_CCW);
+  
   //GLfloat *vertices = new GLfloat[ 1 * 2];
   glVertexPointer(2, GL_FLOAT, sizeof(pifebody->vertices[0]) * 2, pifebody->vertices);
 
@@ -86,11 +86,12 @@ void DrawBodies() {
 
   if ((pifebody->UVmapping_cnt > 0) && (pifebody->texture_ID != GL_INVALID_VALUE)) {
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glEnable(GL_TEXTURE_2D);
+   glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
    glBindTexture(GL_TEXTURE_2D, pifebody->texture_ID);
    glActiveTexture(GL_TEXTURE0);
    glTexCoordPointer(2, GL_FLOAT, sizeof(GLfloat) * 2, pifebody->UVmapping);
-   //GLenum error = glGetError();
+   //glDisable(GL_BLEND);
+   //GLenum error = glGetError();   
   }
 
   if (pifebody->indices_cnt > 0) {

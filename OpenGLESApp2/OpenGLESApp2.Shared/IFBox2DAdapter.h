@@ -291,7 +291,7 @@ public:
   //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
   temp_int64 = RQNDKUtils::timespec2us64(&temp_timespec) - RQNDKUtils::timespec2us64( &game_time_0 );
   game_time_0 = temp_timespec;
-  timeStep = 10000.0f / (float)temp_int64;
+  timeStep = 500.0f / (float)temp_int64;
   //timeThen = timeNow;
   IFA_World->Step( timeStep * speedFactor, velocityIterations, positionIterations );
  }
@@ -308,7 +308,7 @@ public:
    
 
 
-   glMatrixMode(GL_MODELVIEW);
+   //glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 
    //glScalef(IFA_box2D_factor * (drand48() * 0.5 + 0.8), IFA_box2D_factor * (drand48() * 0.5 + 0.8), 1.0f);

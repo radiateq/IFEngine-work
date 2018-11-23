@@ -309,6 +309,5 @@ struct SRangeScale2
  double RangeMax;
 };
 
-
 }
 #endif

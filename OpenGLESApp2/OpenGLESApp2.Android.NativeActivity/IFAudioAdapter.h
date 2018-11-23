@@ -52,7 +52,7 @@ struct EchoAudioEngine {//EchoAudioEngine is original code I stole from but not 
 
  bool audio_engine_playing;
 };
-static bool audio_engine_created = false;
+extern bool audio_engine_created;
 
 extern EchoAudioEngine engine;
 

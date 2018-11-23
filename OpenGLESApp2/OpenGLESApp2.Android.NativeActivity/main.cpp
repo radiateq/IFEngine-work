@@ -80,15 +80,27 @@ TS_User_Data User_Data;
 
 
 GLuint TEST_textid;
+GLfloat TEST_text_u, TEST_text_v;
+struct timespec TEST_Last_Added_Body_Time;
 void TESTFN_AddRandomBody(engine &engine){
  if (engine.EGL_initialized) {
 
-  if (IFGameEditor::GetTouchEvent()){
-   int touchx,touchy;
-   IFGameEditor::GetTouchEvent(&touchx, &touchy);
+  if (IFGameEditor::GetTouchEvent()){   
+   int touchx, touchy;
 
+   struct timespec temp_timespec;
+   clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+   //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
+   unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
+   if(temp_int64<200){
+    while(IFGameEditor::GetTouchEvent(&touchx, &touchy));
+    return;
+   }
+   TEST_Last_Added_Body_Time = temp_timespec;
+
+   IFGameEditor::GetTouchEvent(&touchx, &touchy);   
    IFAdapter.OrderBody();
-   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
+   IFAdapter.OrderedBody()->body_def->type = ((drand48()>0.5)?b2_staticBody: b2_dynamicBody);
    b2PolygonShape *polyShape = new b2PolygonShape;
    b2Vec2 shapeCoords[8];
    b2FixtureDef *fixture = new b2FixtureDef;
@@ -133,10 +145,10 @@ void TESTFN_AddRandomBody(engine &engine){
    float screeny = touchy;
    Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height );
    IFAdapter.OrderedBody()->body_def->position.Set(screenx/ IFA_box2D_factor, screeny/ IFA_box2D_factor);
-   shapeCoords[0] = { -10,  -10 };
-   shapeCoords[1] = { 10,  -10 };
-   shapeCoords[2] = { 10,   10 };
-   shapeCoords[3] = { -10,   10 };
+   shapeCoords[0] = { -1,  -1 };
+   shapeCoords[1] = { 1,  -1 };
+   shapeCoords[2] = { 1,   1 };
+   shapeCoords[3] = { -1,   1 };
    polyShape->Set(shapeCoords, 4);
    fixture->shape = polyShape;
    fixture->density = 1.1;
@@ -150,6 +162,10 @@ void TESTFN_AddRandomBody(engine &engine){
    //Additional work on body  
    if (drand48() > 0.5) {
     first_body->OGL_body->texture_ID = TEST_textid;
+    for( int cnt = 0; cnt < first_body->OGL_body->UVmapping_cnt; cnt++){
+     first_body->OGL_body->UVmapping[cnt]*=TEST_text_u;
+     first_body->OGL_body->UVmapping[++cnt] *= TEST_text_v;
+    }
    }
    else {
     first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
@@ -190,7 +206,9 @@ void TESTFN_AddRandomBody(engine &engine){
    bool two_channels = false, LR_switch=true;
    std::vector<float> timevec;
 
-   float treshold1 = -1000.0, treshold2 = -1000.0, treshold3 = -1000.0, treshold4 = -1000.0;
+   #define TRESHOLD_COUNT 4
+   static std::deque<float> treshold_history[TRESHOLD_COUNT];
+   float treshold[TRESHOLD_COUNT];
 
    //when audio_db starts dropping from constant rise trigger set rising to false
    //when audio_db starts rising set rising to true
@@ -219,7 +237,7 @@ void TESTFN_AddRandomBody(engine &engine){
   
    IFAudioSLES::EngineServiceBufferMutex.LeaveAndUnlock();
 
-   {
+   if(timevec.size()){
 
     Eigen::FFT<float> fft;
 
@@ -236,31 +254,37 @@ void TESTFN_AddRandomBody(engine &engine){
       continue;
      }
      if (freq > 60 && freq < 380) {
-      if (treshold1 < freqvec[cntx].real()) {
-       treshold1 = freqvec[cntx].real();
+      if (treshold[0] < freqvec[cntx].real()) {
+       treshold[0] = freqvec[cntx].real();
       }
      }else if (freq > 400 && freq < 1200){
-      if( treshold2 < freqvec[cntx].real()){
-       treshold2 = freqvec[cntx].real();
+      if( treshold[1] < freqvec[cntx].real()){
+       treshold[1] = freqvec[cntx].real();
       }
      } else if (freq > 1550 && freq < 4000) {
-      if (treshold3 < freqvec[cntx].real()) {
-       treshold3 = freqvec[cntx].real();
+      if (treshold[2] < freqvec[cntx].real()) {
+       treshold[2] = freqvec[cntx].real();
       }
      }else if (freq > 1550 && freq < 4000) {
-      if (treshold4 < freqvec[cntx].real()) {
-       treshold4 = freqvec[cntx].real();
+      if (treshold[3] < freqvec[cntx].real()) {
+       treshold[3] = freqvec[cntx].real();
       }
      }
     }
-    treshold1 = 20 * log10(treshold1 / 4.0f);
-    treshold1 -= 1;
-    treshold2 = 20 * log10(treshold2 / 4.0f);
-    treshold2 -= 1;
-    treshold3 = 20 * log10(treshold3 / 4.0f);
-    treshold3 -= 1;
-    treshold4 = 20 * log10(treshold4 / 4.0f);
-    treshold4 -= 1;
+  
+    typedef std::deque<float>::iterator TDFiter;
+    for( int cntt = 0; cntt < TRESHOLD_COUNT; cntt++){
+     treshold_history[cntt].push_back(treshold[cntt]);
+     treshold[cntt] = 0;
+     for (TDFiter iter = treshold_history[cntt].begin(); iter != treshold_history[cntt].end(); iter++) {
+      treshold[cntt] += *iter;
+     }
+     treshold[cntt] /= treshold_history[cntt].size();
+     while( treshold_history[cntt].size()*(IFAudioSLES::engine.frames_per_buffer / IFAudioSLES::engine.sample_rate)>3.0){
+      treshold_history[cntt].pop_front();
+     }
+     treshold[cntt] = 20 * log10(treshold[cntt] / 4.0f);
+    }
    
 
     for (int cntx = 0; cntx < freqvec.size(); cntx++) {
@@ -268,30 +292,30 @@ void TESTFN_AddRandomBody(engine &engine){
      float ampl = ((freqvec[cntx].real() > 0) ? 20 * log10(freqvec[cntx].real() / 4.0f) : -1000.0);
      float phase = freqvec[cntx].imag();
      if(freq>60 && freq<380){
-      if(ampl> treshold1){      
+      if(ampl> treshold[0]){
        for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
         if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
          IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0.0, abs(ampl) * 0.4), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
         }
        }
       }
-     }else if (freq > 400 && freq < 1200 ) {
-      if(!nMake_added && ampl > treshold2){
+     }else if (freq > 400 && freq < 800 ) {
+      if(!nMake_added && ampl > treshold[1]){
        nMake += 1;
        nMake_added = true;
       }     
      }
-     else if (freq > 1300 && freq < 1500) {
-      if (ampl > treshold3) {
+     else if (freq > 800 && freq < 1500) {
+      if (ampl > treshold[2]) {
        for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
         if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
-         IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(abs(ampl) * 100.0, 0.0), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+         IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(abs(ampl) * 3.0, 0.0), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
         }
        }
       }
      }
-     else if (freq > 1550 && freq < 4000) {
-      if (ampl > treshold4) {
+     else if (freq > 1550 && freq < 3000) {
+      if (ampl > treshold[3]) {
        for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
         if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
          IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(abs(ampl) * -3.0, 0.0), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
@@ -325,6 +349,7 @@ void TESTFN_AddRandomBody(engine &engine){
     nMake=0;
   }else{
    IFAudioSLES::EngineServiceBufferMutex.LeaveAndUnlock();
+   return;
   }
 
 
@@ -410,7 +435,7 @@ void Init_IFAdapter(engine &engine) {
   //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
   IFAdapter.screenResolutionX = engine.width;
   IFAdapter.screenResolutionY = engine.height;
-  IFAdapter.CalculateBox2DSizeFactor(400*drand48()+50);
+  IFAdapter.CalculateBox2DSizeFactor(1000*drand48()+500);
 
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
@@ -453,9 +478,9 @@ void Init_IFAdapter(engine &engine) {
   ifCB2Body *first_body = IFAdapter.OrderedBody();
   if (IFAdapter.MakeBody()){
    //Additional work on body  
-   SetFaceSize(1000, 1000);
-   char outstring[2] = {'#','\0'};  
-   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 4, 0);
+   SetFaceSize(2000, 2000);
+   char outstring[20] = {'R','o','b','o','t','o','\0'};
+   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 20, 45, &TEST_text_u, &TEST_text_v);
    //(engine.width / 20, engine.height / 20);
   }
 
@@ -612,6 +637,7 @@ static int engine_init_display(struct engine* engine) {
 
 	// Initialize GL state.
 	//CubeTest_setupGL(w, h);
+ Setup_OpenGL(w,h);
  Setup_OpenGL(w,h);
 
  Init_IFAdapter(*engine);
@@ -851,6 +877,24 @@ void android_main(struct android_app* state) {
  if (train_file) {
   fprintf(train_file, "4 2 1\r\n- 1 - 1\r\n- 1\r\n- 1 1\r\n1\r\n1 - 1\r\n1\r\n1 1\r\n- 1");
   fclose(train_file);
+
+
+
+
+  //FILE *train_filez = fopen(path_buffer, "r");
+  //if (train_filez) {
+  // fscanf(train_filez, "%s", path_buffer);
+  // fclose(train_filez);
+  //}
+
+
+
+
+
+
+
+
+
  }
 
  fann_train_on_file(ann, path_buffer, max_epochs,

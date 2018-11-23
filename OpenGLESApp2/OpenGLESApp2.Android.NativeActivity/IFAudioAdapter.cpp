@@ -1,9 +1,12 @@
+//TODO if audio callback is not called often enough or at all restart audio with larger buffer.
+
 #include "IFAudioAdapter.h"
 
 using namespace IFAudioSLES;
 
 namespace IFAudioSLES {
 
+ bool audio_engine_created = false;
  EchoAudioEngine engine;
  RQNDKUtils::ICSLock EngineServiceBufferMutex;
  std::queue<uint32_t> EngineServiceBuffer;
