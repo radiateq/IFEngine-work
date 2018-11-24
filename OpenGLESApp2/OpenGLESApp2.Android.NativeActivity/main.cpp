@@ -146,9 +146,9 @@ void TESTFN_AddRandomBody(engine &engine){
    Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height );
    IFAdapter.OrderedBody()->body_def->position.Set(screenx/ IFA_box2D_factor, screeny/ IFA_box2D_factor);
    shapeCoords[0] = { -1,  -1 };
-   shapeCoords[1] = { 1,  -1 };
-   shapeCoords[2] = { 1,   1 };
-   shapeCoords[3] = { -1,   1 };
+   shapeCoords[1] = { 16,  -1 };
+   shapeCoords[2] = { 16,   2 };
+   shapeCoords[3] = { -1,   2 };
    polyShape->Set(shapeCoords, 4);
    fixture->shape = polyShape;
    fixture->density = 1.1;
@@ -453,9 +453,9 @@ void Init_IFAdapter(engine &engine) {
   //shapeCoords[7] = { 0.10,  0.2 };
 
   shapeCoords[0] = { -1,  -1 };
-  shapeCoords[1] = {  1,  -1 };
-  shapeCoords[2] = {  1,   1 };
-  shapeCoords[3] = { -1,   1 };
+  shapeCoords[1] = {  16,  -1 };
+  shapeCoords[2] = {  16,   2 };
+  shapeCoords[3] = { -1,   2 };
   //shapeCoords[4] = { 4,  1 };
   //shapeCoords[5] = { 3,  2 };
   //shapeCoords[6] = { 2,  2 };
@@ -478,8 +478,8 @@ void Init_IFAdapter(engine &engine) {
   ifCB2Body *first_body = IFAdapter.OrderedBody();
   if (IFAdapter.MakeBody()){
    //Additional work on body  
-   SetFaceSize(2000, 2000);
-   char outstring[20] = {'R','o','b','o','t','o','\0'};
+   SetFaceSize(700, 700);
+   char outstring[20] = {'H','J','\0','-','\0'};
    TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 20, 45, &TEST_text_u, &TEST_text_v);
    //(engine.width / 20, engine.height / 20);
   }
@@ -1013,6 +1013,7 @@ void android_main(struct android_app* state) {
 
 			if (state->destroyRequested != 0) {
 				engine_term_display(&engine);
+    DoneFreeType();
 				return;
 			}
 		}

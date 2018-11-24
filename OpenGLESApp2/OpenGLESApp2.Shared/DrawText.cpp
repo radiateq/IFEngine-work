@@ -9,30 +9,44 @@ FT_GlyphSlot  slot;
 FT_Matrix     matrix;              /* transformation matrix */
 FT_UInt       glyph_index;
 FT_Vector     pen;                 /* untransformed origin */
+FT_Byte      *buffer = NULL;
 int           n;
+int char_width, char_height;
+struct android_app* android_app_state = NULL;
 
-bool InitFreeType(struct android_app* state){
+bool InitFreeType(struct android_app* _state){
 
+if(_state!=NULL) android_app_state = _state;
  size_t size;
- FT_Byte *buffer  = (FT_Byte*)RQNDKUtils::getAssetFileToBuffer( state, "RobotoMono-Regular.ttf", size);
+ buffer = (FT_Byte*)RQNDKUtils::getAssetFileToBuffer(android_app_state, "RobotoMono-Regular.ttf", size);
  
  if (buffer == NULL){
   return false;
  }
 
  FT_Error error = FT_Init_FreeType(&library);
- if (error) { return false; }
+ if (error) { 
+  free(buffer);
+  return false;
+ }
 
  error = FT_New_Memory_Face(library,
   buffer,    
   size,      
   0,         
-  &face);
- if (error) { return false; }
+  &face); 
+ if (error) { 
+  free(buffer); 
+  return false; 
+ }
 
- deviceDPI = RQNDKUtils::getDensityDpi(state);
+ deviceDPI = RQNDKUtils::getDensityDpi(android_app_state);
 
  return true;
+}
+void DoneFreeType(){ 
+ FT_Done_Face(face);
+ if(buffer) free(buffer), buffer = NULL;
 }
 
 bool SetFontPixelSize(FT_UInt _width, FT_UInt _heigth ){
@@ -47,7 +61,9 @@ bool SetFontPixelSize(FT_UInt _width, FT_UInt _heigth ){
  return true;
 }
 
-bool SetFaceSize(FT_F26Dot6  char_width, FT_F26Dot6 char_height ) {
+bool SetFaceSize(FT_F26Dot6  _char_width, FT_F26Dot6 _char_height ) {
+ char_width = _char_width;
+ char_height = _char_height;
  if (FT_Set_Char_Size(
   face,    /* handle to face object           */
   char_width,       /* char_width in 1/64th of points  */
@@ -67,6 +83,71 @@ inline int next_p2(int a)
  // rval<<=1 Is A Prettier Way Of Writing rval*=2;
  while (rval < a) rval <<= 1;
  return rval;
+}
+
+void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle)
+{
+ FT_BBox  bbox;
+ FT_BBox  glyph_bbox;
+ int pen_x, pen_y;
+
+ FT_Matrix matrix;
+ // set up matrix 
+ matrix.xx = (FT_Fixed)(cos(angle) * 0x10000L);
+ matrix.xy = (FT_Fixed)(-sin(angle) * 0x10000L);
+ matrix.yx = (FT_Fixed)(sin(angle) * 0x10000L);
+ matrix.yy = (FT_Fixed)(cos(angle) * 0x10000L);
+
+ /* initialize string bbox to "empty" values */
+ bbox.xMin = bbox.yMin = 32000;
+ bbox.xMax = bbox.yMax = -32000;
+ pen_x = pen_y = 0;
+ FT_Error error;
+ int num_chars = strlen(facestring);
+ //memset(&glyph,0,sizeof(glyph));
+ for (size_t n = 0; n < num_chars; n++) {
+  error = FT_Load_Char(face, (unsigned char)facestring[n], FT_LOAD_DEFAULT);
+  if (error)
+   continue;  /* ignore errors */
+  FT_Set_Transform(face, &matrix, &pen);
+  {
+   FT_Glyph glyph;
+   error = FT_Get_Glyph(face->glyph, &glyph);
+   FT_Glyph_Get_CBox(glyph, ft_glyph_bbox_pixels, &glyph_bbox);
+   FT_Done_Glyph(glyph);
+  }
+
+  glyph_bbox.xMin += pen_x;
+  glyph_bbox.xMax += pen_x;
+  glyph_bbox.yMin += pen_y;
+  glyph_bbox.yMax += pen_y;
+
+  if (glyph_bbox.xMin < bbox.xMin)
+   bbox.xMin = glyph_bbox.xMin;
+
+  if (glyph_bbox.yMin < bbox.yMin)
+   bbox.yMin = glyph_bbox.yMin;
+
+  if (glyph_bbox.xMax > bbox.xMax)
+   bbox.xMax = glyph_bbox.xMax;
+
+  if (glyph_bbox.yMax > bbox.yMax)
+   bbox.yMax = glyph_bbox.yMax;
+
+  pen_x += face->glyph->advance.x>>6;
+ }
+ 
+
+ /* check that we really grew the string bbox */
+ if (bbox.xMin > bbox.xMax){
+  bbox.xMin = 0;
+  bbox.yMin = 0;
+  bbox.xMax = 0;
+  bbox.yMax = 0;
+ }
+
+ /* return string bbox */
+ *abbox = bbox;
 }
 
 GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, float *v) {
@@ -94,7 +175,58 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
  pen.x = 0 * 64;
  pen.y = 0 * 64;
  size_t num_chars = strlen(_text);
+ 
+ unsigned int predicted_width;
+ unsigned int predicted_height;
+ int expanded_width = 0;
+ int expanded_height = 0;
+ GLubyte* expanded_data = NULL;
+ struct SRGBA {
+  unsigned char r, g, b, a;
+ };
+ union URGBA {
+  SRGBA rgba;
+  unsigned int field : 32;
+ };
+ URGBA foreground, background;
+ foreground.rgba.r = 255;
+ foreground.rgba.g = 0;
+ foreground.rgba.b = 0;
+ foreground.rgba.a = 255;
+ background.rgba.r = 10;
+ background.rgba.g = 19;
+ background.rgba.b = 35;
+ background.rgba.a = 70;
 
+
+ FT_BBox stringBBox;
+ computeStringBBox(_text, &stringBBox, _angle);
+ predicted_width = stringBBox.xMax-stringBBox.xMin;
+ predicted_height = stringBBox.yMax - stringBBox.yMin;
+ expanded_width = next_p2(predicted_width);
+ expanded_height = next_p2(predicted_height);
+ // Allocate Memory For The Texture Data.
+ //GLubyte* expanded_data = new GLubyte[2 * expanded_width * expanded_height];
+ expanded_data = new GLubyte[4 * expanded_width * expanded_height];
+
+
+ int j = 0;
+ int i = 0, ib;
+ int k = 0, l=0;
+
+
+ for( j = 0; j < predicted_height; j++){
+  for (i = 0; i < predicted_width; i++) {
+   expanded_data[4 * (i + j * expanded_width) + 0] = background.rgba.r;
+   expanded_data[4 * (i + j * expanded_width) + 1] = background.rgba.g;
+   expanded_data[4 * (i + j * expanded_width) + 2] = background.rgba.b;
+   expanded_data[4 * (i + j * expanded_width) + 3] = background.rgba.a;
+  }
+ }
+
+
+ j = i = 0;
+ unsigned int bmp_width, bmp_height;
  for (size_t n = 0; n < num_chars; n++) {
   // set transformation 
   FT_Set_Transform(face, &matrix, &pen);
@@ -109,9 +241,27 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
 //  slot->bitmap_left,
 //  my_target_height - slot->bitmap_top);
 
-
-  unsigned int bmp_width, bmp_height;
   bmp_width = slot->bitmap.width, bmp_height = slot->bitmap.rows;
+  k = bmp_height + pen.y;
+  l = bmp_width + pen.x;
+  for (j = pen.y; j < k; j++) {
+   for (i = pen.x, ib=0; i < l; i++, ib++) {
+    {
+     if ((slot->bitmap.buffer)[i + bmp_width * j] > 0) {
+      expanded_data[4 * (i + j * expanded_width) + 0] = (float)(foreground.rgba.r + (slot->bitmap.buffer)[ib + bmp_width * j])*0.5;
+      expanded_data[4 * (i + j * expanded_width) + 1] = (float)(foreground.rgba.g + (slot->bitmap.buffer)[ib + bmp_width * j])*0.5;
+      expanded_data[4 * (i + j * expanded_width) + 2] = (float)(foreground.rgba.b + (slot->bitmap.buffer)[ib + bmp_width * j])*0.5;
+      expanded_data[4 * (i + j * expanded_width) + 3] = (float)(foreground.rgba.a + (slot->bitmap.buffer)[ib + bmp_width * j])*0.5;
+     } else {
+//      expanded_data[4 * (k + j * expanded_width) + 0] = background.rgba.r;
+//      expanded_data[4 * (k + j * expanded_width) + 1] = background.rgba.g;
+//      expanded_data[4 * (k + j * expanded_width) + 2] = background.rgba.b;
+      expanded_data[4 * (i + j * expanded_width) + 3] = (float)(background.rgba.a + (slot->bitmap.buffer)[ib + bmp_width * j])*0.5;
+     }
+    }    
+
+
+
 
 
 
@@ -132,16 +282,7 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
 // Use Our Helper Function To Get The Widths Of
 // The Bitmap Data That We Will Need In Order To Create
 // Our Texture.
-  int expanded_width = next_p2(bmp_width);
-  int expanded_height = next_p2(bmp_height);
-
-  // Allocate Memory For The Texture Data.
-  //GLubyte* expanded_data = new GLubyte[2 * expanded_width * expanded_height];
-  GLubyte* expanded_data = new GLubyte[4 * expanded_width * expanded_height];
  
-  if(u) *u = (float)bmp_width / (float)expanded_width;
-  if(v) *v = (float)bmp_height/ (float)expanded_height;
-
   // Here We Fill In The Data For The Expanded Bitmap.
   // Notice That We Are Using A Two Channel Bitmap (One For
   // Channel Luminosity And One For Alpha), But We Assign
@@ -159,40 +300,24 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
   //}
 
 
-  struct SRGBA{
-   unsigned char r,g,b,a;
-  };
-  union URGBA{
-   SRGBA rgba;
-   unsigned int field : 32;
-  };
-  URGBA foreground, background;
-  foreground.rgba.r = 255;
-  foreground.rgba.g = 0;
-  foreground.rgba.b = 0;
-  foreground.rgba.a = 255;
-  background.rgba.r = 10;
-  background.rgba.g = 19;
-  background.rgba.b = 35;
-  background.rgba.a = 70;
 
-  for (int j = 0; j < expanded_height; j++) {
-   for (int i = 0; i < expanded_width; i++) {
-    if(i >= bmp_width || j >= bmp_height){
-     *((unsigned int*)&(expanded_data[4 * (i + j * expanded_width)])) = 0;
-    }else{
-     if ((slot->bitmap.buffer)[i + bmp_width * j] > 0){
-      expanded_data[4 * (i + j * expanded_width) + 0] = (float)(foreground.rgba.r + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
-      expanded_data[4 * (i + j * expanded_width) + 1] = (float)(foreground.rgba.g + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
-      expanded_data[4 * (i + j * expanded_width) + 2] = (float)(foreground.rgba.b + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
-      expanded_data[4 * (i + j * expanded_width) + 3] = (float)(foreground.rgba.a + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
-     }else{
-      expanded_data[4 * (i + j * expanded_width) + 0] = background.rgba.r;
-      expanded_data[4 * (i + j * expanded_width) + 1] = background.rgba.g;
-      expanded_data[4 * (i + j * expanded_width) + 2] = background.rgba.b;
-      expanded_data[4 * (i + j * expanded_width) + 3] = (float)(background.rgba.a + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
-     }
-    }
+  //for (int j = 0; j < expanded_height; j++) {
+  // for (int i = 0; i < expanded_width; i++) {
+  //  if(i >= bmp_width || j >= bmp_height){
+  //   *((unsigned int*)&(expanded_data[4 * (i + j * expanded_width)])) = 0;
+  //  }else{
+  //   if ((slot->bitmap.buffer)[i + bmp_width * j] > 0){
+  //    expanded_data[4 * (i + j * expanded_width) + 0] = (float)(foreground.rgba.r + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
+  //    expanded_data[4 * (i + j * expanded_width) + 1] = (float)(foreground.rgba.g + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
+  //    expanded_data[4 * (i + j * expanded_width) + 2] = (float)(foreground.rgba.b + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
+  //    expanded_data[4 * (i + j * expanded_width) + 3] = (float)(foreground.rgba.a + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
+  //   }else{
+  //    expanded_data[4 * (i + j * expanded_width) + 0] = background.rgba.r;
+  //    expanded_data[4 * (i + j * expanded_width) + 1] = background.rgba.g;
+  //    expanded_data[4 * (i + j * expanded_width) + 2] = background.rgba.b;
+  //    expanded_data[4 * (i + j * expanded_width) + 3] = (float)(background.rgba.a + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
+  //   }
+  //  }
     //}else if((slot->bitmap.buffer)[i + bmp_width * j] > 126){
     // *((unsigned int*)&(expanded_data[4 * (i + j * expanded_width)])) = foreground.field;
     //}else{
@@ -205,6 +330,11 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
 //     0 : (slot->bitmap.buffer)[i + bmp_width * j];
    }
   }
+ 
+  pen.x += slot->advance.x>>6;
+  //pen.y += slot->advance.y>>6;
+
+
 
 
 //if (error)
@@ -219,30 +349,36 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
   //{ 
   // return texture;
   //}  
-
-  glBindTexture( GL_TEXTURE_2D, texture );
-//  glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, expanded_width, expanded_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, (GLvoid*)(expanded_data) );
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, expanded_width, expanded_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(expanded_data));
-  GLenum glerror = glGetError();
-  if (glerror)
-  {
-   return texture;
-  }
-
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   
-
-  //free(PNG_image);
-  delete [] expanded_data;
   //                                    USE BITMAP CLASS TO DRAW STRING AND THEN USE CODE ABOVE TO MAP
 //                                 STORE UV COORDS WHERE BORDER IS (POT)
       
 
 
   //increment pen position 
-  //pen.x += slot->advance.x;
-  //pen.y += slot->advance.y;
  }
- return texture;
+
+
+ 
+ if (u) *u = (float)predicted_width / (float)expanded_width;
+ if (v) *v = (float)predicted_height / (float)expanded_height;
+
+
+ glBindTexture(GL_TEXTURE_2D, texture);
+ //  glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, expanded_width, expanded_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, (GLvoid*)(expanded_data) );
+ glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, expanded_width, expanded_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(expanded_data));
+ GLenum glerror = glGetError();
+ if (glerror)
+ {
+  return texture;
+ }
+
+ glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+ glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+
+ //free(PNG_image);
+ delete[] expanded_data;
+
+
+return texture;
 }

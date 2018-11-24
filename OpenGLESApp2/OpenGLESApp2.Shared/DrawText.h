@@ -10,6 +10,8 @@
 
 #include <IFEUtils.h>
 
+#include <freetype/ftglyph.h>
+
 extern FT_Library  library;
 extern FT_Face     face;
 extern int32_t deviceDPI;
@@ -18,9 +20,13 @@ extern FT_Matrix     matrix;              /* transformation matrix */
 extern FT_UInt       glyph_index;
 extern FT_Vector     pen;                 /* untransformed origin */
 extern int           n;
+extern FT_Byte *buffer;
+extern struct android_app* android_app_state;
 
-bool InitFreeType(struct android_app* state);
+bool InitFreeType(struct android_app* _state = NULL);
+void DoneFreeType();
 bool SetFaceSize(FT_F26Dot6  char_width, FT_F26Dot6  char_height );
+void  computeStringBBox(char *glyphs, FT_BBox  *abbox, float angle);
 GLuint DrawText( char *_text, FT_UInt _target_height, double _angle, float *u = NULL, float *v = NULL );
 
 inline int next_p2(int a);
