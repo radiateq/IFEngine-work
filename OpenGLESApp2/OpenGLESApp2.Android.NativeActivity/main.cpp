@@ -101,61 +101,109 @@ void TESTFN_AddRandomBody(engine &engine){
    IFGameEditor::GetTouchEvent(&touchx, &touchy);   
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = ((drand48()>0.5)?b2_staticBody: b2_dynamicBody);
-   b2PolygonShape *polyShape = new b2PolygonShape;
-   b2Vec2 shapeCoords[8];
-   b2FixtureDef *fixture = new b2FixtureDef;
+   if( drand48() > 0.3){
 
-   //IFAdapter.OrderedBody()->body_def->position.Set(touchx*IFA_box2D_factor, touchy*IFA_box2D_factor);
 
-//   //Go backwards from viewport to frustrum to transformation coordinates
-//   // First calculate z because we need it to calculate x and y
-//   //Since z is known and does not exist in screen coordinates we calculate it as OpenGL ES would
-//   //RQNDKUtils::SRangeScale2 zRange(IFEUtils::zvnear, IFEUtils::zvfar);
-//   float zCoord = -zDefaultLayer;
-//   //zCoord = zRange.ScaleAndClip(zCoord, IFEUtils::znear, IFEUtils::zfar);
-//   //      then frustum matrix   
-//   zCoord = (zCoord*(IFEUtils::zfar + IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear) + (zCoord*(IFEUtils::zfar* IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear);
-//   //      perspective division
-//   //zCoord /= -zCoord;
-////   zCoord = ((IFEUtils::zvfar - IFEUtils::zvnear) / 2.0)*zCoord + (IFEUtils::zvnear + IFEUtils::zvfar) / 2.0;
-//
-// 
-//   //               this is result of viewport matrix for x, backwards
-//   float screenx;
-//   //                find center of viewport
-//   float ox = (float)engine.width * 0.5;
-//   //                viewport size in pixels
-//   float px = engine.width;
-//   //                send back through window
-//   screenx = 2.0*(ox- touchx)/px;
-//   //                this is result of frustum matrix for x, backwards
-//   screenx = (IFEUtils::left*screenx+ IFEUtils::left*(zCoord)-IFEUtils::right*screenx+ IFEUtils::right*(zCoord))/(2* IFEUtils::znear);
-//   //                this is reverse transformation matrix
-//   screenx  = (screenx * -zDefaultLayer) / IFA_box2D_factor;
-//   //Same for y
-//   float screeny;// = ((float)engine.height - 2.0f* (float)touchy) / (-(float)engine.height);
-//   float oy = (float)engine.height * 0.5;
-//   float py = engine.height;
-//   screeny = 2.0*(oy - touchy) / py;
-//   //                this is reversed frustum matrix
-//   screeny = (IFEUtils::bottom*screeny + IFEUtils::bottom * (zCoord)-IFEUtils::top * screeny + IFEUtils::top * (zCoord)) / (2 * IFEUtils::znear);
-//   //                this is reverse transformation matrix
-//   screeny = (screeny*zDefaultLayer)/IFA_box2D_factor;
-   float screenx = touchx;
-   float screeny = touchy;
-   Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height );
-   IFAdapter.OrderedBody()->body_def->position.Set(screenx/ IFA_box2D_factor, screeny/ IFA_box2D_factor);
-   shapeCoords[0] = { -1,  -1 };
-   shapeCoords[1] = { 16,  -1 };
-   shapeCoords[2] = { 16,   6 };
-   shapeCoords[3] = { -1,   6 };
-   polyShape->Set(shapeCoords, 4);
-   fixture->shape = polyShape;
-   fixture->density = 1.1;
-   fixture->friction = 0.3;
-   fixture->restitution = 0.001;
+    b2EdgeShape *polyShape = new b2EdgeShape;
+    b2Vec2 shapeCoords[8];
+    b2FixtureDef *fixture = new b2FixtureDef;
 
-   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+
+
+
+    float screenx = touchx;
+    float screeny = touchy;
+    Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height);
+    IFAdapter.OrderedBody()->body_def->position.Set(screenx / IFA_box2D_factor, screeny / IFA_box2D_factor);
+    shapeCoords[0] = { -2,  0 };
+    shapeCoords[1] = { -1,  0 };
+    shapeCoords[2] = { 1,   0 };
+    shapeCoords[3] = { 2,   0 };
+
+    polyShape->Set(shapeCoords[1], shapeCoords[2]);
+    polyShape->m_hasVertex0 = true;
+    polyShape->m_hasVertex3 = true;
+    polyShape->m_vertex0 = shapeCoords[0];
+    polyShape->m_vertex3 = shapeCoords[3];
+    //polyShape->Set(shapeCoords, 4);
+    fixture->shape = polyShape;
+    fixture->density = 1.1;
+    fixture->friction = 0.3;
+    fixture->restitution = 0.001;
+
+    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+
+
+   }else{
+
+
+    b2CircleShape *polyShape = new b2CircleShape;
+    polyShape->m_p.SetZero();
+    polyShape->m_radius = 3.0;
+
+
+
+
+
+    //b2PolygonShape *polyShape = new b2PolygonShape;
+    //b2Vec2 shapeCoords[8];
+    b2FixtureDef *fixture = new b2FixtureDef;
+
+
+
+
+    //IFAdapter.OrderedBody()->body_def->position.Set(touchx*IFA_box2D_factor, touchy*IFA_box2D_factor);
+
+ //   //Go backwards from viewport to frustrum to transformation coordinates
+ //   // First calculate z because we need it to calculate x and y
+ //   //Since z is known and does not exist in screen coordinates we calculate it as OpenGL ES would
+ //   //RQNDKUtils::SRangeScale2 zRange(IFEUtils::zvnear, IFEUtils::zvfar);
+ //   float zCoord = -zDefaultLayer;
+ //   //zCoord = zRange.ScaleAndClip(zCoord, IFEUtils::znear, IFEUtils::zfar);
+ //   //      then frustum matrix   
+ //   zCoord = (zCoord*(IFEUtils::zfar + IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear) + (zCoord*(IFEUtils::zfar* IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear);
+ //   //      perspective division
+ //   //zCoord /= -zCoord;
+ ////   zCoord = ((IFEUtils::zvfar - IFEUtils::zvnear) / 2.0)*zCoord + (IFEUtils::zvnear + IFEUtils::zvfar) / 2.0;
+ //
+ // 
+ //   //               this is result of viewport matrix for x, backwards
+ //   float screenx;
+ //   //                find center of viewport
+ //   float ox = (float)engine.width * 0.5;
+ //   //                viewport size in pixels
+ //   float px = engine.width;
+ //   //                send back through window
+ //   screenx = 2.0*(ox- touchx)/px;
+ //   //                this is result of frustum matrix for x, backwards
+ //   screenx = (IFEUtils::left*screenx+ IFEUtils::left*(zCoord)-IFEUtils::right*screenx+ IFEUtils::right*(zCoord))/(2* IFEUtils::znear);
+ //   //                this is reverse transformation matrix
+ //   screenx  = (screenx * -zDefaultLayer) / IFA_box2D_factor;
+ //   //Same for y
+ //   float screeny;// = ((float)engine.height - 2.0f* (float)touchy) / (-(float)engine.height);
+ //   float oy = (float)engine.height * 0.5;
+ //   float py = engine.height;
+ //   screeny = 2.0*(oy - touchy) / py;
+ //   //                this is reversed frustum matrix
+ //   screeny = (IFEUtils::bottom*screeny + IFEUtils::bottom * (zCoord)-IFEUtils::top * screeny + IFEUtils::top * (zCoord)) / (2 * IFEUtils::znear);
+ //   //                this is reverse transformation matrix
+ //   screeny = (screeny*zDefaultLayer)/IFA_box2D_factor;
+    float screenx = touchx;
+    float screeny = touchy;
+    Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height );
+    IFAdapter.OrderedBody()->body_def->position.Set(screenx/ IFA_box2D_factor, screeny/ IFA_box2D_factor);
+    //shapeCoords[0] = { -1,  -1 };
+    //shapeCoords[1] = { 16,  -1 };
+    //shapeCoords[2] = { 16,   6 };
+    //shapeCoords[3] = { -1,   6 };
+    //polyShape->Set(shapeCoords, 4);
+    fixture->shape = polyShape;
+    fixture->density = 1.1;
+    fixture->friction = 0.3;
+    fixture->restitution = 0.001;
+    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+   }
+
    ifCB2Body *first_body = IFAdapter.OrderedBody();
    if (!IFAdapter.MakeBody())
     return;

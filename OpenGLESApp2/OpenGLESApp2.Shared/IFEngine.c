@@ -8,7 +8,7 @@ using Eigen::MatrixXf;
 //extern bool IFEngine_Initialized = false;
 
 
-ifTbodiesList BodiesList = { 0,NULL };
+ifTbodiesList BodiesList = { 0, NULL };
 ifTCounter IFE_max_bodies = 150;
 
 void Init_ifTbodyDefinition(ifTbodyDefinition *_init_var){ 
@@ -60,6 +60,9 @@ void PrepareDraw(){
 
 void DrawBodies() {
  
+
+
+
  //glMatrixMode(GL_MODELVIEW);
  glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -67,7 +70,10 @@ void DrawBodies() {
   ifTbodyDefinition *pifebody = BodiesList.bodies[bodies_count];
   //pifebody->vertices;
   //pifebody->indices;
-
+  if (pifebody->vertices_mode == GL_LINES) {
+   int a = 0;
+   a++;
+  }
   //load vertices
   
   //GLfloat *vertices = new GLfloat[ 1 * 2];
@@ -86,7 +92,6 @@ void DrawBodies() {
 
   if ((pifebody->UVmapping_cnt > 0) && (pifebody->texture_ID != GL_INVALID_VALUE)) {
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
    glBindTexture(GL_TEXTURE_2D, pifebody->texture_ID);
    glActiveTexture(GL_TEXTURE0);
    glTexCoordPointer(2, GL_FLOAT, sizeof(GLfloat) * 2, pifebody->UVmapping);
@@ -97,6 +102,9 @@ void DrawBodies() {
   if (pifebody->indices_cnt > 0) {
    glDrawElements(pifebody->vertices_mode, pifebody->indices_cnt, GL_UNSIGNED_BYTE, pifebody->indices);
   } else {
+   if(pifebody->vertices_mode==GL_LINES|| pifebody->vertices_mode == GL_LINE_STRIP|| pifebody->vertices_mode == GL_LINE_LOOP){
+    glLineWidth(pifebody->line_thickness);
+   }
    glDrawArrays(pifebody->vertices_mode, 0, pifebody->vertices_cnt * 0.5);
   }
   

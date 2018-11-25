@@ -339,6 +339,8 @@ void Setup_OpenGL(double width, double height) {
  glEnable(GL_BLEND);
  glEnable(GL_TEXTURE_2D);
  glFrontFace(GL_CCW);
+ glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
+
 
  IFEUtils::zvnear = 0.0;
  IFEUtils::zvfar = 1.0;

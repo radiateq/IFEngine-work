@@ -91,12 +91,19 @@ public:
    if (shape_index == 0){
     switch ((*iter)->shape->m_type) {
     case b2Shape::e_chain:
+     *vertices_mode = GL_LINE_STRIP;
+    break;
     case b2Shape::e_edge:
-     *vertices_mode = GL_LINE_LOOP;
-     if (*vertices == NULL) {
-      break;
+     vertices_count = 2*2;
+     if (*vertices != NULL) {
+      free(*vertices);
      }
+     *vertices = (GLfloat*)malloc(sizeof(*vertices[0]) * vertices_count);
      *vertices_mode = GL_LINES;
+     (*vertices)[0] = ((b2EdgeShape*)(*iter)->shape)->m_vertex1.x;
+     (*vertices)[1] = ((b2EdgeShape*)(*iter)->shape)->m_vertex1.y;
+     (*vertices)[2] = ((b2EdgeShape*)(*iter)->shape)->m_vertex2.x;
+     (*vertices)[3] = ((b2EdgeShape*)(*iter)->shape)->m_vertex2.y;
      break;
     case b2Shape::e_polygon:
     {
@@ -107,22 +114,39 @@ public:
      *vertices = (GLfloat*)malloc(sizeof(*vertices[0]) * vertices_count);
      *vertices_mode = GL_TRIANGLES;
      unsigned int cntmax = vertices_count * 0.5;
-     //looking for the left first then bottom coordinate
      Vector2dVector v2vertices;
      for (ifTCounter cnt = 0; cnt < cntmax; cnt++) {
       (*vertices)[2 * cnt] = ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].x;
       (*vertices)[2 * cnt + 1] = ((b2PolygonShape*)(*iter)->shape)->m_vertices[cnt].y;
       v2vertices.push_back(Vector2d((*vertices)[2 * cnt], (*vertices)[2 * cnt + 1]));
-     }
+     }   
      Triangulate::Process(v2vertices, indices_count, *indices);
 
      break;
     }
     case b2Shape::e_circle:
-     if (*vertices == NULL) {
-      break;
+    {
+      unsigned int const segments = 90;
+      float angle_start = 0.0;
+      float angle_stop = b2_pi * 2;
+      float const angle_step = (angle_stop - angle_start) / (float)segments;
+
+      vertices_count = 2 * (segments + 2);
+      if (*vertices != NULL) {
+       free(*vertices);
+      }
+      *vertices = (GLfloat*)malloc(sizeof(*vertices[0]) * vertices_count);
+      *vertices_mode = GL_TRIANGLE_FAN;      
+      unsigned int cntmax = vertices_count * 0.5;
+      //looking for the left first then bottom coordinate
+      (*vertices)[0] = (*vertices)[1] = 0.0f;
+      //Vector2dVector v2vertices;
+      for (ifTCounter cnt = 1; cnt < cntmax; cnt++) {
+       (*vertices)[2 * cnt + 0] = cos(angle_start + (float)(cnt - 1) * angle_step) * ((b2PolygonShape*)(*iter)->shape)->m_radius;
+       (*vertices)[2 * cnt + 1] = sin(angle_start + (float)(cnt - 1) * angle_step) * ((b2PolygonShape*)(*iter)->shape)->m_radius;
+      // v2vertices.push_back(Vector2d((*vertices)[2 * cnt], (*vertices)[2 * cnt + 1]));
+      }
      }
-     *vertices_mode = GL_LINE_LOOP;
      break;
     }
     //Exit for
@@ -171,7 +195,9 @@ public:
    }
    OrderPending = false;
    ifCB2Body *work_body = Bodies.back();
-   DefaultUVMapping( work_body->OGL_body );
+   //if(work_body->OGL_body->vertices_mode!=GL_LINE_STRIP&& work_body->OGL_body->vertices_mode != GL_LINES){
+    DefaultUVMapping( work_body->OGL_body );
+   //}
   }
   return true;
  }
@@ -201,6 +227,7 @@ public:
    Init_ifTbodyDefinition(work_body);
    (*iter)->BodyToVertices(cnt, work_body->vertices_cnt, work_body->indices_cnt, &(work_body->vertices_mode), &(work_body->vertices), &(work_body->indices));
    (*iter)->OGL_body = work_body;
+   (*iter)->OGL_body->line_thickness = 3.0f;
    work_body->z_pos = zDefaultLayer;
    work_body->colors_cnt = work_body->vertices_cnt * 2;
    work_body->colors = (GLfloat*)malloc(sizeof(GLfloat) * work_body->colors_cnt);
@@ -427,5 +454,7 @@ public:
  void MakeWorld(float32 gx, float32 gy) {
   ifCB2WorldManager::MakeWorld(gx, gy);
  }
+//get collisions
+//make joints and motors
 
 };

@@ -26,7 +26,8 @@ bool InitFreeType(struct android_app* _state){
   android_app_state = _state;  
  }
  size_t size;
- buffer = (FT_Byte*)RQNDKUtils::getAssetFileToBuffer(android_app_state, "RobotoMono-Regular.ttf", size);
+ //buffer = (FT_Byte*)RQNDKUtils::getAssetFileToBuffer(android_app_state, "RobotoMono-Regular.ttf", size);
+ buffer = (FT_Byte*)RQNDKUtils::getAssetFileToBuffer(android_app_state, "Roboto-Thin.ttf", size);
  
  if (buffer == NULL){
   return false;

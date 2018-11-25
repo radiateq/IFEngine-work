@@ -43,7 +43,8 @@ typedef struct{
  GLfloat modelview_matrix[16], texture_matrix[16];
  //Texture name
  GLuint texture_ID;
- //Normals (included in box2d b2_shape if needed
+ GLfloat line_thickness;
+ //Normals (included in box2d b2_shape if needed)
 }ifTbodyDefinition;
 
 //Structure holding list of bodies
