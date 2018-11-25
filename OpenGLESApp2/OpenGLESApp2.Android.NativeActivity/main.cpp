@@ -80,7 +80,7 @@ TS_User_Data User_Data;
 
 
 GLuint TEST_textid;
-GLfloat TEST_text_u, TEST_text_v;
+GLfloat TEST_text_ub, TEST_text_vb, TEST_text_ut, TEST_text_vt;
 struct timespec TEST_Last_Added_Body_Time;
 void TESTFN_AddRandomBody(engine &engine){
  if (engine.EGL_initialized) {
@@ -147,8 +147,8 @@ void TESTFN_AddRandomBody(engine &engine){
    IFAdapter.OrderedBody()->body_def->position.Set(screenx/ IFA_box2D_factor, screeny/ IFA_box2D_factor);
    shapeCoords[0] = { -1,  -1 };
    shapeCoords[1] = { 16,  -1 };
-   shapeCoords[2] = { 16,   2 };
-   shapeCoords[3] = { -1,   2 };
+   shapeCoords[2] = { 16,   6 };
+   shapeCoords[3] = { -1,   6 };
    polyShape->Set(shapeCoords, 4);
    fixture->shape = polyShape;
    fixture->density = 1.1;
@@ -162,10 +162,6 @@ void TESTFN_AddRandomBody(engine &engine){
    //Additional work on body  
    if (drand48() > 0.5) {
     first_body->OGL_body->texture_ID = TEST_textid;
-    for( int cnt = 0; cnt < first_body->OGL_body->UVmapping_cnt; cnt++){
-     first_body->OGL_body->UVmapping[cnt]*=TEST_text_u;
-     first_body->OGL_body->UVmapping[++cnt] *= TEST_text_v;
-    }
    }
    else {
     first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
@@ -438,7 +434,7 @@ void Init_IFAdapter(engine &engine) {
   IFAdapter.CalculateBox2DSizeFactor(1000*drand48()+500);
 
   IFAdapter.OrderBody();
-  IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
+  IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
   IFAdapter.OrderedBody()->body_def->position.Set(-0.0,5.0);
   b2PolygonShape *polyShape = new b2PolygonShape;
   b2Vec2 shapeCoords[8];
@@ -454,8 +450,8 @@ void Init_IFAdapter(engine &engine) {
 
   shapeCoords[0] = { -1,  -1 };
   shapeCoords[1] = {  16,  -1 };
-  shapeCoords[2] = {  16,   2 };
-  shapeCoords[3] = { -1,   2 };
+  shapeCoords[2] = {  16,   5 };
+  shapeCoords[3] = { -1,   5 };
   //shapeCoords[4] = { 4,  1 };
   //shapeCoords[5] = { 3,  2 };
   //shapeCoords[6] = { 2,  2 };
@@ -478,9 +474,9 @@ void Init_IFAdapter(engine &engine) {
   ifCB2Body *first_body = IFAdapter.OrderedBody();
   if (IFAdapter.MakeBody()){
    //Additional work on body  
-   SetFaceSize(700, 700);
-   char outstring[20] = {'H','J','\0','-','\0'};
-   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 20, 45, &TEST_text_u, &TEST_text_v);
+   SetFaceSize(10*64, 10 * 64);
+   char outstring[20] = {'R','o','b','0','t','0','\0'};
+   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 16, FT_Vector()={20*64,10*64}, 3.141593*0.25, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    //(engine.width / 20, engine.height / 20);
   }
 

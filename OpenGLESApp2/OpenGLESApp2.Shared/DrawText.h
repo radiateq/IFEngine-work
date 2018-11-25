@@ -26,8 +26,8 @@ extern struct android_app* android_app_state;
 bool InitFreeType(struct android_app* _state = NULL);
 void DoneFreeType();
 bool SetFaceSize(FT_F26Dot6  char_width, FT_F26Dot6  char_height );
-void  computeStringBBox(char *glyphs, FT_BBox  *abbox, float angle);
-GLuint DrawText( char *_text, FT_UInt _target_height, double _angle, float *u = NULL, float *v = NULL );
+void  computeStringBBox(char *glyphs, FT_BBox  *abbox, float angle, FT_Vector _pos);
+GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double _angle, float *ub = NULL, float *vb = NULL, float *ut = NULL, float *vt = NULL);
 
 inline int next_p2(int a);
 

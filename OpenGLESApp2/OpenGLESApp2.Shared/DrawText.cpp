@@ -85,11 +85,10 @@ inline int next_p2(int a)
  return rval;
 }
 
-void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle)
+void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle, FT_Vector _pos )
 {
  FT_BBox  bbox;
  FT_BBox  glyph_bbox;
- int pen_x, pen_y;
 
  FT_Matrix matrix;
  // set up matrix 
@@ -101,7 +100,6 @@ void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle)
  /* initialize string bbox to "empty" values */
  bbox.xMin = bbox.yMin = 32000;
  bbox.xMax = bbox.yMax = -32000;
- pen_x = pen_y = 0;
  FT_Error error;
  int num_chars = strlen(facestring);
  //memset(&glyph,0,sizeof(glyph));
@@ -109,18 +107,22 @@ void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle)
   error = FT_Load_Char(face, (unsigned char)facestring[n], FT_LOAD_DEFAULT);
   if (error)
    continue;  /* ignore errors */
-  FT_Set_Transform(face, &matrix, &pen);
-  {
+ {
    FT_Glyph glyph;
    error = FT_Get_Glyph(face->glyph, &glyph);
    FT_Glyph_Get_CBox(glyph, ft_glyph_bbox_pixels, &glyph_bbox);
    FT_Done_Glyph(glyph);
   }
 
-  glyph_bbox.xMin += pen_x;
-  glyph_bbox.xMax += pen_x;
-  glyph_bbox.yMin += pen_y;
-  glyph_bbox.yMax += pen_y;
+ FT_Set_Transform(face, &matrix, &_pos);
+
+  _pos.x += face->glyph->advance.x;
+  _pos.y += face->glyph->advance.y;
+
+  glyph_bbox.xMin += _pos.x>>6;
+  glyph_bbox.xMax += _pos.x >> 6;
+  glyph_bbox.yMin += _pos.y >> 6;
+  glyph_bbox.yMax += _pos.y >> 6;
 
   if (glyph_bbox.xMin < bbox.xMin)
    bbox.xMin = glyph_bbox.xMin;
@@ -134,7 +136,7 @@ void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle)
   if (glyph_bbox.yMax > bbox.yMax)
    bbox.yMax = glyph_bbox.yMax;
 
-  pen_x += face->glyph->advance.x>>6;
+
  }
  
 
@@ -150,9 +152,10 @@ void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle)
  *abbox = bbox;
 }
 
-GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, float *v) {
+GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double _angle, float *ub, float *vb, float *ut, float *vt) {
 
  GLuint texture = GL_INVALID_VALUE;
+                                                                              //  _angle=0;
 
  slot = face->glyph;                /* a small shortcut */
 
@@ -170,10 +173,10 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
 
  ///* the pen position in 26.6 cartesian space coordinates 
  ///* start at (300,200)                                   
- //pen.x = 300 * 64;
- //pen.y = (_target_height - 200) * 64;
- pen.x = 0 * 64;
- pen.y = 0 * 64;
+ pen.x = start_pos.x;
+ pen.y = start_pos.y;
+ //pen.x = 0 * 64;
+ //pen.y = 0 * 64;
  size_t num_chars = strlen(_text);
  
  unsigned int predicted_width;
@@ -200,7 +203,7 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
 
 
  FT_BBox stringBBox;
- computeStringBBox(_text, &stringBBox, _angle);
+ computeStringBBox(_text, &stringBBox, _angle, pen);
  predicted_width = stringBBox.xMax-stringBBox.xMin;
  predicted_height = stringBBox.yMax - stringBBox.yMin;
  expanded_width = next_p2(predicted_width);
@@ -210,13 +213,13 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
  expanded_data = new GLubyte[4 * expanded_width * expanded_height];
 
 
- int j = 0;
+ int j = 0, jb;
  int i = 0, ib;
  int k = 0, l=0;
 
 
- for( j = 0; j < predicted_height; j++){
-  for (i = 0; i < predicted_width; i++) {
+ for( j = 0; j < expanded_width; j++){
+  for (i = 0; i < expanded_height; i++) {
    expanded_data[4 * (i + j * expanded_width) + 0] = background.rgba.r;
    expanded_data[4 * (i + j * expanded_width) + 1] = background.rgba.g;
    expanded_data[4 * (i + j * expanded_width) + 2] = background.rgba.b;
@@ -227,12 +230,15 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
 
  j = i = 0;
  unsigned int bmp_width, bmp_height;
+FT_UInt glyph_index;
+FT_Error error;
  for (size_t n = 0; n < num_chars; n++) {
-  // set transformation 
-  FT_Set_Transform(face, &matrix, &pen);
 
   //load glyph image into the slot (erase previous one) 
-  FT_Error error = FT_Load_Char(face, _text[n], FT_LOAD_RENDER);
+  //error = FT_Load_Char(face, _text[n], FT_LOAD_RENDER);
+
+  glyph_index = FT_Get_Char_Index(face, _text[n]);
+  error = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
   if (error)
    continue;  /* ignore errors */
 
@@ -240,23 +246,23 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
 // my_draw_bitmap(&slot->bitmap,
 //  slot->bitmap_left,
 //  my_target_height - slot->bitmap_top);
+  // set transformation 
+  FT_Set_Transform(face, &matrix, &pen);
+
+  pen.x += slot->advance.x;
+  pen.y += slot->advance.y;
 
   bmp_width = slot->bitmap.width, bmp_height = slot->bitmap.rows;
-  k = bmp_height + pen.y;
-  l = bmp_width + pen.x;
-  for (j = pen.y; j < k; j++) {
-   for (i = pen.x, ib=0; i < l; i++, ib++) {
+  k = bmp_height + (pen.y>>6);
+  l = bmp_width + (pen.x >> 6);
+  for (j = (pen.y >> 6), jb = bmp_height-1; j < k; j++, jb--) {
+   for (i = (pen.x >> 6), ib=0; i < l; i++, ib++) {
     {
-     if ((slot->bitmap.buffer)[i + bmp_width * j] > 0) {
-      expanded_data[4 * (i + j * expanded_width) + 0] = (float)(foreground.rgba.r + (slot->bitmap.buffer)[ib + bmp_width * j])*0.5;
-      expanded_data[4 * (i + j * expanded_width) + 1] = (float)(foreground.rgba.g + (slot->bitmap.buffer)[ib + bmp_width * j])*0.5;
-      expanded_data[4 * (i + j * expanded_width) + 2] = (float)(foreground.rgba.b + (slot->bitmap.buffer)[ib + bmp_width * j])*0.5;
-      expanded_data[4 * (i + j * expanded_width) + 3] = (float)(foreground.rgba.a + (slot->bitmap.buffer)[ib + bmp_width * j])*0.5;
-     } else {
-//      expanded_data[4 * (k + j * expanded_width) + 0] = background.rgba.r;
-//      expanded_data[4 * (k + j * expanded_width) + 1] = background.rgba.g;
-//      expanded_data[4 * (k + j * expanded_width) + 2] = background.rgba.b;
-      expanded_data[4 * (i + j * expanded_width) + 3] = (float)(background.rgba.a + (slot->bitmap.buffer)[ib + bmp_width * j])*0.5;
+     if ((slot->bitmap.buffer)[ib + bmp_width * jb] > 0) {
+      expanded_data[4 * (i + j * expanded_width) + 0] = (unsigned char)((float)(foreground.rgba.r + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
+      expanded_data[4 * (i + j * expanded_width) + 1] = (unsigned char)((float)(foreground.rgba.g + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
+      expanded_data[4 * (i + j * expanded_width) + 2] = (unsigned char)((float)(foreground.rgba.b + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
+      expanded_data[4 * (i + j * expanded_width) + 3] = (unsigned char)((float)(foreground.rgba.a + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
      }
     }    
 
@@ -331,8 +337,6 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
    }
   }
  
-  pen.x += slot->advance.x>>6;
-  //pen.y += slot->advance.y>>6;
 
 
 
@@ -359,9 +363,10 @@ GLuint DrawText(char *_text, FT_UInt _target_height, double _angle, float *u, fl
 
 
  
- if (u) *u = (float)predicted_width / (float)expanded_width;
- if (v) *v = (float)predicted_height / (float)expanded_height;
-
+ if (ub) *ub = (float)stringBBox.xMin / (float)expanded_width;
+ if (vb) *vb = (float)stringBBox.yMin / (float)expanded_height;
+ if (ut) *ut = ((float)predicted_width + (float)stringBBox.xMin ) / (float)expanded_width;
+ if (vt) *vt = ((float)predicted_height + (float)stringBBox.yMin ) / (float)expanded_height ;
 
  glBindTexture(GL_TEXTURE_2D, texture);
  //  glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, expanded_width, expanded_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, (GLvoid*)(expanded_data) );
