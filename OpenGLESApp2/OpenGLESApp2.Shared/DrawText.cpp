@@ -11,12 +11,20 @@ FT_UInt       glyph_index;
 FT_Vector     pen;                 /* untransformed origin */
 FT_Byte      *buffer = NULL;
 int           n;
-int char_width, char_height;
+int char_width = 0, char_height = 0;
+int char_width_px = 0, char_height_px = 0;
 struct android_app* android_app_state = NULL;
 
 bool InitFreeType(struct android_app* _state){
 
-if(_state!=NULL) android_app_state = _state;
+ if (buffer != NULL) {
+  DoneFreeType();  
+ }
+
+
+ if(_state!=NULL){  
+  android_app_state = _state;  
+ }
  size_t size;
  buffer = (FT_Byte*)RQNDKUtils::getAssetFileToBuffer(android_app_state, "RobotoMono-Regular.ttf", size);
  
@@ -44,26 +52,36 @@ if(_state!=NULL) android_app_state = _state;
 
  return true;
 }
-void DoneFreeType(){ 
- FT_Done_Face(face);
- if(buffer) free(buffer), buffer = NULL;
+void DoneFreeType(){  
+ if(buffer){
+  FT_Done_Face(face);
+  free(buffer), buffer = NULL;
+ }
 }
 
 bool SetFontPixelSize(FT_UInt _width, FT_UInt _heigth ){
+ if(_width!=0|| _heigth!=0){
+  char_width_px = _width;
+  char_height_px = _heigth;
+ }
+ char_width = char_height = 0;
  //If you want to specify the(integer) pixel sizes yourself, you can call FT_Set_Pixel_Sizes.
  FT_Error error = FT_Set_Pixel_Sizes(
   face,   /* handle to face object */
-  _width,      /* pixel_width           */
-  _heigth);   /* pixel_height          */
+  char_width_px,      /* pixel_width           */
+  char_height_px);   /* pixel_height          */
  //This example sets the character pixel sizes to 16×16 pixels.As previously, a value of 0 for one of the dimensions means ‘same as the other’.
  if (error) { return false; }
  //Note that both functions return an error code.Usually, an error occurs with a fixed - size font format(like FNT or PCF) when trying to set the pixel size to a value that is not listed in the face->fixed_sizes array.
  return true;
 }
 
-bool SetFaceSize(FT_F26Dot6  _char_width, FT_F26Dot6 _char_height ) {
- char_width = _char_width;
- char_height = _char_height;
+bool SetFaceSize(FT_F26Dot6 _char_width, FT_F26Dot6 _char_height ) {
+ if(_char_width!=0||_char_height!=0){
+  char_width = _char_width;
+  char_height = _char_height;
+ }
+ char_width_px = char_height_px = 0;
  if (FT_Set_Char_Size(
   face,    /* handle to face object           */
   char_width,       /* char_width in 1/64th of points  */
@@ -102,19 +120,31 @@ void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle, FT_Vector
  bbox.xMax = bbox.yMax = -32000;
  FT_Error error;
  int num_chars = strlen(facestring);
+ bool use_kerning = FT_HAS_KERNING(face);
+ FT_UInt previous = 0;
  //memset(&glyph,0,sizeof(glyph));
  for (size_t n = 0; n < num_chars; n++) {
   error = FT_Load_Char(face, (unsigned char)facestring[n], FT_LOAD_DEFAULT);
   if (error)
    continue;  /* ignore errors */
- {
+
+  if (use_kerning && previous && glyph_index)
+  {
+   FT_Vector  delta;
+   FT_Get_Kerning(face, previous, glyph_index,
+    FT_KERNING_DEFAULT, &delta);
+   _pos.x += delta.x>>6;
+   _pos.y += delta.y>>6;
+  }
+  previous = glyph_index;
+  {
    FT_Glyph glyph;
    error = FT_Get_Glyph(face->glyph, &glyph);
    FT_Glyph_Get_CBox(glyph, ft_glyph_bbox_pixels, &glyph_bbox);
    FT_Done_Glyph(glyph);
   }
 
- FT_Set_Transform(face, &matrix, &_pos);
+  FT_Set_Transform(face, &matrix, &_pos);
 
   _pos.x += face->glyph->advance.x;
   _pos.y += face->glyph->advance.y;
@@ -153,6 +183,13 @@ void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle, FT_Vector
 }
 
 GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double _angle, float *ub, float *vb, float *ut, float *vt) {
+
+ InitFreeType();
+ if(char_width){
+  SetFaceSize();
+ }else{
+  SetFontPixelSize();
+ }
 
  GLuint texture = GL_INVALID_VALUE;
                                                                               //  _angle=0;
@@ -218,8 +255,8 @@ GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double
  int k = 0, l=0;
 
 
- for( j = 0; j < expanded_width; j++){
-  for (i = 0; i < expanded_height; i++) {
+ for( j = 0; j < expanded_height; j++){
+  for (i = 0; i < expanded_width; i++) {
    expanded_data[4 * (i + j * expanded_width) + 0] = background.rgba.r;
    expanded_data[4 * (i + j * expanded_width) + 1] = background.rgba.g;
    expanded_data[4 * (i + j * expanded_width) + 2] = background.rgba.b;
@@ -230,14 +267,27 @@ GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double
 
  j = i = 0;
  unsigned int bmp_width, bmp_height;
-FT_UInt glyph_index;
-FT_Error error;
+ FT_UInt glyph_index;
+ FT_Error error;
+ bool use_kerning = FT_HAS_KERNING(face);
+ FT_UInt previous = 0;
  for (size_t n = 0; n < num_chars; n++) {
 
   //load glyph image into the slot (erase previous one) 
   //error = FT_Load_Char(face, _text[n], FT_LOAD_RENDER);
 
   glyph_index = FT_Get_Char_Index(face, _text[n]);
+
+  if (use_kerning && previous && glyph_index)
+  {
+   FT_Vector  delta;
+   FT_Get_Kerning(face, previous, glyph_index,
+    FT_KERNING_DEFAULT, &delta);
+   pen.x += delta.x >> 6;
+   pen.y += delta.y >> 6;
+  }
+  previous = glyph_index;
+
   error = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
   if (error)
    continue;  /* ignore errors */
@@ -336,7 +386,6 @@ FT_Error error;
 //     0 : (slot->bitmap.buffer)[i + bmp_width * j];
    }
   }
- 
 
 
 
@@ -363,8 +412,8 @@ FT_Error error;
 
 
  
- if (ub) *ub = (float)stringBBox.xMin / (float)expanded_width;
- if (vb) *vb = (float)stringBBox.yMin / (float)expanded_height;
+ if (ub) *ub = 0;
+ if (vb) *vb = 0;
  if (ut) *ut = ((float)predicted_width + (float)stringBBox.xMin ) / (float)expanded_width;
  if (vt) *vt = ((float)predicted_height + (float)stringBBox.yMin ) / (float)expanded_height ;
 
@@ -372,8 +421,8 @@ FT_Error error;
  //  glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, expanded_width, expanded_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, (GLvoid*)(expanded_data) );
  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, expanded_width, expanded_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(expanded_data));
  GLenum glerror = glGetError();
- if (glerror)
- {
+ if (glerror){
+  delete[] expanded_data;
   return texture;
  }
 

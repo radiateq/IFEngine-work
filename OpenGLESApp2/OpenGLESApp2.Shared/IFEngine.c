@@ -8,7 +8,7 @@ using Eigen::MatrixXf;
 //extern bool IFEngine_Initialized = false;
 
 
-ifTbodiesList BodiesList;
+ifTbodiesList BodiesList = { 0,NULL };
 ifTCounter IFE_max_bodies = 150;
 
 void Init_ifTbodyDefinition(ifTbodyDefinition *_init_var){ 
@@ -136,8 +136,8 @@ void RemoveBodies( ifTbodyDefinition **_body, ifTCounter _body_count){
 }
 
 void Init_IFEngine(){
- if(!IFEngine_Initialized)
-  BodiesList.bodies = NULL;
+ //if(!IFEngine_Initialized)
+ // BodiesList.bodies = NULL;
  CleanupBodies();
  IFEngine_Initialized = true;
 }

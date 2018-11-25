@@ -23,15 +23,15 @@ extern int           n;
 extern FT_Byte *buffer;
 extern struct android_app* android_app_state;
 
+//state can be passed only on a first call
 bool InitFreeType(struct android_app* _state = NULL);
 void DoneFreeType();
-bool SetFaceSize(FT_F26Dot6  char_width, FT_F26Dot6  char_height );
+bool SetFaceSize(FT_F26Dot6  char_width = 0, FT_F26Dot6  char_height = 0);
+bool SetFontPixelSize(FT_UInt _width = 0, FT_UInt _heigth = 0);
 void  computeStringBBox(char *glyphs, FT_BBox  *abbox, float angle, FT_Vector _pos);
 GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double _angle, float *ub = NULL, float *vb = NULL, float *ut = NULL, float *vt = NULL);
 
 inline int next_p2(int a);
-
-
 
 
 

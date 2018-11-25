@@ -476,7 +476,7 @@ void Init_IFAdapter(engine &engine) {
    //Additional work on body  
    SetFaceSize(10*64, 10 * 64);
    char outstring[20] = {'R','o','b','0','t','0','\0'};
-   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 16, FT_Vector()={20*64,10*64}, 3.141593*0.25, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 16, FT_Vector()={20*64,10*64}, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    //(engine.width / 20, engine.height / 20);
   }
 
@@ -634,7 +634,6 @@ static int engine_init_display(struct engine* engine) {
 	// Initialize GL state.
 	//CubeTest_setupGL(w, h);
  Setup_OpenGL(w,h);
- Setup_OpenGL(w,h);
 
  Init_IFAdapter(*engine);
 
@@ -692,7 +691,12 @@ static void engine_term_display(struct engine* engine) {
 	engine->context = EGL_NO_CONTEXT;
 	engine->surface = EGL_NO_SURFACE;
 
-	//CubeTest_tearDownGL();
+	//CubeTest_tearDownGL();  
+ glDeleteTextures(1, &TEST_textid);
+ TEST_textid = GL_INVALID_VALUE;
+ glDeleteTextures(1, &User_Data.CubeTexture);
+ User_Data.CubeTexture = GL_INVALID_VALUE;
+ 
 
  IFAudioSLES::TearDownAudioEngine();
 
