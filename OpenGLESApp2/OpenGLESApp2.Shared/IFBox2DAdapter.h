@@ -417,7 +417,7 @@ public:
  }
 
 
-
+ //Input coordinates are window coordinates, and ray is projected through that point and reflection of that point inside opengles 3d space below it
  bool RayTestHitpoint(float x, float y, ifCB2Body *_ifbody) {
   float test_point_x, test_point_y;
   test_point_x = x ;
@@ -434,8 +434,7 @@ public:
   }     
   return false;
  }
-
-
+ 
  ifCB2GameManager *B2GameManager;
 };
 
