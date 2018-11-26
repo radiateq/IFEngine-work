@@ -49,7 +49,7 @@ template<typename Tptr_type> class RQTCAutoDelete {
 template<typename TDataType_np, bool delete_pointers_on_destructor = false, bool pointer_array = false > class S_listWrap_ptr : public std::list<TDataType_np*>
 {
 public:
- void removeElement(TDataType_np *input_var) {
+ bool removeElement(TDataType_np *input_var) {
   for (typename std::list<TDataType_np*>::iterator iter = this->begin(); iter != this->end(); iter++) {
    if ((*iter) == input_var) {
     if (pointer_array)
@@ -57,9 +57,11 @@ public:
     else
      delete input_var;
     this->erase(iter);//this->erase(iter++) to continue execution if search again for multiple elements
-    break;
+    
+    return true;
    }
   }
+  return false;
  }
  ~S_listWrap_ptr()
  {

@@ -99,6 +99,15 @@ void TESTFN_AddRandomBody(engine &engine){
    TEST_Last_Added_Body_Time = temp_timespec;
 
    IFGameEditor::GetTouchEvent(&touchx, &touchy);   
+
+   typename std::list<ifCB2Body*>::iterator iter;
+   for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
+    if( B2BodyUtils.RayTestHitpoint( touchx, touchy, *iter ) ){
+     IFAdapter.Bodies.removeElement(*iter);
+     return;
+    }
+   }
+
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = ((drand48()>0.5)?b2_staticBody: b2_dynamicBody);
    if( drand48() > 0.3){
@@ -115,16 +124,17 @@ void TESTFN_AddRandomBody(engine &engine){
     float screeny = touchy;
     Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height);
     IFAdapter.OrderedBody()->body_def->position.Set(screenx / IFA_box2D_factor, screeny / IFA_box2D_factor);
-    shapeCoords[0] = { -2,  0 };
-    shapeCoords[1] = { -1,  0 };
-    shapeCoords[2] = { 1,   0 };
-    shapeCoords[3] = { 2,   0 };
+    shapeCoords[0] = { -4,  0 };
+    shapeCoords[1] = { -3,  0 };
+    shapeCoords[2] = { 3,   0 };
+    shapeCoords[3] = { 4,   0 };
 
     polyShape->Set(shapeCoords[1], shapeCoords[2]);
     polyShape->m_hasVertex0 = true;
     polyShape->m_hasVertex3 = true;
     polyShape->m_vertex0 = shapeCoords[0];
-    polyShape->m_vertex3 = shapeCoords[3];
+    polyShape->m_vertex3 = shapeCoords[3];
+
     //polyShape->Set(shapeCoords, 4);
     fixture->shape = polyShape;
     fixture->density = 1.1;

@@ -227,7 +227,7 @@ public:
    Init_ifTbodyDefinition(work_body);
    (*iter)->BodyToVertices(cnt, work_body->vertices_cnt, work_body->indices_cnt, &(work_body->vertices_mode), &(work_body->vertices), &(work_body->indices));
    (*iter)->OGL_body = work_body;
-   (*iter)->OGL_body->line_thickness = 3.0f;
+   (*iter)->OGL_body->line_thickness = RQNDKUtils::getDensityDpi(android_app_state) / 25.4;
    work_body->z_pos = zDefaultLayer;
    work_body->colors_cnt = work_body->vertices_cnt * 2;
    work_body->colors = (GLfloat*)malloc(sizeof(GLfloat) * work_body->colors_cnt);
@@ -415,6 +415,27 @@ public:
    }
   }
  }
+
+
+
+ bool RayTestHitpoint(float x, float y, ifCB2Body *_ifbody) {
+  float test_point_x, test_point_y;
+  test_point_x = x ;
+  test_point_y = y ;
+  Window2ObjectCoordinates(test_point_x, test_point_y, _ifbody->OGL_body->z_pos, B2GameManager->screenResolutionX, B2GameManager->screenResolutionY);
+  size_t shape_num = _ifbody->shape.size();
+  for( size_t cnt = 0; cnt < shape_num; cnt++){
+   b2Vec2 test_point={ test_point_x / IFA_box2D_factor, test_point_y / IFA_box2D_factor };
+   b2Transform transform;
+   transform.Set(_ifbody->body->GetPosition(), _ifbody->body->GetAngle());
+   if( _ifbody->shape[cnt]->TestPoint(transform, test_point) ){
+    return true;
+   }
+  }     
+  return false;
+ }
+
+
  ifCB2GameManager *B2GameManager;
 };
 
