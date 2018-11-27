@@ -546,9 +546,11 @@ void Init_IFAdapter(engine &engine) {
   ifCB2Body *first_body = IFAdapter.OrderedBody();
   if (IFAdapter.MakeBody()){
    //Additional work on body  
-   SetFaceSize(60*64, 40 * 64);
+   SetFaceSize(40*64, 40 * 64);
    char outstring[20] = {'R','j','b',',','g','y','\0'};
-   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 10, FT_Vector()={0*64,240*64}, 3.141593*0.5, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 160 * 64,40 * 64 }, 3.141593*0.250, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    size_t UVsize = first_body->OGL_body->UVmapping_cnt;
    for( int cntuv = 0; cntuv < UVsize; cntuv++){
     first_body->OGL_body->UVmapping[cntuv]*= TEST_text_ut;

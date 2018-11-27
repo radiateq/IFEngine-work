@@ -302,13 +302,13 @@ GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double
   unsigned int field : 32;
  };
  URGBA foreground, background;
- foreground.rgba.r = 255;
- foreground.rgba.g = 0;
- foreground.rgba.b = 0;
+ foreground.rgba.r = 25;
+ foreground.rgba.g = 100;
+ foreground.rgba.b = 250;
  foreground.rgba.a = 255;
  background.rgba.r = 10;
  background.rgba.g = 19;
- background.rgba.b = 35;
+ background.rgba.b = 135;
  background.rgba.a = 70;
 
 
@@ -488,7 +488,7 @@ GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double
  
  if (ub) *ub = 0;
  if (vb) *vb = 0;
- if (ut) *ut = ((float)l1) / (float)expanded_width;
+ if (ut) *ut = ((float)l1 + (float)(slot->advance.x >> 6)) / (float)expanded_width;
  if (vt) *vt = ((float)k1 + (float)(slot->advance.y >> 6)) / (float)expanded_height ;
 
  glBindTexture(GL_TEXTURE_2D, texture);
