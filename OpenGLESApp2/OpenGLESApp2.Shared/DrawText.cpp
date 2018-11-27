@@ -147,13 +147,13 @@ void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle, FT_Vector
 
   FT_Set_Transform(face, &matrix, &_pos);
 
-  _pos.x += face->glyph->advance.x;
-  _pos.y += face->glyph->advance.y;
+  _pos.x += face->glyph->advance.x>>6;
+  _pos.y += face->glyph->advance.y>>6;
 
-  glyph_bbox.xMin += _pos.x>>6;
-  glyph_bbox.xMax += _pos.x >> 6;
-  glyph_bbox.yMin += _pos.y >> 6;
-  glyph_bbox.yMax += _pos.y >> 6;
+  glyph_bbox.xMin += _pos.x;
+  glyph_bbox.xMax += _pos.x;
+  glyph_bbox.yMin += _pos.y;
+  glyph_bbox.yMax += _pos.y;
 
   if (glyph_bbox.xMin < bbox.xMin)
    bbox.xMin = glyph_bbox.xMin;
@@ -183,6 +183,78 @@ void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle, FT_Vector
  *abbox = bbox;
 }
 
+
+struct IFSDrawText{
+ //Input
+ //text
+ //target font width/heigth and unit enumerator either pixels or  /* char_width in 1/64th of points  */
+ //target rendering start pos
+ //target rotation angle
+ //foreground bmp - pixels taken when font image is larger than 0
+ //background bmp - pixels taken when font image is 0
+ //Output - all parameters are optional
+ //uv bottom, uv top
+ //output image w/h
+ //array holding texture - user must free
+};
+//width: the width(in pixels) of the bitmap accessed via face->glyph->bitmap.width.
+// height : the height(in pixels) of the bitmap accessed via face->glyph->bitmap.rows.
+// bearingX : the horizontal bearing e.g.the horizontal position(in pixels) of the bitmap relative to the origin accessed via face->glyph->bitmap_left.
+// bearingY : the vertical bearing e.g.the vertical position(in pixels) of the bitmap relative to the baseline accessed via face->glyph->bitmap_top.
+// advance : the horizontal advance e.g.the horizontal distance(in 1 / 64th pixels) from the origin to the origin of the next glyph.Accessed via face->glyph->advance.x.
+
+
+
+   //                                                                                                                                                  
+   //                                    xmin                          xmax                              glyph metrics                                          
+   //                                    -:  /- .                      ./  ::                                                                           
+   //                               `:`-.:s`++./.:--              `:`-.-s./+`.:-:`--         .--.. ::         `/`     --    :.                          
+   //                               :-+-:o:+-o:/-/o.              --+--o-+-o:/s:-+:        .+-``-. y..`````.. .y`.    so  .o+  .` -o`.`.``+  `.  -.`    
+   //                               `````` `````` `               `````` ` `````` `        y.  -y-:o`y:-:h/`y`s:.y`  :.d`:.d`:o:o s:`m:/`h-`o./`-s/`    
+   //                                       -                               -              -/--/+`y- :s-/y-/::o`o+` -o s-.oo`o+-..y.+/  -y.:s-.-///     
+   //                           -.          .            width              .              --------::/-:y/-----------------------------------------`    
+   //                          +md:         -             `` `-  .`         -              ````````````````````````````````````````````````````````     
+   //                         +so+y:        -        -...`:`-::+-+-         -                                                                           
+   //                         ``+/``        -        /+/-://:o-//:+         -                                                                           
+   //                           +/          -  `     ..` .`.`..``.`      `  -                                                                           
+   //                           +/          -:::.........................-/::                                                        ymax               
+   //                           +/          -/:-`````````````````````````--/-                                                       `.`  .`             
+   //                           +/          - ``                         `` -                                                    ` ``o:`/+``.`` `       
+   //                           +/          /----------:/+oooo+/:-----------o``.`.-/ -`-`..```. -`- .`.`..`-`. -`.`.``.-:`- . -` .+-.:+/-:-/o./:-       
+   //                           +/          +      `:sdmdyoooydNmho:--------+   `://:`                                -:+-`     `-/./--.:-:---.-.       
+   //      bearingx             +/          +    `/dNMm:.     `/mMMNNNNNNNNNs   ``--``    bearingy                    ..:.`     ``                      
+   // -.         ``     `-- .-` +/          +   `yMMMN-         -mMMMMh++++/+     --  .                 .` `.          `:                               
+   //`+:..-`----::.:-.-- `/--`  +/```````--.+   yMMMMy           /MMMMN/    +     -- `+. .` .```.-``. .`.:`--          `:                               
+   //-///+./+:o./::/+:/:-:./.   ++.......-:+o  -MMMMM+           `mMMMMN    +     -- :/+:/.:o-o.+-+/+//- +.`           `:                               
+   //`` ```.``. .```-/:/.` `.   +/       .` +  /MMMMMo            dMMMMN    +     -- :.`:.--:..`:`--//:../`            `:                               
+   //               ``.`        +/          +  .NMMMMd`           dMMMMm    +     --                .-:`               `:                               
+   //                           +/          +   oNMMMM+          -NMMMm-    +     --                                   `:                               
+   //                           +/          +   `+mMMMN+`       .dMMNh-     +     --                        height     `:                               
+   //                           +/          +     .odNMNh+-...:smNmh:`      +     --                    /    ``  .- `. `:                               
+   //                           +/          +     `.omyosyhyyyys+:.         +     --                   :/:-/./::.+:.+/ `:                               
+   //                           +/          +    -ymh-`                     +     --                  .::-o-::+:::/./` `:                               
+   //                           +/          +   +NMMo.``````````            +     --                  ` ` ` `::+.````  `:                               
+   //                           +/          +  :MMMMMmhhhhhhhhhhssssss/:.`  +     --                          ``       `:                               
+   //                          `so.         +  .yNMMMMMMMMMMMMMMMMMMMMMMNy:`+     --       `:s/`        +/.            `:                               
+   //                   -:::::/hMMNo::::::::s:::/odMNmmmmmmmmmmmmmmmNNNMMMNss:::::++:::::::hMMMd::::::::+yms.          `:                               
+   //                   `````.-dNNN+````````+```.+md-```````````````.--/omMMy`````````````.ommNs````````/ys/`          `:                               
+   //                     ``.```s+-`        +  :dMy`                     -MMs               ``:         -.             `:                               
+   //         origin    -`.     +/          +`oNMN.                     `+Mh+                 .                        `:                               
+   //             `   ``        +/          ++MMMMs.`                 `.yNy`+                 -                        `:                               
+   //       `-`-.-:.-`:.:-.     +/          ++NMMMMNho/-..```````..-:ohNd/` +                 -                        `:            ymin               
+   //       +::o`+-o/:/:/+.     +/          + /yNMMMMMMNNNmddddddNNNNNy/`   +                 -                       ..:.`         `/. `/.`            
+   //       .``` -/:+.```.      +/          +```./shmNNNMMMMMMNNNmho:.``````+  `   `      `   -          ` ` `      ` -:+-`      ..- o/.//.:.-:`        
+   //             `..           +/          ---------:/+oooooo//:-----------:. -`. .`....`- . /`.`.``.`.`- .`-`..`.`. -./ .```.` `s.:-+/-:+-+/+`        
+   //                           +/                                                         `  -                                 `:.`..``... ```         
+   //                           +/`````````````````````````````````````````````````````````--`-                                                         
+   //                           ++----------------------------------------------------------/o:                                                         
+   //                           +/                        `                               `-` -                                                         
+   //                           +:                    `  `/.   ` ` ` ` `                      -                                                         
+   //                                                -+-::/o`:-+-o//-::+                      -                                                         
+   //                                               -:+::+-/-:-+.-/./.+.                      -                                                         
+   //                                                   advance                                                                                         
+   //                                                                                                                                                  
+
 GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double _angle, float *ub, float *vb, float *ut, float *vt) {
 
  InitFreeType();
@@ -211,8 +283,8 @@ GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double
 
  ///* the pen position in 26.6 cartesian space coordinates 
  ///* start at (300,200)                                   
- pen.x = start_pos.x;
- pen.y = start_pos.y;
+ pen.x = start_pos.x>>6;
+ pen.y = start_pos.y >> 6;
  //pen.x = 0 * 64;
  //pen.y = 0 * 64;
  size_t num_chars = strlen(_text);
@@ -254,7 +326,7 @@ GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double
  int j = 0, jb;
  int i = 0, ib;
  int k = 0, l=0;
-
+ int k1 = INT_MIN, l1 = INT_MIN;
 
  for( j = 0; j < expanded_height; j++){
   for (i = 0; i < expanded_width; i++) {
@@ -300,28 +372,25 @@ GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double
   // set transformation 
   FT_Set_Transform(face, &matrix, &pen);
 
-  pen.x += slot->advance.x;
-  pen.y += slot->advance.y;
 
   bmp_width = slot->bitmap.width, bmp_height = slot->bitmap.rows;
-  k = bmp_height + (pen.y>>6);
-  l = bmp_width + (pen.x >> 6);
-  for (j = (pen.y >> 6), jb = bmp_height-1; j < k; j++, jb--) {
-   for (i = (pen.x >> 6), ib=0; i < l; i++, ib++) {
+  k = pen.y;
+  l = pen.x;
+  for (j = (k - bmp_height + slot->bitmap_top), jb = bmp_height-1; j < ((k ) + slot->bitmap_top); j++, jb--) {
+   for (i = (l + slot->bitmap_left), ib=0; i < ((l + slot->bitmap_left) +bmp_width); i++, ib++) {
     {
+     if((i>= expanded_width)||(j>=expanded_height)||(i <0)||(j<0)){
+      continue;
+     }
+     if (k1 < j) k1 = j;
+     if( l1 < i ) l1 = i;
      if ((slot->bitmap.buffer)[ib + bmp_width * jb] > 0) {
-      expanded_data[4 * (i + j * expanded_width) + 0] = (unsigned char)((float)(foreground.rgba.r + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
+     expanded_data[4 * (i + j * expanded_width) + 0] = (unsigned char)((float)(foreground.rgba.r + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
       expanded_data[4 * (i + j * expanded_width) + 1] = (unsigned char)((float)(foreground.rgba.g + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
       expanded_data[4 * (i + j * expanded_width) + 2] = (unsigned char)((float)(foreground.rgba.b + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
       expanded_data[4 * (i + j * expanded_width) + 3] = (unsigned char)((float)(foreground.rgba.a + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
      }
     }    
-
-
-
-
-
-
   //unsigned int lodeerror;
   //std::vector<unsigned char> bmp((slot->bitmap.buffer), (slot->bitmap.buffer) + bmp_height * (slot->bitmap.pitch));
 //lodepng::load_file(bmp, argv[1]);
@@ -388,6 +457,10 @@ GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double
    }
   }
 
+  pen.x += (slot->advance.x >> 6);
+  pen.y += (slot->advance.y >> 6);
+
+
 
 
 
@@ -415,8 +488,8 @@ GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double
  
  if (ub) *ub = 0;
  if (vb) *vb = 0;
- if (ut) *ut = ((float)predicted_width + (float)stringBBox.xMin ) / (float)expanded_width;
- if (vt) *vt = ((float)predicted_height + (float)stringBBox.yMin ) / (float)expanded_height ;
+ if (ut) *ut = ((float)l1) / (float)expanded_width;
+ if (vt) *vt = ((float)k1 + (float)(slot->advance.y >> 6)) / (float)expanded_height ;
 
  glBindTexture(GL_TEXTURE_2D, texture);
  //  glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, expanded_width, expanded_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, (GLvoid*)(expanded_data) );

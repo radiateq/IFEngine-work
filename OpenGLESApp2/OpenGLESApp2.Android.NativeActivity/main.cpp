@@ -220,6 +220,13 @@ void TESTFN_AddRandomBody(engine &engine){
    //Additional work on body  
    if (drand48() > 0.5) {
     first_body->OGL_body->texture_ID = TEST_textid;
+    size_t UVsize = first_body->OGL_body->UVmapping_cnt;
+    for (int cntuv = 0; cntuv < UVsize; cntuv++) {
+     first_body->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
+     cntuv++;
+     first_body->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
+    }
+
    }
    else {
     first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
@@ -474,6 +481,13 @@ void TESTFN_AddRandomBody(engine &engine){
   //Additional work on body  
   if( drand48()>0.5 ){
    first_body->OGL_body->texture_ID = TEST_textid;
+   size_t UVsize = first_body->OGL_body->UVmapping_cnt;
+   for (int cntuv = 0; cntuv < UVsize; cntuv++) {
+    first_body->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
+    cntuv++;
+    first_body->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
+   }
+
   }else{
    first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
   }
@@ -508,8 +522,8 @@ void Init_IFAdapter(engine &engine) {
 
   shapeCoords[0] = { -1,  -1 };
   shapeCoords[1] = {  16,  -1 };
-  shapeCoords[2] = {  16,   5 };
-  shapeCoords[3] = { -1,   5 };
+  shapeCoords[2] = {  16,   16 };
+  shapeCoords[3] = { -1,   16 };
   //shapeCoords[4] = { 4,  1 };
   //shapeCoords[5] = { 3,  2 };
   //shapeCoords[6] = { 2,  2 };
@@ -532,9 +546,15 @@ void Init_IFAdapter(engine &engine) {
   ifCB2Body *first_body = IFAdapter.OrderedBody();
   if (IFAdapter.MakeBody()){
    //Additional work on body  
-   SetFaceSize(10*64, 10 * 64);
-   char outstring[20] = {'R','o','b','0','t','0','\0'};
-   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 16, FT_Vector()={20*64,10*64}, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   SetFaceSize(60*64, 40 * 64);
+   char outstring[20] = {'R','j','b',',','g','y','\0'};
+   TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 10, FT_Vector()={0*64,240*64}, 3.141593*0.5, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   size_t UVsize = first_body->OGL_body->UVmapping_cnt;
+   for( int cntuv = 0; cntuv < UVsize; cntuv++){
+    first_body->OGL_body->UVmapping[cntuv]*= TEST_text_ut;
+    cntuv++;
+    first_body->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
+   }
    //(engine.width / 20, engine.height / 20);
   }
 
