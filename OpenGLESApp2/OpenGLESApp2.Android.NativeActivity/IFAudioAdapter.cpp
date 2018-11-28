@@ -47,10 +47,8 @@ namespace IFAudioSLES {
   //     *) the less buffering should be before starting player AFTER
   //        receiving the recorder buffer
   //   Adjust the bufSize here to fit your bill [before it busts]
-  uint32_t bufSize = engine.frames_per_buffer * engine.sampleChannels_ *
-   engine.bitsPerSample_;
+  uint32_t bufSize = engine.frames_per_buffer * engine.sampleChannels_ * engine.bitsPerSample_;
   bufSize = (bufSize + 7) >> 3;  // bits --> byte
-
 
   engine.record_buffer_write_pointer = 0;
   engine.record_buffer_frame_size = bufSize;
@@ -68,14 +66,11 @@ namespace IFAudioSLES {
    engine.freeBufQueue_->push(&engine.bufs_[i]);
   }
 
-  engine.echoDelay_ = echoDelay_;
   engine.echoDecay_ = echoDecay_;
   engine.delayEffect_ = new AudioDelay(
    engine.fastPathSampleRate_, engine.sampleChannels_, engine.bitsPerSample_,
    engine.echoDelay_, engine.echoDecay_);
   assert(engine.delayEffect_);
-
-
 }
 
 jboolean

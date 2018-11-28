@@ -15,6 +15,8 @@
 #include "android_fopen.h"
 
 #include <Eigen/Dense>
+
+
 using Eigen::MatrixXf;
 
 #define IF_NULL_DELETE(PARAM) if( NULL != PARAM ) { delete PARAM; PARAM = NULL; }
@@ -310,6 +312,9 @@ struct SRangeScale2
  double RangeMin;
  double RangeMax;
 };
+
+ 
+ char *Make_internalDataPath(char *path_buffer, int buffer_length, char *file_name);
 
 }
 #endif
