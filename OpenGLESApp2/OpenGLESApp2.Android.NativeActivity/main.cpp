@@ -79,14 +79,135 @@ struct engine {
 
 TS_User_Data User_Data;
 
-
-
-
+//DEMO 1 GLOBAL VARIABLES START
 GLuint TEST_textid;
 GLfloat TEST_text_ub, TEST_text_vb, TEST_text_ut, TEST_text_vt;
 struct timespec TEST_Last_Added_Body_Time;
+float last_y_acceleration = 0, last_x_acceleration = 0, last_light = 0;
+size_t last_light_cnt = 30;
+std::vector<float>avglight;
+//DEMO 2 - FANN - GLOBAL VARIABLES START
+IFFANN::IFS_Cascade_FANN LittleBrains;
+ifCB2Body *anns_body, *anns_learned_body;
+static float last_pos_x = FLT_MAX, last_pos_y = FLT_MAX;
+void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output){
+ //Inputs are:
+ // 1 - gravity y
+ // 2 - acceleration x
+ // 3 - acceleration y
+ //Outpus are:
+ // 1 - delta position x
+ // 2 - delta position y
+  input[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
+  input[1] = last_x_acceleration / LittleBrains.input_scale;
+  input[2] = last_y_acceleration / LittleBrains.input_scale; 
+  
+  float x = anns_body->body->GetPosition().x, y = anns_body->body->GetPosition().y;
+
+  if(last_pos_x == FLT_MAX ){
+   output[0] = 0;
+  }else{
+   output[0] = anns_body->body->GetPosition().x - last_pos_x;
+  }
+  last_pos_x = anns_body->body->GetPosition().x;
+  if (last_pos_y == FLT_MAX) {
+   output[1] = 0;
+  }
+  else {
+   output[1] = anns_body->body->GetPosition().y - last_pos_y;
+  }
+  last_pos_y = anns_body->body->GetPosition().y;
+
+  output[0] /= LittleBrains.output_scale;
+  output[1] /= LittleBrains.output_scale;
+
+}
+//DEMO 2 - FANN - GLOBAL VARIABLES STOP
 void TESTFN_AddRandomBody(engine &engine){
  if (engine.EGL_initialized) {
+  //DEMO 2 - FANN - START
+  static bool FANN_TEST_initialized = false;
+  if(!FANN_TEST_initialized){
+   FANN_TEST_initialized = true;
+    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 50, 3, 0.0001, 50, 5);
+
+
+    IFAdapter.OrderBody();
+    IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
+    ifCB2Body *first_body = IFAdapter.OrderedBody();
+    b2CircleShape *polyShape = new b2CircleShape;
+    polyShape->m_p.SetZero();
+    polyShape->m_radius = 2.0;
+    b2FixtureDef *fixture = new b2FixtureDef;
+    fixture->shape = polyShape;
+    fixture->density = 1.1;
+    fixture->friction = 0.3;
+    fixture->restitution = 0.001;
+    fixture->filter.categoryBits = 0x0008;
+    fixture->filter.maskBits = 0x0010;
+    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+    anns_body = IFAdapter.OrderedBody();
+    if (!IFAdapter.MakeBody())
+     return;
+    anns_body->OGL_body->texture_ID = User_Data.CubeTexture;
+
+
+
+    IFAdapter.OrderBody();
+    IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//((drand48() > 0.5) ? b2_staticBody : 
+    first_body = IFAdapter.OrderedBody();
+    polyShape = new b2CircleShape;
+    polyShape->m_p.SetZero();
+    polyShape->m_radius = 3.0;
+    fixture = new b2FixtureDef;
+    fixture->shape = polyShape;
+    fixture->density = 1.1;
+    fixture->friction = 0.3;
+    fixture->restitution = 0.001;
+    fixture->filter.categoryBits= 0x0002;
+    fixture->filter.maskBits = 0x0004;
+    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+    anns_learned_body = IFAdapter.OrderedBody();
+    if (!IFAdapter.MakeBody())
+     return;
+    anns_learned_body->OGL_body->texture_ID = User_Data.CubeTexture;
+
+    
+  }
+  fann_type inputs[3];
+  inputs[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
+  inputs[1] = last_x_acceleration / LittleBrains.input_scale;
+  inputs[2] = last_y_acceleration / LittleBrains.input_scale;
+  fann_type *outputs = IFFANN::Run_Cascade_FANN(&LittleBrains, inputs);
+  outputs[0] = outputs[0] * LittleBrains.output_scale + anns_learned_body->body->GetPosition().x;
+  outputs[1] = outputs[1] * LittleBrains.output_scale + anns_learned_body->body->GetPosition().y;
+  float maxx = engine.width;
+  float maxy = engine.height;
+  Window2ObjectCoordinates(maxx, maxy, zDefaultLayer, maxx, maxy);
+  float cut_off_distance = b2Distance(b2Vec2(0, 0), b2Vec2(maxx / IFA_box2D_factor, maxy / IFA_box2D_factor)) * 1;
+
+  if (b2Distance(b2Vec2(  outputs[0],outputs[1]), b2Vec2(0, 0)) <= cut_off_distance) {
+   anns_learned_body->body->SetTransform(b2Vec2( outputs[0], outputs[1]), anns_learned_body->body->GetAngle());
+  }else{
+   anns_learned_body->body->SetTransform(b2Vec2(0, 0), anns_learned_body->body->GetAngle());
+  }
+  //anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);
+  anns_body->body->SetTransform(b2Vec2(last_x_acceleration*0.1 + anns_body->body->GetPosition().x, last_y_acceleration*0.1 + anns_body->body->GetPosition().y), anns_body->body->GetAngle());
+  if (b2Distance(b2Vec2(anns_body->body->GetPosition().x, anns_body->body->GetPosition().y), b2Vec2(0, 0)) > cut_off_distance) {
+   anns_body->body->SetTransform(b2Vec2(0, 0), anns_learned_body->body->GetAngle());
+   anns_body->body->SetLinearVelocity(b2Vec2(0, 0));
+   anns_body->body->SetAngularVelocity(0);
+   last_pos_x = 0, last_pos_y = 0;
+  }else{
+   IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback);
+  }
+  
+
+
+  //DEMO 2 - FANN - STOP
+  return;
+  
+ //OLD DEMO 1 START 
 
   if (IFGameEditor::GetTouchEvent()){   
    int touchx, touchy;
@@ -508,6 +629,13 @@ void Init_IFAdapter(engine &engine) {
   IFAdapter.screenResolutionY = engine.height;
   IFAdapter.CalculateBox2DSizeFactor(1000*drand48()+500);
 
+  int twidth, theight;
+  GLuint texint;
+
+  ((TS_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+
+  return;
+
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
   IFAdapter.OrderedBody()->body_def->position.Set(-0.0,5.0);
@@ -563,8 +691,6 @@ void Init_IFAdapter(engine &engine) {
    //(engine.width / 20, engine.height / 20);
   }
 
-  int twidth, theight;
-  GLuint texint;
 
 //
 //
@@ -590,7 +716,7 @@ void Init_IFAdapter(engine &engine) {
    //Additional work on body  
    //SetFaceSize(1000, 1000);
    //char *outstring = { "#" };
-   texint = ((TS_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+   texint = ((TS_User_Data*)p_user_data)->CubeTexture;// = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
    first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
    // first_body->body_def->position.Set(0, -100.0);
   }
@@ -737,7 +863,7 @@ static void engine_draw_frame(struct engine* engine) {
 
 
  //cleanup far bodies
- B2BodyUtils.RemoveFarBodies();
+ //B2BodyUtils.RemoveFarBodies();
 
  TESTFN_AddRandomBody(*engine);
 
@@ -883,9 +1009,6 @@ void android_main(struct android_app* state) {
 
 
 
- float last_y_acceleration = 0, last_light = 0;
- size_t last_light_cnt = 30;
- std::vector<float>avglight;
 
 
 
@@ -988,12 +1111,8 @@ void android_main(struct android_app* state) {
 						//LOGI("accelerometer: x=%f y=%f z=%f",
 						//	event.acceleration.x, event.acceleration.y,
 						//	event.acceleration.z);
+      last_x_acceleration = event.acceleration.x;
       last_y_acceleration = event.acceleration.y;
-      for( unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++){
-       if( IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody ){
-        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(-event.acceleration.x * 1.0, (event.acceleration.z - event.acceleration.y) * 0.5 ), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
-       }
-      }
 					}
 				}
 			} else if (ident == (LOOPER_ID_USER + 1)) {
@@ -1003,17 +1122,17 @@ void android_main(struct android_app* state) {
       &event, 1) > 0) {
       //LOGI("gyro: x=%f",
       // event.light);
-      for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
-       if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
-        //IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0, event.light), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
-        last_light = event.light - last_light;
-        IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0, (last_light) * ((last_y_acceleration >0)?1:-1)), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
-        avglight.push_back(last_light);
-        avglight.resize(last_light_cnt);
-        last_light = std::accumulate(avglight.begin(), avglight.end(), 0.0) / avglight.size();        
-       }
-      }
-      // IFAdapter.Bodies[0]->body->ApplyLinearImpulse(b2Vec2( event.light * 20.0, -event.light * 0.0), IFAdapter.Bodies[0]->body->GetWorldCenter(), true );
+      //for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
+      // if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
+      //  //IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0, event.light), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+      //  last_light = event.light - last_light;
+      //  IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0, (last_light) * ((last_y_acceleration >0)?1:-1)), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
+      //  avglight.push_back(last_light);
+      //  avglight.resize(last_light_cnt);
+      //  last_light = std::accumulate(avglight.begin(), avglight.end(), 0.0) / avglight.size();        
+      // }
+      //}
+      // // IFAdapter.Bodies[0]->body->ApplyLinearImpulse(b2Vec2( event.light * 20.0, -event.light * 0.0), IFAdapter.Bodies[0]->body->GetWorldCenter(), true );
      }
     }
    }
