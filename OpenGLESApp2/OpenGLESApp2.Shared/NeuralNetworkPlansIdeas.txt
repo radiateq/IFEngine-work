@@ -1,0 +1,2 @@
+User trains for small tasks, like predicting/separating direction and magnitude
+Using those simpler networks as input layer their outputs are used to train data on next layer that uses it as inputs. Networks can be reconfigured to work with other networks most likely cobmined with same layers as trained.

@@ -27,6 +27,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEngine.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEUtils.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFFANN.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)IFFANNEngine.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFGameEditor.h" />
   </ItemGroup>
   <ItemGroup>
@@ -42,5 +43,6 @@
       <FileType>CppCode</FileType>
     </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)IFGameEditor.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)IFFANNEngine.cpp" />
   </ItemGroup>
 </Project>
