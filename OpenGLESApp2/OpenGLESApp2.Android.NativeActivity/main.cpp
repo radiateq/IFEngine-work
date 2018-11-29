@@ -87,9 +87,14 @@ float last_y_acceleration = 0, last_x_acceleration = 0, last_light = 0;
 size_t last_light_cnt = 30;
 std::vector<float>avglight;
 //DEMO 2 - FANN - GLOBAL VARIABLES START
+bool FANN_TEST_initialized = false;
 IFFANN::IFS_Cascade_FANN LittleBrains;
 ifCB2Body *anns_body, *anns_learned_body;
+bool FANN_Learning_Phase = false;
+fann_type input_data[2048*3], output_data[2048*2];
+unsigned int input_data_sets = 0;
 static float last_pos_x = FLT_MAX, last_pos_y = FLT_MAX;
+
 void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output){
  //Inputs are:
  // 1 - gravity y
@@ -98,99 +103,120 @@ void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_
  //Outpus are:
  // 1 - delta position x
  // 2 - delta position y
-  input[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
-  input[1] = last_x_acceleration / LittleBrains.input_scale;
-  input[2] = last_y_acceleration / LittleBrains.input_scale; 
-  
-  float x = anns_body->body->GetPosition().x, y = anns_body->body->GetPosition().y;
+  //input[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
+  //input[1] = last_x_acceleration / LittleBrains.input_scale;
+  //input[2] = last_y_acceleration / LittleBrains.input_scale; 
 
-  if(last_pos_x == FLT_MAX ){
-   output[0] = 0;
-  }else{
-   output[0] = anns_body->body->GetPosition().x - last_pos_x;
-  }
-  last_pos_x = anns_body->body->GetPosition().x;
-  if (last_pos_y == FLT_MAX) {
-   output[1] = 0;
-  }
-  else {
-   output[1] = anns_body->body->GetPosition().y - last_pos_y;
-  }
-  last_pos_y = anns_body->body->GetPosition().y;
+  //float x = anns_body->body->GetPosition().x, y = anns_body->body->GetPosition().y;
 
-  output[0] /= LittleBrains.output_scale;
-  output[1] /= LittleBrains.output_scale;
+  //if(last_pos_x == FLT_MAX ){
+  // output[0] = 0;
+  //}else{
+  // output[0] = anns_body->body->GetPosition().x - last_pos_x;
+  //}
+  //last_pos_x = anns_body->body->GetPosition().x;
+  //if (last_pos_y == FLT_MAX) {
+  // output[1] = 0;
+  //}
+  //else {
+  // output[1] = anns_body->body->GetPosition().y - last_pos_y;
+  //}
+  //last_pos_y = anns_body->body->GetPosition().y;
+
+  //output[0] /= LittleBrains.output_scale;
+  //output[1] /= LittleBrains.output_scale;
+
+ input[0] = input_data[num_data * 2 + 0];
+ input[1] = input_data[num_data * 2 + 1];
+ input[2] = input_data[num_data * 2 + 2];
+ 
+ output[0] = output_data[num_data * 2 + 0];
+ output[1] = output_data[num_data * 2 + 1];
 
 }
 //DEMO 2 - FANN - GLOBAL VARIABLES STOP
 void TESTFN_AddRandomBody(engine &engine){
  if (engine.EGL_initialized) {
   //DEMO 2 - FANN - START
-  static bool FANN_TEST_initialized = false;
+  
   if(!FANN_TEST_initialized){
    FANN_TEST_initialized = true;
-    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 50, 3, 0.0001, 50, 5);
+   if(IFFANN::Check_Save_Cascade_FANN("forces01", IFFANN::CnTrainedFannPostscript ) ){
+    IFFANN::Load_Cascade_FANN(&LittleBrains, "forces01", IFFANN::CnTrainedFannPostscript );
+   }else{
+    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 1000, 0, 1e-10, 5, 5);
+   } 
+   FANN_Learning_Phase = false;
+   input_data_sets = 0;
+
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
+   ifCB2Body *first_body = IFAdapter.OrderedBody();
+   b2CircleShape *polyShape = new b2CircleShape;
+   polyShape->m_p.SetZero();
+   polyShape->m_radius = 2.0;
+   b2FixtureDef *fixture = new b2FixtureDef;
+   fixture->shape = polyShape;
+   fixture->density = 1.1;
+   fixture->friction = 0.3;
+   fixture->restitution = 0.001;
+   fixture->filter.categoryBits = 0x0008;
+   fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+   anns_body = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   anns_body->OGL_body->texture_ID = User_Data.CubeTexture;
 
 
-    IFAdapter.OrderBody();
-    IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
-    ifCB2Body *first_body = IFAdapter.OrderedBody();
-    b2CircleShape *polyShape = new b2CircleShape;
-    polyShape->m_p.SetZero();
-    polyShape->m_radius = 2.0;
-    b2FixtureDef *fixture = new b2FixtureDef;
-    fixture->shape = polyShape;
-    fixture->density = 1.1;
-    fixture->friction = 0.3;
-    fixture->restitution = 0.001;
-    fixture->filter.categoryBits = 0x0008;
-    fixture->filter.maskBits = 0x0010;
-    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-    anns_body = IFAdapter.OrderedBody();
-    if (!IFAdapter.MakeBody())
-     return;
-    anns_body->OGL_body->texture_ID = User_Data.CubeTexture;
 
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//((drand48() > 0.5) ? b2_staticBody : 
+   first_body = IFAdapter.OrderedBody();
+   polyShape = new b2CircleShape;
+   polyShape->m_p.SetZero();
+   polyShape->m_radius = 3.0;
+   fixture = new b2FixtureDef;
+   fixture->shape = polyShape;
+   fixture->density = 1.1;
+   fixture->friction = 0.3;
+   fixture->restitution = 0.001;
+   fixture->filter.categoryBits= 0x0002;
+   fixture->filter.maskBits = 0x0004;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+   anns_learned_body = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   anns_learned_body->OGL_body->texture_ID = User_Data.CubeTexture;
 
-
-    IFAdapter.OrderBody();
-    IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//((drand48() > 0.5) ? b2_staticBody : 
-    first_body = IFAdapter.OrderedBody();
-    polyShape = new b2CircleShape;
-    polyShape->m_p.SetZero();
-    polyShape->m_radius = 3.0;
-    fixture = new b2FixtureDef;
-    fixture->shape = polyShape;
-    fixture->density = 1.1;
-    fixture->friction = 0.3;
-    fixture->restitution = 0.001;
-    fixture->filter.categoryBits= 0x0002;
-    fixture->filter.maskBits = 0x0004;
-    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-    anns_learned_body = IFAdapter.OrderedBody();
-    if (!IFAdapter.MakeBody())
-     return;
-    anns_learned_body->OGL_body->texture_ID = User_Data.CubeTexture;
-
-    
   }
-  fann_type inputs[3];
-  inputs[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
-  inputs[1] = last_x_acceleration / LittleBrains.input_scale;
-  inputs[2] = last_y_acceleration / LittleBrains.input_scale;
-  fann_type *outputs = IFFANN::Run_Cascade_FANN(&LittleBrains, inputs);
-  outputs[0] = outputs[0] * LittleBrains.output_scale + anns_learned_body->body->GetPosition().x;
-  outputs[1] = outputs[1] * LittleBrains.output_scale + anns_learned_body->body->GetPosition().y;
+
+  int touchx, touchy;
+  if (IFGameEditor::GetTouchEvent()) {
+   while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
+
+   struct timespec temp_timespec;
+   clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+   //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
+   unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
+   if (temp_int64 < 200) {
+    while (IFGameEditor::GetTouchEvent(&touchx, &touchy));    
+   }else{
+    if(touchy > (engine.height * 0.5) ){
+     FANN_Learning_Phase = true;
+    }else{
+     FANN_Learning_Phase = false;
+     input_data_sets = 0;
+    }
+    TEST_Last_Added_Body_Time = temp_timespec;
+   }   
+  }
+
   float maxx = engine.width;
   float maxy = engine.height;
   Window2ObjectCoordinates(maxx, maxy, zDefaultLayer, maxx, maxy);
   float cut_off_distance = b2Distance(b2Vec2(0, 0), b2Vec2(maxx / IFA_box2D_factor, maxy / IFA_box2D_factor)) * 1;
 
-  if (b2Distance(b2Vec2(  outputs[0],outputs[1]), b2Vec2(0, 0)) <= cut_off_distance) {
-   anns_learned_body->body->SetTransform(b2Vec2( outputs[0], outputs[1]), anns_learned_body->body->GetAngle());
-  }else{
-   anns_learned_body->body->SetTransform(b2Vec2(0, 0), anns_learned_body->body->GetAngle());
-  }
   //anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);
   anns_body->body->SetTransform(b2Vec2(last_x_acceleration*0.1 + anns_body->body->GetPosition().x, last_y_acceleration*0.1 + anns_body->body->GetPosition().y), anns_body->body->GetAngle());
   if (b2Distance(b2Vec2(anns_body->body->GetPosition().x, anns_body->body->GetPosition().y), b2Vec2(0, 0)) > cut_off_distance) {
@@ -198,9 +224,44 @@ void TESTFN_AddRandomBody(engine &engine){
    anns_body->body->SetLinearVelocity(b2Vec2(0, 0));
    anns_body->body->SetAngularVelocity(0);
    last_pos_x = 0, last_pos_y = 0;
-  }else{
-   IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback);
+  } else if (!FANN_Learning_Phase) {
+   if ((last_pos_x != FLT_MAX)&&(last_pos_y != FLT_MAX)){  
+    input_data[input_data_sets * 3 + 0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
+    input_data[input_data_sets * 3 + 1] = last_x_acceleration / LittleBrains.input_scale;
+    input_data[input_data_sets * 3 + 2] = last_y_acceleration / LittleBrains.input_scale;
+    output_data[input_data_sets * 2 + 0] = (last_pos_x - anns_body->body->GetPosition().x) / LittleBrains.output_scale;
+    output_data[input_data_sets * 2 + 1] = (last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale;
+    if (input_data_sets<2046){
+     input_data_sets++;
+    }else{
+     FANN_Learning_Phase = true;
+    }
+   }
+   last_pos_x = anns_body->body->GetPosition().x;
+   last_pos_y = anns_body->body->GetPosition().y;   
   }
+  if (FANN_Learning_Phase){
+   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 1000, 0, 1e-10, 5, 5);
+   IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback, input_data_sets);
+   input_data_sets = 0;
+   FANN_Learning_Phase = false;
+  }else{
+   fann_type inputs[3];
+   inputs[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
+   inputs[1] = last_x_acceleration / LittleBrains.input_scale;
+   inputs[2] = last_y_acceleration / LittleBrains.input_scale;
+   fann_type *outputs = IFFANN::Run_Cascade_FANN(&LittleBrains, inputs);
+   outputs[0] = anns_learned_body->body->GetPosition().x - outputs[0] * LittleBrains.output_scale;
+   outputs[1] = anns_learned_body->body->GetPosition().y - outputs[1] * LittleBrains.output_scale;
+
+   if (b2Distance(b2Vec2(outputs[0], outputs[1]), b2Vec2(0, 0)) <= cut_off_distance) {
+    anns_learned_body->body->SetTransform(b2Vec2(outputs[0], outputs[1]), anns_learned_body->body->GetAngle());
+   }
+   else {
+    anns_learned_body->body->SetTransform(b2Vec2(0, 0), anns_learned_body->body->GetAngle());
+   }
+  }
+
   
 
 
@@ -634,6 +695,9 @@ void Init_IFAdapter(engine &engine) {
 
   ((TS_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
 
+  FANN_TEST_initialized = false;
+  anns_body = anns_learned_body = NULL;
+
   return;
 
   IFAdapter.OrderBody();
@@ -844,6 +908,8 @@ static int engine_init_display(struct engine* engine) {
 	//CubeTest_setupGL(w, h);
  Setup_OpenGL(w,h);
 
+ 
+ 
  Init_IFAdapter(*engine);
 
  IFAudioSLES::BuildAudioEngine(User_Data.state->activity);
@@ -908,6 +974,10 @@ static void engine_term_display(struct engine* engine) {
  
 
  IFAudioSLES::TearDownAudioEngine();
+
+ if(FANN_TEST_initialized){
+  IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnTrainedFannPostscript);
+ }
 
 }
 
@@ -999,14 +1069,6 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 */
 
 void android_main(struct android_app* state) {
-
-
-
-
-
-
-
-
 
 
 

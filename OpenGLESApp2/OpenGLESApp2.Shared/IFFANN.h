@@ -13,6 +13,7 @@ namespace IFFANN{
 
  typedef struct {
   struct fann_train_data *train_data, *test_data;
+  //unsigned int num_data;
   fann_type desired_error;
   unsigned int max_neurons;
   unsigned int neurons_between_reports;
@@ -45,11 +46,14 @@ namespace IFFANN{
  IFS_Cascade_FANN *Finish_Train_Cascade_FANN(IFS_Cascade_FANN *ifann);
 
  //Loads empty ann and train structure initialization 
- bool Load_Cascade_FANN(IFS_Cascade_FANN * const ifann, char const * const state_name, char const * const unique_name);
+ bool Load_Cascade_FANN(IFS_Cascade_FANN * const ifann, char const * const unique_name, char const * const state_name);
 
  bool const Save_Cascade_FANN(IFS_Cascade_FANN const * const ifann, char const * const state_name);
 
- void Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback);
+//Returns true if save exists
+ bool const Check_Save_Cascade_FANN(char const * const unique_name, char const * const state_name);
+
+ void Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback, unsigned int num_data);
 
  fann_type *Run_Cascade_FANN(IFS_Cascade_FANN *ifann, fann_type *inputs);
 };

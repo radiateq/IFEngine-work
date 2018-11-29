@@ -32,6 +32,7 @@ namespace IFFANN {
  IFS_Cascade_FANN *Setup_Train_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int max_neurons, unsigned int neurons_between_reports, fann_type desired_error, fann_type input_scale, fann_type output_scale) {
   if (ifann->ann_train) free(ifann->ann_train), ifann->ann_train = NULL;
   ifann->ann_train = (IFS_Cascade_FANN_Train_Struct*)malloc(sizeof(IFS_Cascade_FANN_Train_Struct));
+  //ifann->ann_train->num_data = 0;
   ifann->ann_train->max_neurons = max_neurons;
   ifann->ann_train->neurons_between_reports = neurons_between_reports;
   ifann->ann_train->desired_error = desired_error;
@@ -75,14 +76,14 @@ namespace IFFANN {
  }
 
  //Loads empty ann and train structure initialization 
- bool Load_Cascade_FANN(IFS_Cascade_FANN * const ifann, char const * const state_name, char const * const unique_name) {
+ bool Load_Cascade_FANN(IFS_Cascade_FANN * const ifann, char const * const unique_name, char const * const state_name) {
 
   Cleanup_Cascade_FANN(ifann);
 
   char char_buffer[1024];
   char path_name[1024];
   strcpy(char_buffer, unique_name);
-  size_t name_len = strlen(ifann->unique_name);
+  size_t name_len = strlen(unique_name);
   strcpy(&char_buffer[name_len], state_name);
   FILE *IFANNDataFile = fopen(RQNDKUtils::Make_internalDataPath(path_name, 1024, char_buffer), "r");
   if (IFANNDataFile == NULL) {
@@ -104,6 +105,8 @@ namespace IFFANN {
    ifann->unique_name = (char*)malloc(sizeof(ifann->unique_name[0]) * (name_len + 1));
    fread(ifann->unique_name, sizeof(ifann->unique_name[0]), name_len, IFANNDataFile);
    ifann->unique_name[name_len] = '\0';
+   ifann->ann_train = (IFS_Cascade_FANN_Train_Struct*)malloc(sizeof(IFS_Cascade_FANN_Train_Struct));
+   //fread(&ifann->ann_train->num_data, sizeof(ifann->ann_train->num_data), 1, IFANNDataFile);
    fread(&ifann->ann_train->max_neurons, sizeof(ifann->ann_train->max_neurons), 1, IFANNDataFile);
    fread(&ifann->ann_train->neurons_between_reports, sizeof(ifann->ann_train->neurons_between_reports), 1, IFANNDataFile);
    fread(&ifann->ann_train->desired_error, sizeof(ifann->ann_train->desired_error), 1, IFANNDataFile);
@@ -134,6 +137,7 @@ namespace IFFANN {
    fwrite(&marker, sizeof(marker), 1, IFANNDataFile);
    fwrite(&name_len, sizeof(name_len), 1, IFANNDataFile);
    fwrite(ifann->unique_name, sizeof(ifann->unique_name[0]), name_len, IFANNDataFile);
+   //fwrite(&ifann->ann_train->num_data, sizeof(ifann->ann_train->num_data), 1, IFANNDataFile);
    fwrite(&ifann->ann_train->max_neurons, sizeof(ifann->ann_train->max_neurons), 1, IFANNDataFile);
    fwrite(&ifann->ann_train->neurons_between_reports, sizeof(ifann->ann_train->neurons_between_reports), 1, IFANNDataFile);
    fwrite(&ifann->ann_train->desired_error, sizeof(ifann->ann_train->desired_error), 1, IFANNDataFile);
@@ -147,10 +151,29 @@ namespace IFFANN {
   fclose(IFANNDataFile);
   return true;
  }
+ bool const Check_Save_Cascade_FANN(char const * const unique_name, char const * const state_name){
+  char char_buffer[1024];
+  char path_name[1024];
+  strcpy(char_buffer, unique_name);
+  size_t name_len = strlen(unique_name);
+  strcpy(&char_buffer[name_len], state_name);
+  FILE *IFANNDataFile = fopen(RQNDKUtils::Make_internalDataPath(path_name, 1024, char_buffer), "r");
+  if (NULL == IFANNDataFile ){
+   return false;
+  }
+  fclose(IFANNDataFile);  
+  strcpy(&char_buffer[strlen(char_buffer)], CnFannIFANNDataPostscript);
+  IFANNDataFile = fopen(RQNDKUtils::Make_internalDataPath(path_name, 1024, char_buffer), "r");
+  if ( NULL == IFANNDataFile ) {
+   return false;
+  }
+  fclose(IFANNDataFile);
+  return true;
+ }
+ void Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback, unsigned int num_data ) {
 
- void Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback) {
-
-  ifann->ann_train->train_data = fann_create_train_from_callback(1, ifann->ann->num_input, ifann->ann->num_output, train_callback);
+  //ifann->ann_train->num_data = num_data;
+  ifann->ann_train->train_data = fann_create_train_from_callback(num_data, ifann->ann->num_input, ifann->ann->num_output, train_callback);
   fann_cascadetrain_on_data(ifann->ann, ifann->ann_train->train_data, ifann->ann_train->max_neurons, ifann->ann_train->neurons_between_reports, ifann->ann_train->desired_error);
 
   Save_Cascade_FANN(ifann, CnTrainedFannPostscript);
