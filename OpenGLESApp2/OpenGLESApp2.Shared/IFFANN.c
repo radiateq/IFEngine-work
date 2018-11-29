@@ -85,15 +85,15 @@ namespace IFFANN {
   strcpy(char_buffer, unique_name);
   size_t name_len = strlen(unique_name);
   strcpy(&char_buffer[name_len], state_name);
-  FILE *IFANNDataFile = fopen(RQNDKUtils::Make_internalDataPath(path_name, 1024, char_buffer), "r");
+  FILE *IFANNDataFile = fopen(RQNDKUtils::Make_storageDataPath(path_name, 1024, char_buffer), "r");
   if (IFANNDataFile == NULL) {
    return false;
   }
   fclose(IFANNDataFile);
-  ifann->ann = fann_create_from_file(RQNDKUtils::Make_internalDataPath(path_name, 1024, char_buffer));
+  ifann->ann = fann_create_from_file(RQNDKUtils::Make_storageDataPath(path_name, 1024, char_buffer));
   //Save additional nework data
   strcpy(&char_buffer[strlen(char_buffer)], CnFannIFANNDataPostscript);
-  IFANNDataFile = fopen(RQNDKUtils::Make_internalDataPath(path_name, 1024, char_buffer), "r");
+  IFANNDataFile = fopen(RQNDKUtils::Make_storageDataPath(path_name, 1024, char_buffer), "r");
   if (IFANNDataFile == NULL) {
    return false;
   }
@@ -123,12 +123,12 @@ namespace IFFANN {
   strcpy(char_buffer, ifann->unique_name);
   size_t name_len = strlen(ifann->unique_name);
   strcpy(&char_buffer[name_len], state_name);
-  if( -1 == fann_save(ifann->ann, RQNDKUtils::Make_internalDataPath(path_name, 1024, char_buffer)) ){
+  if( -1 == fann_save(ifann->ann, RQNDKUtils::Make_storageDataPath(path_name, 1024, char_buffer)) ){
    return false;
   }
   //Save additional network data
   strcpy(&char_buffer[strlen(char_buffer)], CnFannIFANNDataPostscript);
-  FILE *IFANNDataFile = fopen(RQNDKUtils::Make_internalDataPath(path_name, 1024, char_buffer), "w+");
+  FILE *IFANNDataFile = fopen(RQNDKUtils::Make_storageDataPath(path_name, 1024, char_buffer), "w+");
   if( IFANNDataFile == NULL){
    return false;
   }
@@ -157,13 +157,13 @@ namespace IFFANN {
   strcpy(char_buffer, unique_name);
   size_t name_len = strlen(unique_name);
   strcpy(&char_buffer[name_len], state_name);
-  FILE *IFANNDataFile = fopen(RQNDKUtils::Make_internalDataPath(path_name, 1024, char_buffer), "r");
+  FILE *IFANNDataFile = fopen(RQNDKUtils::Make_storageDataPath(path_name, 1024, char_buffer), "r");
   if (NULL == IFANNDataFile ){
    return false;
   }
   fclose(IFANNDataFile);  
   strcpy(&char_buffer[strlen(char_buffer)], CnFannIFANNDataPostscript);
-  IFANNDataFile = fopen(RQNDKUtils::Make_internalDataPath(path_name, 1024, char_buffer), "r");
+  IFANNDataFile = fopen(RQNDKUtils::Make_storageDataPath(path_name, 1024, char_buffer), "r");
   if ( NULL == IFANNDataFile ) {
    return false;
   }

@@ -3,6 +3,7 @@
 
 //#include "fann.h"
 #include "floatfann.h"
+#include "../OpenGLESApp2.Android.NativeActivity/RQ_NDK_Utils.h"
 
 namespace IFFANN{
 

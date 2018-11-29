@@ -79,16 +79,16 @@ int32_t getDensityDpi(android_app* app) {
  return density;
 }
 
-char *Make_internalDataPath(char *path_buffer, int buffer_length, char *file_name) {
+char *Make_storageDataPath(char *path_buffer, int buffer_length, char *file_name) {
 
  TS_User_Data *user_data = (TS_User_Data *)p_user_data;
- int intpathlen = strlen(user_data->state->activity->internalDataPath);
+ int intpathlen = strlen(user_data->state->activity->externalDataPath);
 
  if (buffer_length < (intpathlen + strlen(file_name) + 2)) {
   return NULL;
  } 
 
- strcpy(path_buffer, user_data->state->activity->internalDataPath);
+ strcpy(path_buffer, user_data->state->activity->externalDataPath);
  strcpy(&path_buffer[intpathlen], "/");
  intpathlen++;
  strcpy(&path_buffer[intpathlen], file_name);

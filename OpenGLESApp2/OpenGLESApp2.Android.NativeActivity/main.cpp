@@ -35,6 +35,7 @@
 #include "IFEUtils.h"
 #include "IFGameEditor.h"
 #include "IFFANN.h"
+#include "IFFANNEngine.h"
 
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "AndroidProject1.NativeActivity", __VA_ARGS__))
@@ -1073,7 +1074,6 @@ void android_main(struct android_app* state) {
 
 
 
-
  Init_IFEngine();
  //               FREETYPE               SAMPLE START
  if( !InitFreeType(state) ){
@@ -1107,7 +1107,6 @@ void android_main(struct android_app* state) {
  p_user_data = &User_Data;
 
 
-  
 
 	if (state->savedState != NULL) {
 		// We are starting with a previous saved state; restore from it.
@@ -1120,6 +1119,18 @@ void android_main(struct android_app* state) {
 
 
 
+ //----------------------------------------------------                   FANN NETWORK TEST START
+
+
+
+
+ IFFANNEngine::CFANNNetwork FANNNetwork;
+ FANNNetwork.AddNetwork("test123", 1);
+
+
+
+
+ //----------------------------------------------------                   FANN NETWORK TEST STOP
 
 
 	// loop waiting for stuff to do.

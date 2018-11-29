@@ -314,7 +314,7 @@ struct SRangeScale2
 };
 
  
- char *Make_internalDataPath(char *path_buffer, int buffer_length, char *file_name);
+ char *Make_storageDataPath(char *path_buffer, int buffer_length, char *file_name);
 
 }
 #endif
