@@ -29,6 +29,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)IFFANN.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFFANNEngine.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFGameEditor.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)IF_General_Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)..\OpenGLESApp2.Android.NativeActivity\IFGlobals.c">
@@ -44,5 +45,6 @@
     </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)IFGameEditor.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)IFFANNEngine.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)IF_General_Utils.cpp" />
   </ItemGroup>
 </Project>

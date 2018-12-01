@@ -92,7 +92,7 @@ bool FANN_TEST_initialized = false;
 IFFANN::IFS_Cascade_FANN LittleBrains;
 ifCB2Body *anns_body, *anns_learned_body;
 bool FANN_Learning_Phase = false;
-fann_type input_data[2048*3], output_data[2048*2];
+fann_type input_data[10000*3], output_data[10000*2];
 unsigned int input_data_sets = 0;
 static float last_pos_x = FLT_MAX, last_pos_y = FLT_MAX;
 
@@ -127,9 +127,9 @@ void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_
   //output[0] /= LittleBrains.output_scale;
   //output[1] /= LittleBrains.output_scale;
 
- input[0] = input_data[num_data * 2 + 0];
- input[1] = input_data[num_data * 2 + 1];
- input[2] = input_data[num_data * 2 + 2];
+ input[0] = input_data[num_data * 3 + 0];
+ input[1] = input_data[num_data * 3 + 1];
+ input[2] = input_data[num_data * 3 + 2];
  
  output[0] = output_data[num_data * 2 + 0];
  output[1] = output_data[num_data * 2 + 1];
@@ -145,7 +145,7 @@ void TESTFN_AddRandomBody(engine &engine){
    if(IFFANN::Check_Save_Cascade_FANN("forces01", IFFANN::CnTrainedFannPostscript ) ){
     IFFANN::Load_Cascade_FANN(&LittleBrains, "forces01", IFFANN::CnTrainedFannPostscript );
    }else{
-    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 1000, 0, 1e-10, 5, 5);
+    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 1000, 0, 0.001, 5, 5);
    } 
    FANN_Learning_Phase = false;
    input_data_sets = 0;
@@ -200,17 +200,16 @@ void TESTFN_AddRandomBody(engine &engine){
    clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
    //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
    unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
-   if (temp_int64 < 200) {
-    while (IFGameEditor::GetTouchEvent(&touchx, &touchy));    
-   }else{
+   if (temp_int64 > 2000) {
     if(touchy > (engine.height * 0.5) ){
-     FANN_Learning_Phase = true;
+     if(input_data_sets>100) FANN_Learning_Phase = true;
     }else{
      FANN_Learning_Phase = false;
      input_data_sets = 0;
     }
     TEST_Last_Added_Body_Time = temp_timespec;
    }   
+   while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
   }
 
   float maxx = engine.width;
@@ -232,7 +231,7 @@ void TESTFN_AddRandomBody(engine &engine){
     input_data[input_data_sets * 3 + 2] = last_y_acceleration / LittleBrains.input_scale;
     output_data[input_data_sets * 2 + 0] = (last_pos_x - anns_body->body->GetPosition().x) / LittleBrains.output_scale;
     output_data[input_data_sets * 2 + 1] = (last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale;
-    if (input_data_sets<2046){
+    if (input_data_sets<(sizeof(output_data)*0.5 - 1)){
      input_data_sets++;
     }else{
      FANN_Learning_Phase = true;
@@ -242,7 +241,7 @@ void TESTFN_AddRandomBody(engine &engine){
    last_pos_y = anns_body->body->GetPosition().y;   
   }
   if (FANN_Learning_Phase){
-   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 1000, 0, 1e-10, 5, 5);
+   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 100, 0, 0, 5, 5);
    IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback, input_data_sets);
    input_data_sets = 0;
    FANN_Learning_Phase = false;
@@ -1125,7 +1124,7 @@ void android_main(struct android_app* state) {
 
 
  IFFANNEngine::CFANNNetwork FANNNetwork;
- FANNNetwork.AddNetwork("test123", 1);
+ //FANNNetwork.AddToNetwork("test123", 1);
 
 
 
