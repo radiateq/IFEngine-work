@@ -29,7 +29,7 @@ namespace IFFANN {
   return ifann;
  }
 
- //It is very important to set input and output scale properly. Network seems to prefer larger numbers, most likely because of accuracy
+ //It is very important to set input and output scale properly. Network seems to prefer larger numbers, most likely because of accuracy, smaller than 1 numbers increase range, larger decrease it
  IFS_Cascade_FANN *Setup_Train_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int max_neurons, unsigned int neurons_between_reports, fann_type desired_error, fann_type input_scale, fann_type output_scale) {
   if (ifann->ann_train) free(ifann->ann_train), ifann->ann_train = NULL;
   ifann->ann_train = (IFS_Cascade_FANN_Train_Struct*)malloc(sizeof(IFS_Cascade_FANN_Train_Struct));

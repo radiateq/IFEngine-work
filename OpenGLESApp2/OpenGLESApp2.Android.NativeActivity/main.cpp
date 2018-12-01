@@ -95,6 +95,9 @@ bool FANN_Learning_Phase = false;
 std::vector<fann_type> input_data, output_data;
 unsigned int input_data_sets = 0;
 static float last_pos_x = FLT_MAX, last_pos_y = FLT_MAX;
+int max_neurons = 100, neurons_between_reports = 0, input_layers = 3, output_layers = 2;
+float desired_error = 0.0, input_scale = 0.01, output_scale = 0.01;
+
 
 void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output){
  //Inputs are:
@@ -142,14 +145,17 @@ void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_
 void TESTFN_AddRandomBody(engine &engine){
  if (engine.EGL_initialized) {
   //DEMO 2 - FANN - START
-  
+
   if(!FANN_TEST_initialized){
    FANN_TEST_initialized = true;
-   if(IFFANN::Check_Save_Cascade_FANN("forces01", IFFANN::CnTrainedFannPostscript ) ){
-    IFFANN::Load_Cascade_FANN(&LittleBrains, "forces01", IFFANN::CnTrainedFannPostscript );
+
+   if(IFFANN::Check_Save_Cascade_FANN("forces01", IFFANN::CnTrainedFannPostscript )){
+    if(!IFFANN::Load_Cascade_FANN(&LittleBrains, "forces01", IFFANN::CnTrainedFannPostscript)){
+     IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
+    }
    }else{
-    //IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 1000, 0, 0.001, 0.001, 0.001);
-   } 
+    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
+   }
    FANN_Learning_Phase = false;
    input_data_sets = 0;
    
@@ -205,7 +211,7 @@ void TESTFN_AddRandomBody(engine &engine){
    unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
    if (temp_int64 > 2000) {
     if(touchy > (engine.height * 0.5) ){
-     if(input_data_sets>100) FANN_Learning_Phase = true;
+     if(input_data_sets>1) FANN_Learning_Phase = true;
     }else{
      FANN_Learning_Phase = false;
      input_data_sets = 0;
@@ -223,8 +229,7 @@ void TESTFN_AddRandomBody(engine &engine){
   float cut_off_distance = b2Distance(b2Vec2(0, 0), b2Vec2(maxx / IFA_box2D_factor, maxy / IFA_box2D_factor)) * 1;
 
   last_x_acceleration*=0.1;
-  last_y_acceleration *= 0.1;
-  //anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);
+  last_y_acceleration *=0.1;  
   if (b2Distance(b2Vec2(anns_body->body->GetPosition().x, anns_body->body->GetPosition().y), b2Vec2(0, 0)) > cut_off_distance) {
    anns_body->body->SetTransform(b2Vec2(0, 0), anns_learned_body->body->GetAngle());
    anns_body->body->SetLinearVelocity(b2Vec2(0, 0));
@@ -233,7 +238,8 @@ void TESTFN_AddRandomBody(engine &engine){
   } else if (!FANN_Learning_Phase) {
    last_pos_x = anns_body->body->GetPosition().x;
    last_pos_y = anns_body->body->GetPosition().y;
-   anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetPosition().x, last_y_acceleration + anns_body->body->GetPosition().y), anns_body->body->GetAngle());
+   anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetPosition().x, last_y_acceleration + anns_body->body->GetPosition().y), anns_body->body->GetAngle());//Has immediate effect, set last_pos_x before
+   //anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);//Has effect after world step, set last_pos_x after
    if ((last_pos_x != FLT_MAX)&&(last_pos_y != FLT_MAX)){
     input_data.push_back(IFA_World->GetGravity().y / LittleBrains.input_scale);
     //input_data[(input_data_sets+0) * 3 + 0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
@@ -248,12 +254,12 @@ void TESTFN_AddRandomBody(engine &engine){
     input_data_sets++;
     if (input_data.size() > ((60 * 60 * 60 *  3) + 120)) {
      input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (60 * 60 * 60 * 3)));
-     input_data_sets = input_data.size();
+     input_data_sets = input_data.size()/3;
     }
    }
   }
   if (FANN_Learning_Phase&&input_data_sets){
-   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 100, 0, 1e-20, 0.01, 0.01);
+   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
    IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback, input_data_sets);  
    //fann_set_scaling_params(LittleBrains.ann, LittleBrains.ann_train->train_data, -1, 1, min_output, max_output);
    //input_data_sets = 0;
@@ -1137,7 +1143,7 @@ void android_main(struct android_app* state) {
 
 
 
- IFFANNEngine::CFANNNetwork FANNNetwork;
+ //IFFANNEngine::CFANNNetwork FANNNetwork;
  //FANNNetwork.AddToNetwork("test123", 1);
 
 
