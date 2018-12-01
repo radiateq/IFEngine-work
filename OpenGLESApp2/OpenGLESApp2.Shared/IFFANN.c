@@ -174,7 +174,14 @@ namespace IFFANN {
 
   //ifann->ann_train->num_data = num_data;
   ifann->ann_train->train_data = fann_create_train_from_callback(num_data, ifann->ann->num_input, ifann->ann->num_output, train_callback);
+  fann_scale_train_data(ifann->ann_train->train_data, -1, 1);
   fann_cascadetrain_on_data(ifann->ann, ifann->ann_train->train_data, ifann->ann_train->max_neurons, ifann->ann_train->neurons_between_reports, ifann->ann_train->desired_error);
+
+
+
+  //float mse_train = fann_test_data(ifann->ann, ifann->ann_train->train_data);
+  //int bit_fail_train = fann_get_bit_fail(ifann->ann);
+
 
   Save_Cascade_FANN(ifann, CnTrainedFannPostscript);
 
