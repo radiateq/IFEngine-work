@@ -150,12 +150,9 @@ void TESTFN_AddRandomBody(engine &engine){
    FANN_TEST_initialized = true;
 
    if(IFFANN::Check_Save_Cascade_FANN("forces01", IFFANN::CnTrainedFannPostscript )){
-    if(!IFFANN::Load_Cascade_FANN(&LittleBrains, "forces01", IFFANN::CnTrainedFannPostscript)){
-     IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
-    }
-   }else{
-    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
+    IFFANN::Load_Cascade_FANN(&LittleBrains, "forces01", IFFANN::CnTrainedFannPostscript);
    }
+   if(!LittleBrains.ann) IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
    FANN_Learning_Phase = false;
    input_data_sets = 0;
    

@@ -32,9 +32,9 @@ namespace IFFANNEngine{
   std::vector<char*> matching_files;
   ~IFANNEngine(){
   }
-  bool Save(char const * const file_name, bool append = true){  
+  bool Save(){  
   }
-  bool Load(char const * const file_name, bool append = true){   
+  bool Load(){   
   }
   char const * const GetAddressFileName(SCFANN_Address &address){
    sprintf(address_file_name, "%10u", address.layer );
@@ -69,10 +69,27 @@ namespace IFFANNEngine{
     //
     if(0==strncmp(address_file_name, IFFileSystem.GetLastDirectoryEntry(), compare_len)){
      //matching_files
+     matching_files.push_back(strcpy((char*)malloc((strlen(IFFileSystem.GetLastDirectoryEntry())+1)*sizeof(IFFileSystem.GetLastDirectoryEntry()[0])), IFFileSystem.GetLastDirectoryEntry()));
     }
     //
 
    }
+   return matching_files.size();
+  }
+  unsigned int MatchToType(char const * const type_string ) {
+   Free();
+   IFFileSystem.Directory(IFFileSystem.CurrentDirectory());
+   while (IFFileSystem.DirectoryNext()) {
+
+    //
+    if (0 == IFGeneralUtils::strcmprev(IFFileSystem.GetLastDirectoryEntry(), type_string, strlen(type_string))){
+     //matching_files
+     matching_files.push_back(strcpy((char*)malloc((strlen(IFFileSystem.GetLastDirectoryEntry()) + 1) * sizeof(IFFileSystem.GetLastDirectoryEntry()[0])), IFFileSystem.GetLastDirectoryEntry()));
+    }
+    //
+
+   }
+   return matching_files.size();
   }
   void Free(){
    for( int cnt = 0; cnt < matching_files.size(); cnt++){
@@ -96,22 +113,36 @@ namespace IFFANNEngine{
  public:
   CFANNCapsule *connect_to_ifann;
   std::vector < SConnection > connections;
-  SCFANN_Address address;
-  bool Save(char const * const file_name, bool append = true) {
+  SCFANN_Address address;//address.connection should be set to -1
+  bool Save() {
    char file_path[BUFSIZ+1];
    if( chdir(RQNDKUtils::Make_storageDataPath(file_path,1024,"")) ) return false;
 
    for( size_t cnt = 0; cnt < connections.size(); cnt++ ){
     char const *file_name = GetAddressFileName(connections[cnt].address);
     IFFileSystem.Remove(file_name);
-    if( !IFFileSystem.OpenFile(file_name, (append?"a":"w")) ) return false;
+    if( !IFFileSystem.OpenFile(file_name, "w") ) return false;
     IFFileSystem.Write(&connections[cnt],sizeof(connections[cnt]));
     IFFileSystem.Free();
-   }
-  }
-  bool Load(char const * const file_name, bool append = true) {
-  }
+   }     
 
+   return true;
+  }
+  bool Load() {   
+   char file_path[BUFSIZ + 1];
+   if (chdir(RQNDKUtils::Make_storageDataPath(file_path, 1024, ""))) return false;
+   connections.clear();
+   SConnection temp_con;
+   if(MatchToAddress(address)){
+    for( size_t cnt = 0; cnt < matching_files.size(); cnt++ ){
+     IFFileSystem.OpenFile(matching_files[cnt], "r");
+     IFFileSystem.Read(&temp_con,sizeof(temp_con));
+     IFFileSystem.Free();
+     connections.push_back(temp_con);
+    }
+   }
+   return true;
+  }
  };
 
  class CFANNCapsule : public IFANNEngine {
@@ -132,6 +163,16 @@ namespace IFFANNEngine{
    }
    return (outputs = IFFANN::Run_Cascade_FANN(&ifann, inputs));
   }  
+
+  bool Save() {
+
+   return true;
+  }
+  bool Load() {
+
+   return true;
+  }
+//------------------------------------------------------------------
  };
 
 

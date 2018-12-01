@@ -5,6 +5,9 @@
 #include <unistd.h>
 
 namespace IFGeneralUtils{
+ 
+ int strcmprev(char const * const string1, char const * const string2, unsigned int compare_len);
+
  class CFileSystem{
  public:
   FILE *file_handle = NULL;
