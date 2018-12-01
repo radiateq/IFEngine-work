@@ -130,9 +130,12 @@ void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_
  input[0] = input_data[num_data * 3 + 0];
  input[1] = input_data[num_data * 3 + 1];
  input[2] = input_data[num_data * 3 + 2];
- 
- output[0] = output_data[(num_data+1) * 2 + 0];
- output[1] = output_data[(num_data+1) * 2 + 1];
+
+
+
+ output[0] = output_data[(num_data) * 2 + 0];
+ output[1] = output_data[(num_data) * 2 + 1];
+
 
 }
 //DEMO 2 - FANN - GLOBAL VARIABLES STOP
@@ -145,11 +148,11 @@ void TESTFN_AddRandomBody(engine &engine){
    if(IFFANN::Check_Save_Cascade_FANN("forces01", IFFANN::CnTrainedFannPostscript ) ){
     IFFANN::Load_Cascade_FANN(&LittleBrains, "forces01", IFFANN::CnTrainedFannPostscript );
    }else{
-    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 1000, 0, 0, 1, 1);
+    //IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 1000, 0, 0.001, 0.001, 0.001);
    } 
    FANN_Learning_Phase = false;
    input_data_sets = 0;
-
+   
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
    ifCB2Body *first_body = IFAdapter.OrderedBody();
@@ -222,13 +225,15 @@ void TESTFN_AddRandomBody(engine &engine){
   last_x_acceleration*=0.1;
   last_y_acceleration *= 0.1;
   //anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);
-  anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetPosition().x, last_y_acceleration + anns_body->body->GetPosition().y), anns_body->body->GetAngle());
   if (b2Distance(b2Vec2(anns_body->body->GetPosition().x, anns_body->body->GetPosition().y), b2Vec2(0, 0)) > cut_off_distance) {
    anns_body->body->SetTransform(b2Vec2(0, 0), anns_learned_body->body->GetAngle());
    anns_body->body->SetLinearVelocity(b2Vec2(0, 0));
    anns_body->body->SetAngularVelocity(0);
    last_pos_x = 0, last_pos_y = 0;
   } else if (!FANN_Learning_Phase) {
+   last_pos_x = anns_body->body->GetPosition().x;
+   last_pos_y = anns_body->body->GetPosition().y;
+   anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetPosition().x, last_y_acceleration + anns_body->body->GetPosition().y), anns_body->body->GetAngle());
    if ((last_pos_x != FLT_MAX)&&(last_pos_y != FLT_MAX)){
     input_data.push_back(IFA_World->GetGravity().y / LittleBrains.input_scale);
     //input_data[(input_data_sets+0) * 3 + 0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
@@ -241,25 +246,28 @@ void TESTFN_AddRandomBody(engine &engine){
     output_data.push_back((last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale);
     //output_data[input_data_sets * 2 + 1] = (last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale;
     input_data_sets++;
+    if (input_data.size() > ((60 * 60 * 60 *  3) + 120)) {
+     input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (60 * 60 * 60 * 3)));
+     input_data_sets = input_data.size();
+    }
    }
-   last_pos_x = anns_body->body->GetPosition().x;
-   last_pos_y = anns_body->body->GetPosition().y;   
   }
   if (FANN_Learning_Phase&&input_data_sets){
-   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 100, 0, 0, 1, 1);
-   IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback, input_data_sets-1);
+   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 100, 0, 1e-20, 0.01, 0.01);
+   IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback, input_data_sets);  
+   //fann_set_scaling_params(LittleBrains.ann, LittleBrains.ann_train->train_data, -1, 1, min_output, max_output);
    //input_data_sets = 0;
    FANN_Learning_Phase = false;
   }else{
    fann_type inputs[3];
    inputs[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
    inputs[1] = last_x_acceleration / LittleBrains.input_scale;
-   inputs[2] = last_y_acceleration / LittleBrains.input_scale;
+   inputs[2] = last_y_acceleration / LittleBrains.input_scale;   
+   fann_scale_input(LittleBrains.ann, inputs);
    fann_type *outputs = IFFANN::Run_Cascade_FANN(&LittleBrains, inputs);
    fann_descale_output(LittleBrains.ann,outputs);
    outputs[0] = anns_learned_body->body->GetPosition().x - outputs[0] * LittleBrains.output_scale;
    outputs[1] = anns_learned_body->body->GetPosition().y - outputs[1] * LittleBrains.output_scale;
-
    if (b2Distance(b2Vec2(outputs[0], outputs[1]), b2Vec2(0, 0)) <= cut_off_distance) {
     anns_learned_body->body->SetTransform(b2Vec2(outputs[0], outputs[1]), anns_learned_body->body->GetAngle());
    }

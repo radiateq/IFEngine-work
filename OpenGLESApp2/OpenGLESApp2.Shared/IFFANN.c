@@ -29,6 +29,7 @@ namespace IFFANN {
   return ifann;
  }
 
+ //It is very important to set input and output scale properly. Network seems to prefer larger numbers, most likely because of accuracy
  IFS_Cascade_FANN *Setup_Train_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int max_neurons, unsigned int neurons_between_reports, fann_type desired_error, fann_type input_scale, fann_type output_scale) {
   if (ifann->ann_train) free(ifann->ann_train), ifann->ann_train = NULL;
   ifann->ann_train = (IFS_Cascade_FANN_Train_Struct*)malloc(sizeof(IFS_Cascade_FANN_Train_Struct));
@@ -170,13 +171,16 @@ namespace IFFANN {
   fclose(IFANNDataFile);
   return true;
  }
+ //User must descale output after running only 
  void Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback, unsigned int num_data ) {
 
   //ifann->ann_train->num_data = num_data;
   ifann->ann_train->train_data = fann_create_train_from_callback(num_data, ifann->ann->num_input, ifann->ann->num_output, train_callback);
-  fann_scale_train_data(ifann->ann_train->train_data, -1, 1);
+  //fann_scale_train_data(ifann->ann_train->train_data, -1, 1);
+  //ifann->ann->scale_factor_in
+  fann_set_scaling_params(ifann->ann, ifann->ann_train->train_data, -1, 1, -1, 1);
   fann_cascadetrain_on_data(ifann->ann, ifann->ann_train->train_data, ifann->ann_train->max_neurons, ifann->ann_train->neurons_between_reports, ifann->ann_train->desired_error);
-
+   
 
 
   //float mse_train = fann_test_data(ifann->ann, ifann->ann_train->train_data);
