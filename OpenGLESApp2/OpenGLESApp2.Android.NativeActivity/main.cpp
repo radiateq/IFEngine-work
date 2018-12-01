@@ -131,8 +131,8 @@ void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_
  input[1] = input_data[num_data * 3 + 1];
  input[2] = input_data[num_data * 3 + 2];
  
- output[0] = output_data[num_data * 2 + 0];
- output[1] = output_data[num_data * 2 + 1];
+ output[0] = output_data[(num_data+1) * 2 + 0];
+ output[1] = output_data[(num_data+1) * 2 + 1];
 
 }
 //DEMO 2 - FANN - GLOBAL VARIABLES STOP
@@ -226,12 +226,12 @@ void TESTFN_AddRandomBody(engine &engine){
    last_pos_x = 0, last_pos_y = 0;
   } else if (!FANN_Learning_Phase) {
    if ((last_pos_x != FLT_MAX)&&(last_pos_y != FLT_MAX)){  
-    input_data[input_data_sets * 3 + 0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
-    input_data[input_data_sets * 3 + 1] = last_x_acceleration / LittleBrains.input_scale;
-    input_data[input_data_sets * 3 + 2] = last_y_acceleration / LittleBrains.input_scale;
+    input_data[(input_data_sets+0) * 3 + 0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
+    input_data[(input_data_sets+0) * 3 + 1] = last_x_acceleration / LittleBrains.input_scale;
+    input_data[(input_data_sets+0) * 3 + 2] = last_y_acceleration / LittleBrains.input_scale;
     output_data[input_data_sets * 2 + 0] = (last_pos_x - anns_body->body->GetPosition().x) / LittleBrains.output_scale;
     output_data[input_data_sets * 2 + 1] = (last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale;
-    if (input_data_sets<(sizeof(output_data)*0.5 - 1)){
+    if (input_data_sets<(sizeof(output_data)*0.5 - 2)){
      input_data_sets++;
     }else{
      FANN_Learning_Phase = true;
@@ -242,7 +242,7 @@ void TESTFN_AddRandomBody(engine &engine){
   }
   if (FANN_Learning_Phase){
    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), 3, 2, "forces01"), 100, 0, 0, 5, 5);
-   IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback, input_data_sets);
+   IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback, input_data_sets-1);
    input_data_sets = 0;
    FANN_Learning_Phase = false;
   }else{
