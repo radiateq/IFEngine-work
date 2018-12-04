@@ -8,6 +8,7 @@
 #include <list>
 #include <vector>
 #include <map>
+#include <set>
 #include <Eigen/Dense>
 
 
@@ -123,13 +124,94 @@ namespace IFGeneralUtils{
   }
  };
 
+ template< typename TDataType > struct SSetWrap
+ {
+ public:
+  typedef std::set< TDataType > TSet;
+  TSet Set;
+  typename TSet::iterator Iter_Set;
+  void Add(TDataType *pData)
+  {
+   Set.insert(*pData);
+  }
+  void Add(TDataType Data)
+  {
+   Set.insert(Data);
+  }
+  bool Get(TDataType &Data)
+  {
+   Iter_Set = Set.find(Data);
+   if (Set.end() == Iter_Set)
+   {
+    return false;
+   }
+   Data = *Iter_Set;
+   return true;
+  }
+  //Return values
+  //  2 : First element before element with sought key returned
+  //  1 : Element with same key or higher returned - sought key is first in map
+  // -1 : Map Empty
+  //TDataType &Data is IN/OUT	
+  int GetFirstBefore(TDataType &Data)
+  {
+   int RetVal = 1;
+   bool KeyAdded = false;
+   if (0 == Set.size())
+    return -1;
+   TDataType TempData;
+   Iter_Set = Set.find(Data);
+   //Key not found, add it
+   if (Set.end() == Iter_Set)
+   {
+    Add(Data);
+    KeyAdded = true;
+   }
+   //Get iterator to our key
+   Iter_Set = Set.lower_bound(Data);
+   //Is our key first in map
+   if (Iter_Set == Set.begin())
+   {//Yes
+    //We have at least two elements in map and first element is our temporary key, so move iterator on next element
+    if (KeyAdded)
+    {
+     Iter_Set++;
+    }
+    RetVal = 2;
+   }
+   else
+   {//No
+    Iter_Set--;
+   }
+   TempData = *Iter_Set;
+   if (KeyAdded)
+   {
+    Remove(Data);
+   }
+   Iter_Set = Set.lower_bound(TempData);
+   Data = *Iter_Set;
+   return RetVal;
+  }
+  bool Remove(TDataType &Data)
+  {
+   Iter_Set = Set.find(Data);
+   if (Set.end() == Iter_Set)
+   {
+    return false;
+   }
+   Set.erase(Data);
+   return false;
+  }
+ };
+
+
  template< typename TKeyType, typename TDataType> struct SMapWrap
  {
  public:
   typedef std::map< TKeyType, TDataType > TMap;
   TMap Map;
   typedef std::pair< TKeyType, TDataType > TMap_KeyData;
-  typename TMap::iterator Iter_Map;
+  typename TMap::iterator Iter_Map, Iter_MapGetRef;
   void Add(TKeyType &Key, TDataType &Data)
   {
    Map.insert(TMap_KeyData(Key, Data));
@@ -166,20 +248,20 @@ namespace IFGeneralUtils{
 
   TDataType* GetRef(TKeyType &Key)
   {
-   Iter_Map = Map.find(Key);
-   if (Map.end() == Iter_Map)
+   Iter_MapGetRef = Map.find(Key);
+   if (Map.end() == Iter_MapGetRef)
    {
-    return false;
+    return NULL;
    }
 
-   return &(Iter_Map->second);
+   return &(Iter_MapGetRef->second);
   }
   TDataType pGet(TKeyType &Key)
   {
    Iter_Map = Map.find(Key);
    if (Map.end() == Iter_Map)
    {
-    return nullptr;
+    return NULL;
    }
    return Iter_Map->second;
   }

@@ -109,30 +109,30 @@ namespace IFFANNEngine {
   Network.ConnectPins(Node1.GetOutPinByIndex(0)->ID, Node2.GetInPinByIndex(1)->ID);
   //OR
   Network.ConnectPins(Node1.GetOutPinByIndex(1), Node2.GetInPinByIndex(2));
+
+  unsigned int ID;
+  fann_type *pin_value;
+  //Set all inputs to some value
+  Network.NodeRegister.InputPinRegister.input_pins.ResetIterator();
+  while(0<=Network.NodeRegister.InputPinRegister.input_pins.GetNextIterator(ID, pin_value)){
+   *pin_value = 0.1;
+  }
+  Network.Run();
+  //get output values
+  Network.NodeRegister.OutputPinRegister.output_pins.ResetIterator();
+  while (0 <= Network.NodeRegister.OutputPinRegister.output_pins.GetNextIterator(ID, pin_value)) {
+   if(pin_value){
+    fann_type val = *pin_value;
+    val = val;
+   }
+  }
+
+
   Network.DisconnectPins(Node1.GetOutPinByIndex(1), Node2.GetInPinByIndex(2));
   Network.DisconnectPins(Node1.GetOutPinByIndex(0), Node2.GetInPinByIndex(1));
 
 
-  Network.ConnectPins(Node1.GetOutPinByIndex(0)->ID, Node2.GetInPinByIndex(1)->ID);
-  //OR
-  Network.ConnectPins(Node1.GetOutPinByIndex(1), Node2.GetInPinByIndex(2));
-  Network.DisconnectPins(Node1.GetOutPinByIndex(1), Node2.GetInPinByIndex(2));
-  Network.DisconnectPins(Node1.GetOutPinByIndex(0), Node2.GetInPinByIndex(1));
-
-
-  Network.ConnectPins(Node1.GetOutPinByIndex(0)->ID, Node2.GetInPinByIndex(1)->ID);
-  //OR
-  Network.ConnectPins(Node1.GetOutPinByIndex(1), Node2.GetInPinByIndex(2));
-  Network.DisconnectPins(Node1.GetOutPinByIndex(1), Node2.GetInPinByIndex(2));
-  Network.DisconnectPins(Node1.GetOutPinByIndex(0), Node2.GetInPinByIndex(1));
-
-
-  Network.ConnectPins(Node1.GetOutPinByIndex(0)->ID, Node2.GetInPinByIndex(1)->ID);
-  //OR
-  Network.ConnectPins(Node1.GetOutPinByIndex(1), Node2.GetInPinByIndex(2));
-  Network.DisconnectPins(Node1.GetOutPinByIndex(1), Node2.GetInPinByIndex(2));
-  Network.DisconnectPins(Node1.GetOutPinByIndex(0), Node2.GetInPinByIndex(1));
-
+  Network.NodeRegister.Unregister(&Node1);
   Network.NodeRegister.Unregister(&Node2);
 
  }

@@ -54,7 +54,7 @@ namespace IFFANNEngine{
   unsigned int ID;
   fann_type *data;
   unsigned int fann_index;//index in fann input/output array
-  std::set<unsigned int> connected_pins;
+  IFGeneralUtils::SSetWrap<unsigned int> connected_pins;
  };
  //pin map:
  // -map pin ID = key, owner node ID = value
@@ -234,9 +234,9 @@ namespace IFFANNEngine{
    }
 
    pin_out = Node1->GetOutPinByID( outID);
-   pin_out->connected_pins.insert(inID);
+   pin_out->connected_pins.Set.insert(inID);
    pin_in = Node2->GetInPinByID(inID);
-   pin_in->connected_pins.insert(outID);
+   pin_in->connected_pins.Set.insert(outID);
 
    return true;
   }
@@ -251,18 +251,97 @@ namespace IFFANNEngine{
    Node2->input_pins.Get(inID, pin_in);
 
    pin_out = Node1->GetOutPinByID(outID);
-   pin_out->connected_pins.erase(inID);
+   pin_out->connected_pins.Set.erase(inID);
    pin_in = Node2->GetInPinByID(inID);
-   pin_in->connected_pins.erase(outID);
+   pin_in->connected_pins.Set.erase(outID);
 
-   if (pin_out->connected_pins.size()==0) {
+   if (pin_out->connected_pins.Set.size()==0) {
     NodeRegister.OutputPinRegister.output_pins.pAdd(outID, pin_out->data);
    }
-   if (pin_in->connected_pins.size() == 0) {
+   if (pin_in->connected_pins.Set.size() == 0) {
     NodeRegister.InputPinRegister.input_pins.pAdd(inID, pin_in->data);
    }
 
    return true;
+  }
+ private:
+  class CExecuteContainer{
+  public:
+   CNode *Node = NULL;
+   bool Executed = false;
+  };
+  //Before network is executed pointer is stored to this container in order to pass data
+  //If this map is clear after execution, execution ends, and output is passed to user using OutputPinRegister
+  //After user supplies new data to input pins in InputPinRegister, networks are executed again
+  IFGeneralUtils::SMapWrap<unsigned int, CExecuteContainer> NodesToRun;
+  //While executing input nodes, store their output pins to this vector
+  //After executions, clear NodesToRun and fill it with nodes with pins connected to pins with id in CurrentOutputPins vector
+  //Clear CurrentOutputPins vector and repeat
+  std::vector<unsigned int> CurrentOutputPins;
+  fann_type *pin_data;
+  unsigned int pin_ID, pin_in_ID, node_ID, pin_ord;  
+  CExecuteContainer ExecuteContainer, *pExecuteContainer;  
+  CPin *pin;
+  CNode *node;
+ public:
+  void Run(){
+   
+   //1. start with input pins, find all their node IDs and store them in to map with flag that indicates that network has been executed
+   NodesToRun.Map.clear();
+   NodeRegister.InputPinRegister.input_pins.ResetIterator();
+   while(0<=NodeRegister.InputPinRegister.input_pins.GetNextIterator(pin_ID, pin_data)){
+    NodeRegister.PinToNode.pin_to_node_ID.Get(pin_ID, node_ID);
+    NodeRegister.nodes_by_ID.Get(node_ID, ExecuteContainer.Node);
+    NodesToRun.Add(node_ID, ExecuteContainer);
+   }
+   while(NodesToRun.Map.size()>0){
+    //2. execute all those nodes
+    NodesToRun.ResetIterator();
+    CurrentOutputPins.clear();
+    while (0 <= NodesToRun.GetNextIterator(node_ID, ExecuteContainer)) {     
+     pExecuteContainer = NodesToRun.GetRef(node_ID);     
+     if (pExecuteContainer->Executed) {
+      continue;
+     }
+     pExecuteContainer->Node->outputs = IFFANN::Run_Cascade_FANN(&ExecuteContainer.Node->ifann, ExecuteContainer.Node->inputs);
+     pExecuteContainer->Executed = true;
+     //Copy outputs to strucutres
+     for( size_t out_pin_cnt = 0; out_pin_cnt< ExecuteContainer.Node->ifann.ann->num_output; out_pin_cnt++){
+      pExecuteContainer->Node->GetOutPinByIndex(out_pin_cnt)->data = &pExecuteContainer->Node->outputs[out_pin_cnt];
+      pin = pExecuteContainer->Node->GetOutPinByIndex(out_pin_cnt);
+      pin->data = &pExecuteContainer->Node->outputs[out_pin_cnt];
+      if(NodeRegister.OutputPinRegister.output_pins.GetRef(pin->ID)){
+       *NodeRegister.OutputPinRegister.output_pins.GetRef(pin->ID) = pin->data;
+      }
+     }
+     //3. find all output pins of all nodes and store them to vector   
+     pExecuteContainer->Node->output_pins.ResetIterator();
+     while (0 <= pExecuteContainer->Node->output_pins.GetNextIterator(pin_ord, pin)) {
+      CurrentOutputPins.push_back(pin->ID);
+     }
+    }
+    NodesToRun.Map.clear();
+    //4. find all their connected pins and pass values
+    for(size_t cnt_out = 0; cnt_out < CurrentOutputPins.size(); cnt_out++){
+     NodeRegister.PinToNode.pin_to_node_ID.Get(CurrentOutputPins[cnt_out], node_ID);
+     NodeRegister.nodes_by_ID.Get(node_ID, node);
+     pin = node->GetOutPinByID(CurrentOutputPins[cnt_out]);
+     for (pin->connected_pins.Iter_Set = pin->connected_pins.Set.begin(); pin->connected_pins.Iter_Set != pin->connected_pins.Set.end(); pin->connected_pins.Iter_Set++) {
+      pin_in_ID = *pin->connected_pins.Iter_Set;
+      NodeRegister.PinToNode.pin_to_node_ID.Get(pin_in_ID, node_ID);
+      NodeRegister.nodes_by_ID.Get(node_ID, node);
+      ExecuteContainer.Node = node;
+      ExecuteContainer.Executed = false;
+      NodesToRun.Add(node_ID, ExecuteContainer);
+      //pass value
+      *node->GetInPinByID(pin_in_ID)->data = *pin->data;
+     }
+    }
+    //5. find all nodes that belong to pins in vector and execute them   
+    NodesToRun.ResetIterator();
+   
+    //6. goto 2
+   }
   }
  };
  //running the network:
