@@ -48,28 +48,6 @@ void *getAssetFileToBuffer(android_app* state, const char *pFileName, size_t &si
  return pBuffer; 
 }
 
-void CopyFloat16ToMatrix(MatrixXf &mf, float *mfa) {
- for (int cnt = 0; cnt < 16; cnt++) {
-  mf(cnt) = mfa[cnt];
- }
-}
-void CopyMatrix16ToFloat(MatrixXf &mf, float *mfa) {
- for (int cnt = 0; cnt < 16; cnt++) {
-  mfa[cnt] = mf(cnt);
- }
-}
-
-void LoadIdentityMatrix(float *matrix4x4) {
- //1000
- //0100
- //0010
- //0001
- memset(matrix4x4, 0.0, sizeof(float) * 16);
- matrix4x4[0] = 1.0;
- matrix4x4[5] = 1.0;
- matrix4x4[10] = 1.0;
- matrix4x4[15] = 1.0;
-}
 
 int32_t getDensityDpi(android_app* app) {
  AConfiguration* config = AConfiguration_new();
@@ -79,7 +57,7 @@ int32_t getDensityDpi(android_app* app) {
  return density;
 }
 
-char *Make_storageDataPath(char *path_buffer, int buffer_length, char *file_name) {
+char *Make_storageDataPath(char * const path_buffer, int buffer_length, char const * const file_name) {
 
  TS_User_Data *user_data = (TS_User_Data *)p_user_data;
  int intpathlen = strlen(user_data->state->activity->externalDataPath);
@@ -96,7 +74,7 @@ char *Make_storageDataPath(char *path_buffer, int buffer_length, char *file_name
  return path_buffer;
 }
 
-char *Make_privateeDataPath(char *path_buffer, int buffer_length, char *file_name){
+char *Make_privateeDataPath(char * const path_buffer, int buffer_length, char const * const file_name){
 
  TS_User_Data *user_data = (TS_User_Data *)p_user_data;
  int intpathlen = strlen(user_data->state->activity->internalDataPath);

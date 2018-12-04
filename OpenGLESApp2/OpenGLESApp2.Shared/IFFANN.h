@@ -13,7 +13,7 @@ namespace IFFANN{
  extern const char CnFannIFANNDataPostscript[];
 
  typedef struct {
-  struct fann_train_data *train_data, *test_data;
+  struct fann_train_data *train_data = NULL, *test_data = NULL;
   //unsigned int num_data;
   fann_type desired_error;
   unsigned int max_neurons;
@@ -22,9 +22,9 @@ namespace IFFANN{
  
 
  typedef struct {
-  struct fann *ann;
-  IFS_Cascade_FANN_Train_Struct *ann_train;
-  char *unique_name;
+  struct fann *ann = NULL;
+  IFS_Cascade_FANN_Train_Struct *ann_train = NULL;
+  char *unique_name = NULL;
   //Scale factor should be such that for intended range all inputs should be scaled to range -1 to 1
   fann_type input_scale;
   //Scale factor should be such that for intended range all outputs should be scaled to range -1 to 1

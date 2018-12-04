@@ -115,7 +115,7 @@ namespace IFFANN {
    fread(&ifann->output_scale, sizeof(ifann->input_scale), 1, IFANNDataFile);
   }
   fclose(IFANNDataFile);
-
+  
   return true;
  }
  bool const Save_Cascade_FANN(IFS_Cascade_FANN const * const ifann, char const * const state_name) {

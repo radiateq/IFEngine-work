@@ -261,6 +261,20 @@ void TESTFN_AddRandomBody(engine &engine){
    //fann_set_scaling_params(LittleBrains.ann, LittleBrains.ann_train->train_data, -1, 1, min_output, max_output);
    //input_data_sets = 0;
    FANN_Learning_Phase = false;
+
+
+
+
+
+   IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnFinalFannPostscript);
+   IFFANNEngine::TestNetwork();
+
+
+
+
+
+
+
   }else{
    fann_type inputs[3];
    inputs[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;

@@ -12,6 +12,7 @@
 #include <IFEngine.h>
 #include <IFEUtils.h>
 
+#include <IF_General_Utils.h>
 //
 //class Iifclass1 {
 //public:
@@ -49,8 +50,8 @@ public:
  ////////////////////////////////////
  b2BodyDef *body_def;
  b2Body *body;
- RQNDKUtils::S_listWrap_ptr<b2Shape, true> shape;
- RQNDKUtils::S_listWrap_ptr<b2FixtureDef, true> fixture;
+ IFGeneralUtils::S_listWrap_ptr<b2Shape, true> shape;
+ IFGeneralUtils::S_listWrap_ptr<b2FixtureDef, true> fixture;
  ifTbodyDefinition *OGL_body;
  ////////////////////////////////////
  //After body_def, body, shape and fixture have been prepared this function will create a body and add it to the world 
@@ -287,7 +288,7 @@ public:
  } 
  //void Add
 // b2World *World;
- RQNDKUtils::S_listWrap_ptr<ifCB2Body, true> Bodies;
+ IFGeneralUtils::S_listWrap_ptr<ifCB2Body, true> Bodies;
 private:
  bool OrderPending;
  void Free() {

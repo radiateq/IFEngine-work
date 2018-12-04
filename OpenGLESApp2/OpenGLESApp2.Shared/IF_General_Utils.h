@@ -4,6 +4,19 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+
+#include <list>
+#include <vector>
+#include <map>
+#include <Eigen/Dense>
+
+
+using Eigen::MatrixXf;
+
+#define IF_NULL_DELETE(PARAM) if( NULL != PARAM ) { delete PARAM; PARAM = NULL; }
+#define IF_NULL_DELETE_ARRAY(PARAM) if( NULL != PARAM ) { delete [] PARAM; PARAM = NULL; }
+
+
 namespace IFGeneralUtils{
  
  int strcmprev(char const * const string1, char const * const string2, unsigned int compare_len);
@@ -108,6 +121,423 @@ namespace IFGeneralUtils{
   void Free(){
    if(file_handle) fclose(file_handle), file_handle=NULL;
   }
+ };
+
+ template< typename TKeyType, typename TDataType> struct SMapWrap
+ {
+ public:
+  typedef std::map< TKeyType, TDataType > TMap;
+  TMap Map;
+  typedef std::pair< TKeyType, TDataType > TMap_KeyData;
+  typename TMap::iterator Iter_Map;
+  void Add(TKeyType &Key, TDataType &Data)
+  {
+   Map.insert(TMap_KeyData(Key, Data));
+  }
+  void pAdd(TKeyType &Key, TDataType Data)
+  {
+   Map.insert(TMap_KeyData(Key, Data));
+  }
+  bool AddCheck(TKeyType &Key, TDataType &Data)
+  {
+   if (IsPresent(Key))
+    return false;
+   Map.insert(TMap_KeyData(Key, Data));
+   return true;
+  }
+  //removes element with passed key if exists and then adds passed
+  void AddReplace(TKeyType &Key, TDataType &Data)
+  {
+   if (IsPresent(Key))
+    Remove(Key);
+   Map.insert(TMap_KeyData(Key, Data));
+  }
+  //				IN				OUT
+  bool Get(TKeyType &Key, TDataType &Data)
+  {
+   Iter_Map = Map.find(Key);
+   if (Map.end() == Iter_Map)
+   {
+    return false;
+   }
+   Data = Iter_Map->second;
+   return true;
+  }
+
+  TDataType* GetRef(TKeyType &Key)
+  {
+   Iter_Map = Map.find(Key);
+   if (Map.end() == Iter_Map)
+   {
+    return false;
+   }
+
+   return &(Iter_Map->second);
+  }
+  TDataType pGet(TKeyType &Key)
+  {
+   Iter_Map = Map.find(Key);
+   if (Map.end() == Iter_Map)
+   {
+    return nullptr;
+   }
+   return Iter_Map->second;
+  }
+  bool IsPresent(TKeyType &Key)
+  {
+   Iter_Map = Map.find(Key);
+   if (Map.end() == Iter_Map)
+   {
+    return false;
+   }
+   return true;
+  }
+  void ResetIterator()
+  {
+   Iter_Map = Map.begin();
+  }
+  int GetNextIterator(TKeyType &Key, TDataType &Data)
+  {
+   if (Map.empty())
+    return -1;
+   if (Iter_Map == Map.end())
+    return -2;
+   Key = Iter_Map->first;
+   Data = Iter_Map->second;
+   ++Iter_Map;
+   return 1;
+  }
+  //Return values
+  //  2 : First element before element with sought key returned
+  //  1 : Element with same key or higher returned - sought key is first in map
+  // -1 : Map Empty
+  int GetFirstBefore(TKeyType &Key, TDataType &Data)
+  {
+   int RetVal = 1;
+   bool KeyAdded = false;
+   if (0 == Map.size())
+    return -1;
+   TKeyType TempKey;
+   Iter_Map = Map.find(Key);
+   //Key not found, add it
+   if (Map.end() == Iter_Map)
+   {
+    Add(Key, Data);
+    KeyAdded = true;
+   }
+   //Get iterator to our key
+   Iter_Map = Map.lower_bound(Key);
+   //Is our key first in map
+   if (Iter_Map == Map.begin())
+   {//Yes
+    //We have at least two elements in map and first element is our temporary key, so move iterator on next element
+    if (KeyAdded)
+    {
+     Iter_Map++;
+    }
+    RetVal = 2;
+   }
+   else
+   {//No
+    Iter_Map--;
+   }
+   TempKey = Iter_Map->first;
+   if (KeyAdded)
+   {
+    Remove(Key);
+   }
+   Iter_Map = Map.lower_bound(TempKey);
+   Data = Iter_Map->first;
+   return RetVal;
+  }
+  bool Remove(TKeyType &Key)
+  {
+   Iter_Map = Map.find(Key);
+   if (Map.end() == Iter_Map)
+   {
+    return false;
+   }
+   Map.erase(Key);
+   return true;
+  }
+ };
+
+
+ template<typename Tptr_type> class RQTCAutoDelete {
+ public:
+  Tptr_type *managed_pointer;
+  RQTCAutoDelete(Tptr_type *_managed_pointer = NULL) {
+   managed_pointer = _managed_pointer;
+  }
+  ~RQTCAutoDelete() {
+   if (managed_pointer == NULL)
+    return;
+   delete[] managed_pointer;
+   managed_pointer = NULL;
+  }
+ };
+
+ template<typename TDataType_np, bool delete_pointers_on_destructor = false, bool pointer_array = false > class S_listWrap_ptr : public std::list<TDataType_np*>
+ {
+ public:
+  bool removeElement(TDataType_np *input_var) {
+   for (typename std::list<TDataType_np*>::iterator iter = this->begin(); iter != this->end(); iter++) {
+    if ((*iter) == input_var) {
+     if (pointer_array)
+      delete[] input_var;
+     else
+      delete input_var;
+     this->erase(iter);//this->erase(iter++) to continue execution if search again for multiple elements
+
+     return true;
+    }
+   }
+   return false;
+  }
+  ~S_listWrap_ptr()
+  {
+   if (delete_pointers_on_destructor)
+   {
+    TDataType_np *temp_var;
+    while (this->size() > 0)
+    {
+     temp_var = this->back();
+     if (pointer_array)
+      delete[] temp_var;
+     else
+      delete temp_var;
+     this->pop_back();
+    }
+   }
+  }
+  TDataType_np* operator [](size_t index) {
+   for (typename std::list<TDataType_np*>::iterator iter = this->begin(); iter != this->end(); iter++) {
+    if (index-- == 0) {
+     return (*iter);
+    }
+   }
+   return NULL;
+  }
+ };
+
+
+ //void Test4mleaks() {
+ // S_listWrap_ptr<int, true> pointerlist;
+ // int *findme = new int(1);
+ // pointerlist.push_back(findme);
+ // pointerlist.push_back(new int(2));
+ // pointerlist.push_back(new int(3));
+ // pointerlist.push_back(new int(4));
+ // pointerlist.removeElement(findme);
+ // pointerlist.removeElement(*(pointerlist.begin()));
+ // S_listWrap_ptr<int, true, true> pointerArraylist;
+ // int *findmea = new int[100];
+ // pointerArraylist.push_back(new int[10]);
+ // pointerArraylist.push_back(new int[50]);
+ // pointerArraylist.push_back(findmea);
+ // pointerArraylist.push_back(new int[150]);
+ // pointerArraylist.removeElement(findmea);
+ // pointerArraylist.removeElement(*(pointerArraylist.begin()));
+ //}
+ //
+ //int main()
+ //{
+ // _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+ // while (!_kbhit()) {
+ //  Test4mleaks();
+ // }
+ //
+ //
+ // return 0;
+ //}
+
+
+ template<typename TDataType_np, bool delete_pointers_on_destructor = false, bool pointer_array = false > class S_vectorWrap_ptr : public std::vector<TDataType_np*>
+ {
+ public:
+  ~S_vectorWrap_ptr()
+  {
+   if (delete_pointers_on_destructor)
+   {
+    TDataType_np *temp_var;
+    while (this->size() > 0)
+    {
+     temp_var = this->back();
+     if (pointer_array)
+      delete[] temp_var;
+     else
+      delete temp_var;
+     this->pop_back();
+    }
+   }
+
+  }
+ };
+
+
+
+
+
+
+
+
+
+ class ICSLock
+ {
+ public:
+  pthread_mutex_t mutex;
+  ICSLock()
+  {
+   pthread_mutex_init(&mutex, NULL);
+  }
+  ~ICSLock()
+  {
+   pthread_mutex_destroy(&mutex);
+  }
+  void EnterAndLock()
+  {
+   pthread_mutex_lock(&mutex);
+  }
+  bool TryEnteringAndLock()
+  {
+   if (pthread_mutex_trylock(&mutex)) {
+    return false;
+   }
+   return true;
+  }
+  void LeaveAndUnlock()
+  {
+   pthread_mutex_unlock(&mutex);
+  }
+ };
+
+ struct SAutoICSLock
+ {
+ private:
+  ICSLock *pCSLock;
+ public:
+  SAutoICSLock(ICSLock *_pCSLock, bool EnterLock = true)
+  {
+   if (EnterLock)
+    _pCSLock->EnterAndLock();
+   pCSLock = _pCSLock;
+  }
+  ~SAutoICSLock()
+  {
+   pCSLock->LeaveAndUnlock();
+  }
+ };
+
+ template<typename TDataType> class TC_THSafe_Queue : public std::queue<TDataType>, public ICSLock
+ {
+#define DEF_TC_THSafe_Queue_LOCK SAutoICSLock AutoLock(this);
+#define OVERRIDE_QUEUE(FUNC_NAME,RET_VAL,PARAMT,PARAM) \
+	RET_VAL THS##FUNC_NAME(PARAMT) \
+	{ \
+		DEF_TC_THSafe_Queue_LOCK \
+        return this->FUNC_NAME(PARAM); \
+	}
+ public:
+  //queue<TDataType> THSQueue;
+  //Returns a reference to the last and most recently added element at the back of the queue. 
+  OVERRIDE_QUEUE(back, TDataType&, , )
+   //Tests if the queue is empty.  
+   OVERRIDE_QUEUE(empty, bool, , )
+   //Returns a reference to the first element at the front of the queue. 
+   OVERRIDE_QUEUE(front, TDataType&, , )
+   //Removes an element from the front of the queue. 
+   OVERRIDE_QUEUE(pop, void, , )
+   //Adds an element to the back of the queue. 
+   OVERRIDE_QUEUE(push, void, const TDataType& val, val)
+   //Returns the number of elements in the queue. 
+   OVERRIDE_QUEUE(size, size_t, , )
+#undef DEF_TC_THSafe_Queue_LOCK
+#undef OVERRIDE_QUEUE
+ };
+ /*
+  Usage Example
+
+  TC_THSafe_Queue<int> THSStdInEventFIFO;
+  THSStdInEventFIFO.push(1);
+  THSStdInEventFIFO.THSpush(2);
+  cout << THSStdInEventFIFO.THSback() << endl;
+  cout << THSStdInEventFIFO.back() << endl;
+
+ */
+
+
+
+ void CopyFloat16ToMatrix(MatrixXf &mf, float *mfa);
+ void CopyMatrix16ToFloat(MatrixXf &mf, float *mfa);
+
+
+ void LoadIdentityMatrix(float *matrix4x4);
+
+
+
+ struct SRangeScale
+ {
+  SRangeScale()
+  {
+   SetRange(0, 1);
+  }
+  SRangeScale(double _RangeMin, double _RangeMax)
+  {
+   SetRange(_RangeMin, _RangeMax);
+  }
+  void SetRange(double _RangeMin, double _RangeMax)
+  {
+   RangeMin = _RangeMin;
+   RangeMax = _RangeMax;
+  }
+  double Scale(double Value, double ValueMin, double ValueMax)
+  {
+   return ((RangeMax - RangeMin) / (ValueMax - ValueMin)) * Value;
+  }
+  double ScaleAndClip(double Value, double ValueMin, double ValueMax)
+  {
+   double Result = ((RangeMax - RangeMin) / (ValueMax - ValueMin)) * Value;
+   if (RangeMin > Result)
+    Result = RangeMin;
+   else if (RangeMax < Result)
+    Result = RangeMax;
+   return Result;
+  }
+  double RangeMin;
+  double RangeMax;
+ };
+
+ struct SRangeScale2
+ {
+  SRangeScale2()
+  {
+   SetRange(0, 1);
+  }
+  SRangeScale2(double _RangeMin, double _RangeMax)
+  {
+   SetRange(_RangeMin, _RangeMax);
+  }
+  void SetRange(double _RangeMin, double _RangeMax)
+  {
+   RangeMin = _RangeMin;
+   RangeMax = _RangeMax;
+  }
+  double Scale(double Value, double ValueMin, double ValueMax)
+  {
+   //double Result = RangeMin + ( ( RangeMax - RangeMin ) / ( ValueMax - ValueMin ) ) * ( Value - ValueMin );
+   return (RangeMin + ((RangeMax - RangeMin) / (ValueMax - ValueMin)) * (Value - ValueMin));
+  }
+  double ScaleAndClip(double Value, double ValueMin, double ValueMax)
+  {
+   double Result = RangeMin + ((RangeMax - RangeMin) / (ValueMax - ValueMin)) * (Value - ValueMin);
+   if (RangeMin > Result)
+    Result = RangeMin;
+   else if (RangeMax < Result)
+    Result = RangeMax;
+   return Result;
+  }
+  double RangeMin;
+  double RangeMax;
  };
 
 

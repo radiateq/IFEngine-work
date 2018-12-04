@@ -8,7 +8,7 @@ namespace IFAudioSLES {
 
  bool audio_engine_created = false;
  EchoAudioEngine engine;
- RQNDKUtils::ICSLock EngineServiceBufferMutex;
+ IFGeneralUtils::ICSLock EngineServiceBufferMutex;
  std::queue<uint32_t> EngineServiceBuffer;
 
  void createSLEngine(

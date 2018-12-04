@@ -2,6 +2,7 @@
 
 #include "IFAudioSLES.h"
 
+#include <IF_General_Utils.h>
 /*
  * Copyright 2015 The Android Open Source Project
  *
@@ -56,7 +57,7 @@ extern bool audio_engine_created;
 
 extern EchoAudioEngine engine;
 
-extern RQNDKUtils::ICSLock EngineServiceBufferMutex;
+extern IFGeneralUtils::ICSLock EngineServiceBufferMutex;
 extern std::queue<uint32_t> EngineServiceBuffer;
 bool EngineService(void *ctx, uint32_t msg, void *data);
 
