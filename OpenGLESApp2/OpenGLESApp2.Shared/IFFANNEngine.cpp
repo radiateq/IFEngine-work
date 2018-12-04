@@ -86,14 +86,14 @@ namespace IFFANNEngine {
 
 
 
- CNode Node1;
- CNode Node2;
  CNetwork Network;
- 
+
 
  void TestNetwork() {
   //Create Node
-  
+  CNode Node1;
+  CNode Node2;
+
   Network.NodeRegister.Register(&Node1);
   Node1.LoadCore("forces01");
 
@@ -115,7 +115,7 @@ namespace IFFANNEngine {
   //Set all inputs to some value
   Network.NodeRegister.InputPinRegister.input_pins.ResetIterator();
   while(0<=Network.NodeRegister.InputPinRegister.input_pins.GetNextIterator(ID, pin_value)){
-   *pin_value = 0.1;
+   *pin_value = 0.6;
   }
   Network.Run();
   //get output values

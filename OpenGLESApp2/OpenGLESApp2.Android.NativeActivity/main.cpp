@@ -97,6 +97,7 @@ unsigned int input_data_sets = 0;
 static float last_pos_x = FLT_MAX, last_pos_y = FLT_MAX;
 int max_neurons = 100, neurons_between_reports = 0, input_layers = 3, output_layers = 2;
 float desired_error = 0.0, input_scale = 0.01, output_scale = 0.01;
+int touchx, touchy;
 
 
 void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output){
@@ -161,7 +162,7 @@ void TESTFN_AddRandomBody(engine &engine){
    ifCB2Body *first_body = IFAdapter.OrderedBody();
    b2CircleShape *polyShape = new b2CircleShape;
    polyShape->m_p.SetZero();
-   polyShape->m_radius = 2.0;
+   polyShape->m_radius = 2.5;
    b2FixtureDef *fixture = new b2FixtureDef;
    fixture->shape = polyShape;
    fixture->density = 1.1;
@@ -182,7 +183,7 @@ void TESTFN_AddRandomBody(engine &engine){
    first_body = IFAdapter.OrderedBody();
    polyShape = new b2CircleShape;
    polyShape->m_p.SetZero();
-   polyShape->m_radius = 3.0;
+   polyShape->m_radius = 2.5;
    fixture = new b2FixtureDef;
    fixture->shape = polyShape;
    fixture->density = 1.1;
@@ -198,7 +199,6 @@ void TESTFN_AddRandomBody(engine &engine){
 
   }
 
-  int touchx, touchy;
   if (IFGameEditor::GetTouchEvent()) {
    while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
 
@@ -236,6 +236,10 @@ void TESTFN_AddRandomBody(engine &engine){
    last_pos_x = anns_body->body->GetPosition().x;
    last_pos_y = anns_body->body->GetPosition().y;
    anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetPosition().x, last_y_acceleration + anns_body->body->GetPosition().y), anns_body->body->GetAngle());//Has immediate effect, set last_pos_x before
+   //float coordx = touchx;
+   //float coordy = touchy;
+   //Window2ObjectCoordinates(coordx, coordy, zDefaultLayer, engine.width, engine.height);
+   //anns_body->body->SetTransform(b2Vec2(coordx, coordy), anns_body->body->GetAngle());
    //anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);//Has effect after world step, set last_pos_x after
    if ((last_pos_x != FLT_MAX)&&(last_pos_y != FLT_MAX)){
     input_data.push_back(IFA_World->GetGravity().y / LittleBrains.input_scale);
@@ -261,21 +265,10 @@ void TESTFN_AddRandomBody(engine &engine){
    //fann_set_scaling_params(LittleBrains.ann, LittleBrains.ann_train->train_data, -1, 1, min_output, max_output);
    //input_data_sets = 0;
    FANN_Learning_Phase = false;
-
-
-
-
-
+  }else{
    IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnFinalFannPostscript);
    IFFANNEngine::TestNetwork();
 
-
-
-
-
-
-
-  }else{
    fann_type inputs[3];
    inputs[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
    inputs[1] = last_x_acceleration / LittleBrains.input_scale;
