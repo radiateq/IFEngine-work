@@ -95,8 +95,8 @@ bool FANN_Learning_Phase = false;
 std::vector<fann_type> input_data, output_data;
 unsigned int input_data_sets = 0;
 static float last_pos_x = FLT_MAX, last_pos_y = FLT_MAX;
-int max_neurons = 100, neurons_between_reports = 0, input_layers = 3, output_layers = 2;
-float desired_error = 0.0, input_scale = 0.01, output_scale = 0.01;
+int max_neurons = 20, neurons_between_reports = 0, input_layers = 3, output_layers = 2;
+float desired_error = 0.001, input_scale = 0.01, output_scale = 0.01;
 int touchx, touchy;
 
 
@@ -211,9 +211,9 @@ void TESTFN_AddRandomBody(engine &engine){
      if(input_data_sets>1) FANN_Learning_Phase = true;
     }else{
      FANN_Learning_Phase = false;
-     input_data_sets = 0;
-     input_data.clear();
-     output_data.clear();
+     IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);     //input_data_sets = 0;
+     //input_data.clear();
+     //output_data.clear();
     }
     TEST_Last_Added_Body_Time = temp_timespec;
    }   
@@ -235,12 +235,16 @@ void TESTFN_AddRandomBody(engine &engine){
   } else if (!FANN_Learning_Phase) {
    last_pos_x = anns_body->body->GetPosition().x;
    last_pos_y = anns_body->body->GetPosition().y;
-   anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetPosition().x, last_y_acceleration + anns_body->body->GetPosition().y), anns_body->body->GetAngle());//Has immediate effect, set last_pos_x before
-   //float coordx = touchx;
-   //float coordy = touchy;
-   //Window2ObjectCoordinates(coordx, coordy, zDefaultLayer, engine.width, engine.height);
-   //anns_body->body->SetTransform(b2Vec2(coordx, coordy), anns_body->body->GetAngle());
-   //anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);//Has effect after world step, set last_pos_x after
+   
+anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetPosition().x, last_y_acceleration + anns_body->body->GetPosition().y), anns_body->body->GetAngle());//Has immediate effect, set last_pos_x before
+
+//float coordx = touchx;
+//float coordy = touchy;
+//Window2ObjectCoordinates(coordx , coordy , zDefaultLayer, engine.width, engine.height);
+//anns_body->body->SetTransform(b2Vec2(coordx / IFA_box2D_factor, coordy / IFA_box2D_factor), anns_body->body->GetAngle());
+
+//anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);//Has effect after world step, set last_pos_x after
+
    if ((last_pos_x != FLT_MAX)&&(last_pos_y != FLT_MAX)){
     input_data.push_back(IFA_World->GetGravity().y / LittleBrains.input_scale);
     //input_data[(input_data_sets+0) * 3 + 0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
@@ -265,6 +269,12 @@ void TESTFN_AddRandomBody(engine &engine){
    //fann_set_scaling_params(LittleBrains.ann, LittleBrains.ann_train->train_data, -1, 1, min_output, max_output);
    //input_data_sets = 0;
    FANN_Learning_Phase = false;
+
+   input_data_sets = 0;
+   input_data.clear();
+   output_data.clear();
+
+
   }else{
    IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnFinalFannPostscript);
    IFFANNEngine::TestNetwork();
