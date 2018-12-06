@@ -148,7 +148,7 @@ void startPlay() {
   return;
  }
  engine.audio_engine_playing = true;
- engine.recorder_->Start();
+ //engine.recorder_->Start();
 }
 //
 void stopPlay() {

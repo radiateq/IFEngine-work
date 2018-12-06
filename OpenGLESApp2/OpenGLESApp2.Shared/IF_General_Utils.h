@@ -549,8 +549,8 @@ namespace IFGeneralUtils{
 
 
 
- void CopyFloat16ToMatrix(MatrixXf &mf, float *mfa);
- void CopyMatrix16ToFloat(MatrixXf &mf, float *mfa);
+ void CopyFloat16ToMatrix(Eigen::Matrix<float, 4, 4> &mf, float *mfa);
+ void CopyMatrix16ToFloat(Eigen::Matrix<float, 4, 4> &mf, float *mfa);
 
 
  void LoadIdentityMatrix(float *matrix4x4);

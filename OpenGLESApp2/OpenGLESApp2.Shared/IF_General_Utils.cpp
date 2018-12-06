@@ -15,12 +15,12 @@ namespace IFGeneralUtils {
  }
 
 
- void CopyFloat16ToMatrix(MatrixXf &mf, float *mfa) {
+ void CopyFloat16ToMatrix(Eigen::Matrix<float, 4, 4> &mf, float *mfa) {
   for (int cnt = 0; cnt < 16; cnt++) {
    mf(cnt) = mfa[cnt];
   }
  }
- void CopyMatrix16ToFloat(MatrixXf &mf, float *mfa) {
+ void CopyMatrix16ToFloat(Eigen::Matrix<float, 4, 4> &mf, float *mfa) {
   for (int cnt = 0; cnt < 16; cnt++) {
    mfa[cnt] = mf(cnt);
   }

@@ -303,8 +303,8 @@ public:
 class ifCB2GameManager : public ifCB2BodyManager {
 public:
  ifCB2GameManager() {
-  velocityIterations = 3;   //how strongly to correct velocity
-  positionIterations = 1;   //how strongly to correct position
+  velocityIterations = 8;   //how strongly to correct velocity
+  positionIterations = 3;   //how strongly to correct position
   screenResolutionX = 1;
   screenResolutionY = 1;
   CalculateBox2DSizeFactor(40);

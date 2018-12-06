@@ -37,6 +37,8 @@
 #include "IFFANN.h"
 #include "IFFANNEngine.h"
 
+#include <Eigen/Dense>
+#include <Eigen/Geometry> 
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "AndroidProject1.NativeActivity", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "AndroidProject1.NativeActivity", __VA_ARGS__))
@@ -98,7 +100,26 @@ static float last_pos_x = FLT_MAX, last_pos_y = FLT_MAX;
 int max_neurons = 20, neurons_between_reports = 0, input_layers = 3, output_layers = 2;
 float desired_error = 0.001, input_scale = 0.01, output_scale = 0.01;
 int touchx, touchy;
-
+//DEMO 3 - BODY + GUI 
+bool BODY_DEMO_initialized = false;
+ifCB2Body *last_touched_object = NULL;
+GLuint TEST_GUI_Tex_Ary[10] = {0};
+ifCB2Body *buttons_body[10];
+//DEMO 4 - Simple Game
+ifCB2Body *game_body[10];
+bool DEMO4_initialized = false;
+float thickness;
+float left, bottom, right, top;
+float radius, dummy;
+IFFANN::IFS_Cascade_FANN PaddleBrains;
+bool Pong_Learning_Phase = false;
+struct SFANNPong{
+ int max_neurons = 8, neurons_between_reports = 0, input_layers = 2, output_layers = 1;
+ float desired_error = 0.00001, input_scale = 0.001, output_scale = 10.0;
+} FANNPong;
+IFFANNEngine::CNetwork Network;
+IFFANNEngine::CNode Node1;
+IFFANNEngine::CNode Node2;
 
 void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output){
  //Inputs are:
@@ -142,9 +163,629 @@ void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_
 
 
 }
+void Train_Cascade_FANN_PaddleBrains_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
+ input[0] = input_data[num_data * 2 + 0];
+ input[1] = input_data[num_data * 2 + 1];
+ output[0] = output_data[(num_data) * 1 + 0];
+int a = 1;
+a = 3;
+}
+void TESTFN_PostOperations(engine &engine){
+ if (engine.EGL_initialized) {
+  //DEMO 3 - USER INTERFACE - START
+  if (!BODY_DEMO_initialized) {
+  }else{
+   if (last_touched_object) {
+
+    Eigen::Transform<float, 3, Eigen::TransformTraits::Affine> t;
+    Eigen::Matrix<float, 4, 4> mScale;
+    //void CopyFloat16ToMatrix(MatrixXf &mf, float *mfa);
+    //void CopyMatrix16ToFloat(MatrixXf &mf, float *mfa);
+    IFGeneralUtils::CopyFloat16ToMatrix(mScale, last_touched_object->OGL_body->modelview_matrix);
+    t.matrix() = mScale;
+
+    GLuint texture_index;
+   
+    if(buttons_body[0]== last_touched_object){
+     texture_index = 0;
+    }else{
+     texture_index = 1;
+    }
+
+    glDeleteTextures(0,&TEST_GUI_Tex_Ary[texture_index]);
+    char outstring[120];
+    strcpy(outstring,"touched");    
+    TEST_GUI_Tex_Ary[texture_index] = last_touched_object->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+
+    static bool _temp_lastScale = false;
+    if (_temp_lastScale) {
+     t *= Eigen::Scaling<float>(1.2, 1.2, 1.0);
+    }
+    else {
+     t *= Eigen::Scaling<float>(1.0, 1.0, 1.0);
+    }
+    _temp_lastScale = !_temp_lastScale;
+
+    //mScale = t.matrix();
+    memcpy(last_touched_object->OGL_body->modelview_matrix, t.data(), sizeof(float) * 16);
+
+    //
+
+
+    //if (abs(last_touched_object->OGL_body->z_pos )< abs(zDefaultLayer))
+     //last_touched_object->OGL_body->modelview_matrix
+ //= zDefaultLayer * 1.1;
+   // else
+     //last_touched_object->OGL_body->z_pos = zDefaultLayer * 0.9;
+
+   }
+  }
+ }
+}
 //DEMO 2 - FANN - GLOBAL VARIABLES STOP
 void TESTFN_AddRandomBody(engine &engine){
  if (engine.EGL_initialized) {
+
+ if(!DEMO4_initialized) {
+  DEMO4_initialized = true;
+  thickness = RQNDKUtils::getDensityDpi(android_app_state) / 25.4;
+  left = thickness; bottom = thickness; right = engine.width- thickness; top = engine.height- thickness;
+  Window2ObjectCoordinates(left, bottom, zDefaultLayer, engine.width, engine.height);
+  left /= IFA_box2D_factor; bottom /= IFA_box2D_factor;
+  Window2ObjectCoordinates(right, top, zDefaultLayer, engine.width, engine.height);
+  right /= IFA_box2D_factor; top /= IFA_box2D_factor;
+
+  IFAdapter.OrderBody();
+  IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+  b2EdgeShape *edgeShape = new b2EdgeShape;
+  edgeShape->Set(b2Vec2(left,bottom), b2Vec2(left,top ));
+  b2FixtureDef *fixture = new b2FixtureDef;
+  fixture->shape = edgeShape;
+  fixture->density = 1.0;
+  fixture->friction = 0.0;
+  fixture->restitution = 1.000;
+  //fixture->filter.categoryBits = 0x0008;
+  //fixture->filter.maskBits = 0x0010;
+  IFAdapter.OrderedBody()->AddShapeAndFixture(edgeShape, fixture);
+  game_body[0] = IFAdapter.OrderedBody();
+  if (!IFAdapter.MakeBody())
+   return;
+  game_body[0]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
+  game_body[0]->OGL_body->texture_ID = User_Data.CubeTexture;
+  game_body[0]->OGL_body->line_thickness = thickness;
+
+
+  IFAdapter.OrderBody();
+  IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+  edgeShape = new b2EdgeShape;
+  edgeShape->Set(b2Vec2(right, bottom), b2Vec2(right, top));
+  fixture = new b2FixtureDef;
+  fixture->shape = edgeShape;
+  fixture->density = 1.0;
+  fixture->friction = 0.0;
+  fixture->restitution = 1.000;
+  //fixture->filter.categoryBits = 0x0008;
+  //fixture->filter.maskBits = 0x0010;
+  IFAdapter.OrderedBody()->AddShapeAndFixture(edgeShape, fixture);
+  game_body[1] = IFAdapter.OrderedBody();
+  if (!IFAdapter.MakeBody())
+   return;
+  game_body[1]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
+  game_body[1]->OGL_body->texture_ID = User_Data.CubeTexture;
+  game_body[1]->OGL_body->line_thickness = thickness;
+
+
+
+
+
+
+  IFAdapter.OrderBody();
+  IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
+  b2CircleShape *polyShape = new b2CircleShape;
+  polyShape->m_p.SetZero();
+  radius = engine.width>engine.height?engine.width:engine.height, dummy = 0.0;
+  radius*=0.02;
+  radius+=engine.width*0.5;
+  Window2ObjectCoordinates(radius, dummy, zDefaultLayer, engine.width, engine.height);
+  radius /= IFA_box2D_factor;
+  polyShape->m_radius = radius;
+  fixture = new b2FixtureDef;
+  fixture->shape = polyShape;
+  fixture->density = 1.0;
+  fixture->friction = 0.0;
+  fixture->restitution = 1.000;
+  //fixture->filter.categoryBits = 0x0008;
+  //fixture->filter.maskBits = 0x0010;
+  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+  game_body[2] = IFAdapter.OrderedBody();
+  if (!IFAdapter.MakeBody())
+   return;
+  game_body[2]->OGL_body->texture_ID = User_Data.CubeTexture;
+
+
+
+
+
+
+
+
+
+  IFAdapter.OrderBody();
+  IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+  b2PolygonShape *polyShape2 = new b2PolygonShape;
+  b2Vec2 shapeCoords[8];
+  float zoom_factor;
+  zoom_factor = engine.width < engine.height ? engine.width : engine.height, dummy = 0.0;
+  zoom_factor /= 12.0 * 24.0;
+  zoom_factor += engine.width*0.5;
+  Window2ObjectCoordinates(zoom_factor, dummy, zDefaultLayer, engine.width, engine.height);
+  //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
+  //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
+  //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
+  //shapeCoords[3] = { zoom_factor * 3,zoom_factor *-2};
+  //shapeCoords[4] = { zoom_factor * 5,zoom_factor * 0};
+  //shapeCoords[5] = { zoom_factor * 2,zoom_factor * 2};
+  //shapeCoords[6] = { zoom_factor * 0,zoom_factor * 3 };
+  //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
+  shapeCoords[0].x = zoom_factor *-12, shapeCoords[0].y = zoom_factor *-1;
+  shapeCoords[1].x = zoom_factor * 12, shapeCoords[1].y = zoom_factor *-1;
+  shapeCoords[2].x = zoom_factor * 12, shapeCoords[2].y = zoom_factor * 1;
+  shapeCoords[3].x = zoom_factor *-12, shapeCoords[3].y = zoom_factor * 1;
+  polyShape2->Set(shapeCoords, 4);
+  fixture = new b2FixtureDef;
+  fixture->shape = polyShape2;
+  fixture->density = 1.0;
+  fixture->friction = 0.0;
+  fixture->restitution = 1.000;
+  //fixture->filter.categoryBits = 0x0008;
+  //fixture->filter.maskBits = 0x0010;
+  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+  game_body[3] = IFAdapter.OrderedBody();
+  if (!IFAdapter.MakeBody())
+   return;
+  game_body[3]->body->SetTransform(b2Vec2(0.0, -bottom), 0.0);
+  game_body[3]->OGL_body->texture_ID = User_Data.CubeTexture;
+
+
+
+
+
+
+
+
+
+  IFAdapter.OrderBody();
+  IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+  polyShape2 = new b2PolygonShape;
+  zoom_factor = engine.width < engine.height ? engine.width : engine.height, dummy = 0.0;
+  zoom_factor /= 12.0 * 24.0;
+  zoom_factor += engine.width*0.5;
+  Window2ObjectCoordinates(zoom_factor, dummy, zDefaultLayer, engine.width, engine.height);
+  shapeCoords[0].x = zoom_factor * -12, shapeCoords[0].y = zoom_factor * -1;
+  shapeCoords[1].x = zoom_factor * 12, shapeCoords[1].y = zoom_factor * -1;
+  shapeCoords[2].x = zoom_factor * 12, shapeCoords[2].y = zoom_factor * 1;
+  shapeCoords[3].x = zoom_factor * -12, shapeCoords[3].y = zoom_factor * 1;
+  polyShape2->Set(shapeCoords, 4);
+  fixture = new b2FixtureDef;
+  fixture->shape = polyShape2;
+  fixture->density = 1.0;
+  fixture->friction = 0.0;
+  fixture->restitution = 1.000;
+  //fixture->filter.categoryBits = 0x0008;
+  //fixture->filter.maskBits = 0x0010;
+  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+  game_body[4] = IFAdapter.OrderedBody();
+  if (!IFAdapter.MakeBody())
+   return;
+  game_body[4]->body->SetTransform(b2Vec2(0.0, bottom), 0.0);
+  game_body[4]->OGL_body->texture_ID = User_Data.CubeTexture;
+
+
+
+
+
+
+
+
+
+  IFAdapter.OrderBody();
+  IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+  polyShape2 = new b2PolygonShape;
+  shapeCoords[8];
+#define  zoom_factor 1.8
+  //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
+  //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
+  //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
+  //shapeCoords[3] = { zoom_factor * 3,zoom_factor *-2};
+  //shapeCoords[4] = { zoom_factor * 5,zoom_factor * 0};
+  //shapeCoords[5] = { zoom_factor * 2,zoom_factor * 2};
+  //shapeCoords[6] = { zoom_factor * 0,zoom_factor * 3 };
+  //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
+  shapeCoords[0] = { zoom_factor *-6, zoom_factor *-2 };
+  shapeCoords[1] = { zoom_factor * 6, zoom_factor * -2 };
+  shapeCoords[2] = { zoom_factor * 6, zoom_factor * 2 };
+  shapeCoords[3] = { zoom_factor *-6, zoom_factor * 2 };
+#undef zoom_factor
+  polyShape2->Set(shapeCoords, 4);
+  fixture = new b2FixtureDef;
+  fixture->shape = polyShape2;
+  fixture->density = 1.1;
+  fixture->friction = 0.3;
+  fixture->restitution = 0.001;
+  fixture->filter.categoryBits = 0x0008;
+  fixture->filter.maskBits = 0x0010;
+  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+  game_body[5] = IFAdapter.OrderedBody();
+  if (!IFAdapter.MakeBody())
+   return;
+  game_body[5]->body->SetTransform(b2Vec2(-16.0, 0.0), 0.0);
+  game_body[5]->OGL_body->z_pos -= 0.1;
+  SetFaceSize(100 * 64, 60 * 64);
+  char outstring[120];
+  strcpy(outstring, "train");
+  //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+  TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+  //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+  size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
+  for (int cntuv = 0; cntuv < UVsize; cntuv++) {
+   game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
+   cntuv++;
+   game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
+  }
+
+
+
+
+
+
+
+
+
+
+  if (IFFANN::Check_Save_Cascade_FANN("pongpaddle", IFFANN::CnTrainedFannPostscript)) {
+   IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);   
+  }
+  if (!PaddleBrains.ann) IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+  //IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+  
+  Pong_Learning_Phase = false;
+  input_data_sets = 0;
+
+  Network.NodeRegister.Register(&Node1);
+  IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
+  IFFANN::Save_Cascade_FANN(&PaddleBrains, IFFANN::CnFinalFannPostscript);
+  Node1.LoadCore("pongpaddle");
+
+
+
+
+
+  game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*500.0, (drand48() * 1.0-0.5) * 500.0), game_body[2]->body->GetPosition(), true);
+
+
+  }else{
+
+
+   float maxx = engine.width;
+   float maxy = engine.height;
+   Window2ObjectCoordinates(maxx, maxy, zDefaultLayer, maxx, maxy);
+   float cut_off_distance = b2Distance(b2Vec2(0, 0), b2Vec2(maxx / IFA_box2D_factor, maxy / IFA_box2D_factor)) * 1;
+
+   {
+
+    b2Vec2 position = game_body[3]->body->GetPosition();
+    game_body[3]->body->SetTransform(b2Vec2(-last_x_acceleration * 2.4, -bottom), game_body[3]->body->GetAngle());
+
+   }
+
+   if (b2Distance(b2Vec2(game_body[2]->body->GetPosition().x, game_body[2]->body->GetPosition().y), b2Vec2(0, 0)) > cut_off_distance) {
+    if (game_body[2]->body->GetPosition().y < 0) {
+     int deleteamount = output_data.size() - 30;
+     if (deleteamount >= 0) {
+      while (input_data.size() > (deleteamount * 2))input_data.pop_back();
+      while (output_data.size() > (deleteamount * 1))output_data.pop_back();
+      input_data_sets = output_data.size();
+     }
+    }
+    game_body[2]->body->SetTransform(b2Vec2(0, 0), game_body[2]->body->GetAngle());
+    game_body[2]->body->SetLinearVelocity(b2Vec2(0, 0));
+    game_body[2]->body->SetAngularVelocity(0);   
+    game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48() * 500.0, (drand48() * 1.0 - 0.5) * 500.0), game_body[2]->body->GetPosition(), true);
+   }else{
+
+
+
+    if(abs(game_body[2]->body->GetLinearVelocity().y)<10.0){
+     game_body[2]->body->ApplyLinearImpulse(b2Vec2(0, (game_body[2]->body->GetLinearVelocity().y<0?-100.0:100.0)), game_body[2]->body->GetPosition(), true);
+    }
+
+
+    if (IFGameEditor::GetTouchEvent()) {
+     while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
+
+     struct timespec temp_timespec;
+     clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+     //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
+     unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
+     if (temp_int64 > 2000) {
+      {
+       IFGameEditor::GetTouchEvent(&touchx, &touchy);
+
+       typename std::list<ifCB2Body*>::iterator iter;
+       for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
+        if(game_body[5]==*iter){
+         if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {
+          //while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
+
+          if(input_data_sets>20){
+           Pong_Learning_Phase = true;        
+          }
+
+          break;
+         }
+        }
+       }
+
+      }
+      TEST_Last_Added_Body_Time = temp_timespec;
+     }   
+    }
+
+
+
+    {
+
+
+     if(Pong_Learning_Phase){
+      IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+      IFFANN::Train_Cascade_FANN(&PaddleBrains, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets);
+      IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
+      IFFANN::Save_Cascade_FANN(&PaddleBrains, IFFANN::CnFinalFannPostscript);
+      Node1.LoadCore("pongpaddle");
+      Pong_Learning_Phase = false;
+      struct timespec temp_timespec;
+      clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+      TEST_Last_Added_Body_Time = temp_timespec;
+     }
+
+     //input_data_sets = 0;
+     //input_data.clear();
+     //output_data.clear();
+
+
+
+
+     float ball_angle_to_pad;
+     b2Vec2 balllinvel = game_body[2]->body->GetLinearVelocity();
+     b2Vec2 ballposition = game_body[2]->body->GetPosition();
+     b2Vec2 paddleposition ;
+     bool AIPaddle=false;
+     if( ballposition.y > 0 ){
+      AIPaddle = true;
+     }
+     if(AIPaddle){
+      paddleposition = game_body[4]->body->GetPosition();     
+     }else{
+      paddleposition = game_body[3]->body->GetPosition();
+      balllinvel.x *= -1.0;
+      balllinvel.y *= -1.0;
+     }
+     {
+      if (AIPaddle) {
+       unsigned int ID;
+       fann_type *pin_value;
+       //Set all inputs to some value
+       Network.NodeRegister.InputPinRegister.input_pins.ResetIterator();
+       int cnt = 0;
+       while (0 <= Network.NodeRegister.InputPinRegister.input_pins.GetNextIterator(ID, pin_value)) {
+        switch(cnt++){
+        case 0:
+         *pin_value = b2Distance(paddleposition, ballposition) / Node1.ifann.input_scale;
+        break;
+        case 1:
+         *pin_value = atan2(balllinvel.x, balllinvel.y) / Node1.ifann.input_scale;
+        break;
+       
+        };       
+       }
+       fann_scale_input(Node1.ifann.ann, Node1.inputs);
+       Network.Run();
+       fann_descale_output(Node1.ifann.ann, Node1.outputs);
+       //get output values
+       Network.NodeRegister.OutputPinRegister.output_pins.ResetIterator();
+       while (0 <= Network.NodeRegister.OutputPinRegister.output_pins.GetNextIterator(ID, pin_value)) {
+        if (pin_value) {
+         fann_type val = *pin_value * Node1.ifann.output_scale;
+         b2Vec2 position = game_body[4]->body->GetPosition();
+         game_body[4]->body->SetTransform(b2Vec2( val * 1.0, position.y), game_body[4]->body->GetAngle());
+        }
+       }
+      }else{
+       static int skipCnt = 0;
+       if(skipCnt++==0){    
+        skipCnt = 0;
+        input_data.push_back( b2Distance(paddleposition, ballposition) / PaddleBrains.input_scale);
+        input_data.push_back(atan2(balllinvel.x, balllinvel.y) / PaddleBrains.input_scale);
+        output_data.push_back(paddleposition.x / PaddleBrains.output_scale);
+        input_data_sets++;
+        if (input_data.size() > ((60*60*60 *2 ) + 120)) {
+         input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (60 * 60 * 60 *2)));
+         input_data_sets = input_data.size() / 2;
+         output_data.erase(output_data.begin(), output_data.begin() + input_data_sets);
+        }
+       }
+      }
+     }
+    }
+   }  
+  }
+  //DEMO 4 - Simple Game - START
+
+  return;
+  //DEMO 4 - Simple Game - STOP
+
+
+
+  //DEMO 3 - USER INTERFACE - START
+  if (!BODY_DEMO_initialized) {
+   BODY_DEMO_initialized = true;
+
+   last_touched_object = NULL;
+   
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
+   b2CircleShape *polyShape = new b2CircleShape;
+   polyShape->m_p.SetZero();
+   polyShape->m_radius = 5.5;
+   b2FixtureDef *fixture = new b2FixtureDef;
+   fixture->shape = polyShape;
+   fixture->density = 1.1;
+   fixture->friction = 0.3;
+   fixture->restitution = 0.001;
+   fixture->filter.categoryBits = 0x0008;
+   fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+   buttons_body[0] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   buttons_body[0]->OGL_body->texture_ID = User_Data.CubeTexture;
+
+
+   memset(TEST_GUI_Tex_Ary, GL_INVALID_VALUE, sizeof(TEST_GUI_Tex_Ary[0]) * sizeof(TEST_GUI_Tex_Ary));
+
+
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+   b2PolygonShape *polyShape2 = new b2PolygonShape;
+   b2Vec2 shapeCoords[8];
+   #define  zoom_factor 2.0
+   //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
+   //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
+   //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
+   //shapeCoords[3] = { zoom_factor * 3,zoom_factor *-2};
+   //shapeCoords[4] = { zoom_factor * 5,zoom_factor * 0};
+   //shapeCoords[5] = { zoom_factor * 2,zoom_factor * 2};
+   //shapeCoords[6] = { zoom_factor * 0,zoom_factor * 3 };
+   //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
+   shapeCoords[0] = { zoom_factor *-6, zoom_factor *-2 };
+   shapeCoords[1] = { zoom_factor *6, zoom_factor * -2};
+   shapeCoords[2] = { zoom_factor *6, zoom_factor * 2 };
+   shapeCoords[3] = { zoom_factor *-6, zoom_factor * 2 };
+#undef zoom_factor
+   polyShape2->Set(shapeCoords, 4);
+   fixture = new b2FixtureDef;
+   fixture->shape = polyShape2;
+   fixture->density = 1.1;
+   fixture->friction = 0.3;
+   fixture->restitution = 0.001;
+   fixture->filter.categoryBits = 0x0008;
+   fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+   buttons_body[1] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   buttons_body[1]->body->SetTransform(b2Vec2(0.0,-10.0), 0.0);
+   SetFaceSize(100 * 64, 60 * 64);
+   char outstring[120];
+   strcpy(outstring,"Option 1");
+   //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   TEST_GUI_Tex_Ary[0] = buttons_body[1]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 },0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   size_t UVsize = buttons_body[1]->OGL_body->UVmapping_cnt;
+   for (int cntuv = 0; cntuv < UVsize; cntuv++) {
+    buttons_body[1]->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
+    cntuv++;
+    buttons_body[1]->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
+   }
+
+
+
+
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+   polyShape2 = new b2PolygonShape;
+#define  zoom_factor 2.0
+   //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
+   //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
+   //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
+   //shapeCoords[3] = { zoom_factor * 3,zoom_factor *-2};
+   //shapeCoords[4] = { zoom_factor * 5,zoom_factor * 0};
+   //shapeCoords[5] = { zoom_factor * 2,zoom_factor * 2};
+   //shapeCoords[6] = { zoom_factor * 0,zoom_factor * 3 };
+   //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
+   shapeCoords[0] = { zoom_factor *-6, zoom_factor *-2 };
+   shapeCoords[1] = { zoom_factor * 6, zoom_factor * -2 };
+   shapeCoords[2] = { zoom_factor * 6, zoom_factor * 2 };
+   shapeCoords[3] = { zoom_factor *-6, zoom_factor * 2 };
+#undef zoom_factor
+   polyShape2->Set(shapeCoords, 4);
+   fixture = new b2FixtureDef;
+   fixture->shape = polyShape2;
+   fixture->density = 1.1;
+   fixture->friction = 0.3;
+   fixture->restitution = 0.001;
+   fixture->filter.categoryBits = 0x0008;
+   fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+   buttons_body[2] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   buttons_body[2]->body->SetTransform(b2Vec2(0.0, -25.0), 0.0);
+   SetFaceSize(100 * 64, 60 * 64);
+   strcpy(outstring, "Very long button text");
+   //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   TEST_GUI_Tex_Ary[1] = buttons_body[2]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   UVsize = buttons_body[2]->OGL_body->UVmapping_cnt;
+   for (int cntuv = 0; cntuv < UVsize; cntuv++) {
+    buttons_body[2]->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
+    cntuv++;
+    buttons_body[2]->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
+   }
+
+
+  }else{
+
+   if (IFGameEditor::GetTouchEvent()) {
+    while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
+
+    struct timespec temp_timespec;
+    clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+    //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
+    unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
+    if (temp_int64 > 2000) {
+//     if (touchy > (engine.height * 0.5)) {
+//     }else
+     {
+      IFGameEditor::GetTouchEvent(&touchx, &touchy);
+     
+      typename std::list<ifCB2Body*>::iterator iter;
+      for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
+       if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {
+
+        //IFAdapter.Bodies.removeElement(*iter);
+        //if(last_touched_object)
+        // last_touched_object->OGL_body->z_pos = zDefaultLayer;        
+
+        last_touched_object = (*iter);
+        break;
+       }
+      }
+
+     }
+     TEST_Last_Added_Body_Time = temp_timespec;
+    }
+    while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
+   }
+
+
+
+
+
+  }
+
+ // return;
+//DEMO 3 - USER INTERFACE - STOP
   //DEMO 2 - FANN - START
 
   if(!FANN_TEST_initialized){
@@ -260,6 +901,7 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
     if (input_data.size() > ((60 * 60 * 60 *  3) + 120)) {
      input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (60 * 60 * 60 * 3)));
      input_data_sets = input_data.size()/3;
+     output_data.erase(output_data.begin(), output_data.begin() + input_data_sets*2);
     }
    }
   }
@@ -276,8 +918,8 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
 
 
   }else{
-   IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnFinalFannPostscript);
-   IFFANNEngine::TestNetwork();
+//   IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnFinalFannPostscript);
+//   IFFANNEngine::TestNetwork();
 
    fann_type inputs[3];
    inputs[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
@@ -300,7 +942,7 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
 
 
   //DEMO 2 - FANN - STOP
-  return;
+  //return;
   
  //OLD DEMO 1 START 
 
@@ -622,11 +1264,19 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
 
    prev_average_value = average_value;
 
+
+
+nMake = 20;
+nMake_added = true;
+
+
+
    if(nMake==0)
     return;
    nMake--;
    if(!nMake_added)
     nMake=0;
+
   }else{
    IFAudioSLES::EngineServiceBufferMutex.LeaveAndUnlock();
    return;
@@ -942,8 +1592,6 @@ static int engine_init_display(struct engine* engine) {
 	//CubeTest_setupGL(w, h);
  Setup_OpenGL(w,h);
 
- 
- 
  Init_IFAdapter(*engine);
 
  IFAudioSLES::BuildAudioEngine(User_Data.state->activity);
@@ -973,6 +1621,8 @@ static void engine_draw_frame(struct engine* engine) {
 
  IFAdapter.UpdateSim();
  IFAdapter.UpdateGraphics();
+
+ TESTFN_PostOperations(*engine);
 
 	//CubeTest_draw();
  DrawBodies();
@@ -1004,14 +1654,18 @@ static void engine_term_display(struct engine* engine) {
  glDeleteTextures(1, &TEST_textid);
  TEST_textid = GL_INVALID_VALUE;
  glDeleteTextures(1, &User_Data.CubeTexture);
- User_Data.CubeTexture = GL_INVALID_VALUE;
- 
+ User_Data.CubeTexture = GL_INVALID_VALUE; 
+ glDeleteTextures(10, TEST_GUI_Tex_Ary);
+ memset(TEST_GUI_Tex_Ary, GL_INVALID_VALUE,sizeof(TEST_GUI_Tex_Ary[0])*sizeof(TEST_GUI_Tex_Ary));
+
 
  IFAudioSLES::TearDownAudioEngine();
 
  if(FANN_TEST_initialized){
   IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnTrainedFannPostscript);
  }
+
+ last_touched_object = NULL;
 
 }
 
