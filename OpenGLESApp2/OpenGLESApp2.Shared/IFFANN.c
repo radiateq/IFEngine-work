@@ -17,7 +17,7 @@ namespace IFFANN {
  void Cleanup_Cascade_FANN(IFS_Cascade_FANN  * const ifann) {
   if (ifann->ann) fann_destroy(ifann->ann), ifann->ann = NULL;
   if (ifann->ann_train) free(ifann->ann_train), ifann->ann_train = NULL;
-  if (ifann->unique_name) free(ifann->unique_name), ifann->unique_name = NULL;
+  if (ifann->unique_name) free(ifann->unique_name), ifann->unique_name = NULL;  
  }
 
  //unique_name parameter is used for file operations to generate multiple different file names
@@ -43,12 +43,12 @@ namespace IFFANN {
 
   //Setup network
   fann_set_training_algorithm(ifann->ann, FANN_TRAIN_RPROP);//Option is FANN_TRAIN_QUICKPROP FANN_TRAIN_RPROP
-  fann_set_activation_function_hidden(ifann->ann, FANN_LINEAR);//FANN_LINEAR FANN_SIGMOID_SYMMETRIC
+  fann_set_activation_function_hidden(ifann->ann, FANN_SIGMOID_SYMMETRIC);//FANN_LINEAR FANN_SIGMOID_SYMMETRIC
   fann_set_activation_function_output(ifann->ann, FANN_LINEAR);
   fann_set_train_error_function(ifann->ann, FANN_ERRORFUNC_LINEAR);
   fann_type steepness;
-  //steepness = 0.5;
-  steepness = 1;
+  steepness = 0.5;
+  //steepness = 1;
   fann_set_cascade_activation_steepnesses(ifann->ann, &steepness, 1);
   enum fann_activationfunc_enum activation;
   //activation = FANN_SIN_SYMMETRIC;

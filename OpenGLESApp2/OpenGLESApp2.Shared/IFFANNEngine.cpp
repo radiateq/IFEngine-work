@@ -30,6 +30,8 @@ namespace IFFANNEngine {
  }
 
  bool CNode::UnloadCore() {
+  
+  if(ifann.ann==NULL) return false;
 
   CPin *temp_pin;
 
