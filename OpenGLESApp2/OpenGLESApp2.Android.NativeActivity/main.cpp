@@ -53,30 +53,30 @@ ifCB2BodyUtils B2BodyUtils(&IFAdapter);
 * Our saved state data.
 */
 struct saved_state {
-	float angle;
-	int32_t x;
-	int32_t y;
+ float angle;
+ int32_t x;
+ int32_t y;
 };
 
 /**
 * Shared state for our app.
 */
 struct engine {
-	bool EGL_initialized;
+ bool EGL_initialized;
 
-	struct android_app *app;
+ struct android_app *app;
 
-	ASensorManager *sensorManager, *sensorManager2;
-	const ASensor *accelerometerSensor, *sensor2;
-	ASensorEventQueue *sensorEventQueue, *sensorEventQueue2;
+ ASensorManager *sensorManager, *sensorManager2;
+ const ASensor *accelerometerSensor, *sensor2;
+ ASensorEventQueue *sensorEventQueue, *sensorEventQueue2;
 
-	int animating;
-	EGLDisplay display;
-	EGLSurface surface;
-	EGLContext context;
-	int32_t width;
-	int32_t height;
-	struct saved_state state;
+ int animating;
+ EGLDisplay display;
+ EGLSurface surface;
+ EGLContext context;
+ int32_t width;
+ int32_t height;
+ struct saved_state state;
 };
 
 
@@ -103,7 +103,7 @@ int touchx, touchy;
 //DEMO 3 - BODY + GUI 
 bool BODY_DEMO_initialized = false;
 ifCB2Body *last_touched_object = NULL;
-GLuint TEST_GUI_Tex_Ary[10] = {0};
+GLuint TEST_GUI_Tex_Ary[10] = { 0 };
 ifCB2Body *buttons_body[10];
 //DEMO 4 - Simple Game
 ifCB2Body *game_body[10];
@@ -113,15 +113,17 @@ float left, bottom, right, top;
 float radius, dummy;
 IFFANN::IFS_Cascade_FANN PaddleBrains;
 bool Pong_Learning_Phase = false;
-struct SFANNPong{
- int max_neurons = 8, neurons_between_reports = 0, input_layers = 2, output_layers = 1;
- float desired_error = 0.00001, input_scale = 0.001, output_scale = 10.0;
+struct SFANNPong {
+ int max_neurons = 13, neurons_between_reports = 0, input_neurons = 2, output_neurons = 1;
+ float desired_error = 0.0, input_scale = 0.01, output_scale = 10.0;
 } FANNPong;
 IFFANNEngine::CNetwork Network;
 IFFANNEngine::CNode Node1;
 IFFANNEngine::CNode Node2;
+unsigned int check_input_data_sets = 0;
 
-void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output){
+
+void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
  //Inputs are:
  // 1 - gravity y
  // 2 - acceleration x
@@ -166,15 +168,19 @@ void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_
 void Train_Cascade_FANN_PaddleBrains_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
  input[0] = input_data[num_data * 2 + 0];
  input[1] = input_data[num_data * 2 + 1];
+ //input[2] = input_data[num_data * 5 + 2];
+ //input[3] = input_data[num_data * 5 + 3];
+ //input[4] = input_data[num_data * 5 + 4];
  output[0] = output_data[(num_data) * 1 + 0];
-int a = 1;
-a = 3;
+ int a = 1;
+ a = 3;
 }
-void TESTFN_PostOperations(engine &engine){
+void TESTFN_PostOperations(engine &engine) {
  if (engine.EGL_initialized) {
   //DEMO 3 - USER INTERFACE - START
   if (!BODY_DEMO_initialized) {
-  }else{
+  }
+  else {
    if (last_touched_object) {
 
     Eigen::Transform<float, 3, Eigen::TransformTraits::Affine> t;
@@ -185,16 +191,17 @@ void TESTFN_PostOperations(engine &engine){
     t.matrix() = mScale;
 
     GLuint texture_index;
-   
-    if(buttons_body[0]== last_touched_object){
+
+    if (buttons_body[0] == last_touched_object) {
      texture_index = 0;
-    }else{
+    }
+    else {
      texture_index = 1;
     }
 
-    glDeleteTextures(0,&TEST_GUI_Tex_Ary[texture_index]);
+    glDeleteTextures(0, &TEST_GUI_Tex_Ary[texture_index]);
     char outstring[120];
-    strcpy(outstring,"touched");    
+    strcpy(outstring, "touched");
     TEST_GUI_Tex_Ary[texture_index] = last_touched_object->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
 
     static bool _temp_lastScale = false;
@@ -223,128 +230,84 @@ void TESTFN_PostOperations(engine &engine){
  }
 }
 //DEMO 2 - FANN - GLOBAL VARIABLES STOP
-void TESTFN_AddRandomBody(engine &engine){
+void TESTFN_AddRandomBody(engine &engine) {
  if (engine.EGL_initialized) {
 
- if(!DEMO4_initialized) {
-  DEMO4_initialized = true;
-  thickness = RQNDKUtils::getDensityDpi(android_app_state) / 25.4;
-  left = thickness; bottom = thickness; right = engine.width- thickness; top = engine.height- thickness;
-  Window2ObjectCoordinates(left, bottom, zDefaultLayer, engine.width, engine.height);
-  left /= IFA_box2D_factor; bottom /= IFA_box2D_factor;
-  Window2ObjectCoordinates(right, top, zDefaultLayer, engine.width, engine.height);
-  right /= IFA_box2D_factor; top /= IFA_box2D_factor;
+  if (!DEMO4_initialized) {
+   DEMO4_initialized = true;
+   thickness = RQNDKUtils::getDensityDpi(android_app_state) / 25.4;
+   left = thickness; bottom = thickness; right = engine.width - thickness; top = engine.height - thickness;
+   Window2ObjectCoordinates(left, bottom, zDefaultLayer, engine.width, engine.height);
+   left /= IFA_box2D_factor; bottom /= IFA_box2D_factor;
+   Window2ObjectCoordinates(right, top, zDefaultLayer, engine.width, engine.height);
+   right /= IFA_box2D_factor; top /= IFA_box2D_factor;
 
-  IFAdapter.OrderBody();
-  IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
-  b2EdgeShape *edgeShape = new b2EdgeShape;
-  edgeShape->Set(b2Vec2(left,bottom), b2Vec2(left,top ));
-  b2FixtureDef *fixture = new b2FixtureDef;
-  fixture->shape = edgeShape;
-  fixture->density = 1.0;
-  fixture->friction = 0.0;
-  fixture->restitution = 1.000;
-  //fixture->filter.categoryBits = 0x0008;
-  //fixture->filter.maskBits = 0x0010;
-  IFAdapter.OrderedBody()->AddShapeAndFixture(edgeShape, fixture);
-  game_body[0] = IFAdapter.OrderedBody();
-  if (!IFAdapter.MakeBody())
-   return;
-  game_body[0]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
-  game_body[0]->OGL_body->texture_ID = User_Data.CubeTexture;
-  game_body[0]->OGL_body->line_thickness = thickness;
-
-
-  IFAdapter.OrderBody();
-  IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
-  edgeShape = new b2EdgeShape;
-  edgeShape->Set(b2Vec2(right, bottom), b2Vec2(right, top));
-  fixture = new b2FixtureDef;
-  fixture->shape = edgeShape;
-  fixture->density = 1.0;
-  fixture->friction = 0.0;
-  fixture->restitution = 1.000;
-  //fixture->filter.categoryBits = 0x0008;
-  //fixture->filter.maskBits = 0x0010;
-  IFAdapter.OrderedBody()->AddShapeAndFixture(edgeShape, fixture);
-  game_body[1] = IFAdapter.OrderedBody();
-  if (!IFAdapter.MakeBody())
-   return;
-  game_body[1]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
-  game_body[1]->OGL_body->texture_ID = User_Data.CubeTexture;
-  game_body[1]->OGL_body->line_thickness = thickness;
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+   b2EdgeShape *edgeShape = new b2EdgeShape;
+   edgeShape->Set(b2Vec2(left, bottom), b2Vec2(left, top));
+   b2FixtureDef *fixture = new b2FixtureDef;
+   fixture->shape = edgeShape;
+   fixture->density = 1.0;
+   fixture->friction = 0.0;
+   fixture->restitution = 1.000;
+   //fixture->filter.categoryBits = 0x0008;
+   //fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(edgeShape, fixture);
+   game_body[0] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   game_body[0]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
+   game_body[0]->OGL_body->texture_ID = User_Data.CubeTexture;
+   game_body[0]->OGL_body->line_thickness = thickness;
 
 
-
-
-
-
-  IFAdapter.OrderBody();
-  IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
-  b2CircleShape *polyShape = new b2CircleShape;
-  polyShape->m_p.SetZero();
-  radius = engine.width>engine.height?engine.width:engine.height, dummy = 0.0;
-  radius*=0.02;
-  radius+=engine.width*0.5;
-  Window2ObjectCoordinates(radius, dummy, zDefaultLayer, engine.width, engine.height);
-  radius /= IFA_box2D_factor;
-  polyShape->m_radius = radius;
-  fixture = new b2FixtureDef;
-  fixture->shape = polyShape;
-  fixture->density = 1.0;
-  fixture->friction = 0.0;
-  fixture->restitution = 1.000;
-  //fixture->filter.categoryBits = 0x0008;
-  //fixture->filter.maskBits = 0x0010;
-  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-  game_body[2] = IFAdapter.OrderedBody();
-  if (!IFAdapter.MakeBody())
-   return;
-  game_body[2]->OGL_body->texture_ID = User_Data.CubeTexture;
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+   edgeShape = new b2EdgeShape;
+   edgeShape->Set(b2Vec2(right, bottom), b2Vec2(right, top));
+   fixture = new b2FixtureDef;
+   fixture->shape = edgeShape;
+   fixture->density = 1.0;
+   fixture->friction = 0.0;
+   fixture->restitution = 1.000;
+   //fixture->filter.categoryBits = 0x0008;
+   //fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(edgeShape, fixture);
+   game_body[1] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   game_body[1]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
+   game_body[1]->OGL_body->texture_ID = User_Data.CubeTexture;
+   game_body[1]->OGL_body->line_thickness = thickness;
 
 
 
 
 
 
-
-
-
-  IFAdapter.OrderBody();
-  IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
-  b2PolygonShape *polyShape2 = new b2PolygonShape;
-  b2Vec2 shapeCoords[8];
-  float zoom_factor;
-  zoom_factor = engine.width < engine.height ? engine.width : engine.height, dummy = 0.0;
-  zoom_factor /= 12.0 * 24.0;
-  zoom_factor += engine.width*0.5;
-  Window2ObjectCoordinates(zoom_factor, dummy, zDefaultLayer, engine.width, engine.height);
-  //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
-  //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
-  //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
-  //shapeCoords[3] = { zoom_factor * 3,zoom_factor *-2};
-  //shapeCoords[4] = { zoom_factor * 5,zoom_factor * 0};
-  //shapeCoords[5] = { zoom_factor * 2,zoom_factor * 2};
-  //shapeCoords[6] = { zoom_factor * 0,zoom_factor * 3 };
-  //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
-  shapeCoords[0].x = zoom_factor *-12, shapeCoords[0].y = zoom_factor *-1;
-  shapeCoords[1].x = zoom_factor * 12, shapeCoords[1].y = zoom_factor *-1;
-  shapeCoords[2].x = zoom_factor * 12, shapeCoords[2].y = zoom_factor * 1;
-  shapeCoords[3].x = zoom_factor *-12, shapeCoords[3].y = zoom_factor * 1;
-  polyShape2->Set(shapeCoords, 4);
-  fixture = new b2FixtureDef;
-  fixture->shape = polyShape2;
-  fixture->density = 1.0;
-  fixture->friction = 0.0;
-  fixture->restitution = 1.000;
-  //fixture->filter.categoryBits = 0x0008;
-  //fixture->filter.maskBits = 0x0010;
-  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
-  game_body[3] = IFAdapter.OrderedBody();
-  if (!IFAdapter.MakeBody())
-   return;
-  game_body[3]->body->SetTransform(b2Vec2(0.0, -bottom), 0.0);
-  game_body[3]->OGL_body->texture_ID = User_Data.CubeTexture;
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
+   b2CircleShape *polyShape = new b2CircleShape;
+   polyShape->m_p.SetZero();
+   radius = engine.width > engine.height ? engine.width : engine.height, dummy = 0.0;
+   radius *= 0.02;
+   radius += engine.width*0.5;
+   Window2ObjectCoordinates(radius, dummy, zDefaultLayer, engine.width, engine.height);
+   radius /= IFA_box2D_factor;
+   polyShape->m_radius = radius;
+   fixture = new b2FixtureDef;
+   fixture->shape = polyShape;
+   fixture->density = 1.0;
+   fixture->friction = 0.0;
+   fixture->restitution = 1.000;
+   //fixture->filter.categoryBits = 0x0008;
+   //fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
+   game_body[2] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   game_body[2]->OGL_body->texture_ID = User_Data.CubeTexture;
 
 
 
@@ -354,31 +317,42 @@ void TESTFN_AddRandomBody(engine &engine){
 
 
 
-  IFAdapter.OrderBody();
-  IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
-  polyShape2 = new b2PolygonShape;
-  zoom_factor = engine.width < engine.height ? engine.width : engine.height, dummy = 0.0;
-  zoom_factor /= 12.0 * 24.0;
-  zoom_factor += engine.width*0.5;
-  Window2ObjectCoordinates(zoom_factor, dummy, zDefaultLayer, engine.width, engine.height);
-  shapeCoords[0].x = zoom_factor * -12, shapeCoords[0].y = zoom_factor * -1;
-  shapeCoords[1].x = zoom_factor * 12, shapeCoords[1].y = zoom_factor * -1;
-  shapeCoords[2].x = zoom_factor * 12, shapeCoords[2].y = zoom_factor * 1;
-  shapeCoords[3].x = zoom_factor * -12, shapeCoords[3].y = zoom_factor * 1;
-  polyShape2->Set(shapeCoords, 4);
-  fixture = new b2FixtureDef;
-  fixture->shape = polyShape2;
-  fixture->density = 1.0;
-  fixture->friction = 0.0;
-  fixture->restitution = 1.000;
-  //fixture->filter.categoryBits = 0x0008;
-  //fixture->filter.maskBits = 0x0010;
-  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
-  game_body[4] = IFAdapter.OrderedBody();
-  if (!IFAdapter.MakeBody())
-   return;
-  game_body[4]->body->SetTransform(b2Vec2(0.0, bottom), 0.0);
-  game_body[4]->OGL_body->texture_ID = User_Data.CubeTexture;
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+   b2PolygonShape *polyShape2 = new b2PolygonShape;
+   b2Vec2 shapeCoords[8];
+   float zoom_factor;
+   zoom_factor = engine.width < engine.height ? engine.width : engine.height, dummy = 0.0;
+   zoom_factor /= 12.0 * 24.0;
+   zoom_factor += engine.width*0.5;
+   Window2ObjectCoordinates(zoom_factor, dummy, zDefaultLayer, engine.width, engine.height);
+   //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
+   //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
+   //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
+   //shapeCoords[3] = { zoom_factor * 3,zoom_factor *-2};
+   //shapeCoords[4] = { zoom_factor * 5,zoom_factor * 0};
+   //shapeCoords[5] = { zoom_factor * 2,zoom_factor * 2};
+   //shapeCoords[6] = { zoom_factor * 0,zoom_factor * 3 };
+   //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
+   shapeCoords[0].x = zoom_factor * -12, shapeCoords[0].y = zoom_factor * -1;
+   shapeCoords[1].x = zoom_factor * 12, shapeCoords[1].y = zoom_factor * -1;
+   shapeCoords[2].x = zoom_factor * 12, shapeCoords[2].y = zoom_factor * 0.0;
+   shapeCoords[3].x = 0,                shapeCoords[3].y = zoom_factor * 1.5;
+   shapeCoords[4].x = zoom_factor * -12, shapeCoords[4].y = zoom_factor * 0.0;
+   polyShape2->Set(shapeCoords, 5);
+   fixture = new b2FixtureDef;
+   fixture->shape = polyShape2;
+   fixture->density = 1.0;
+   fixture->friction = 0.0;
+   fixture->restitution = 1.000;
+   //fixture->filter.categoryBits = 0x0008;
+   //fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+   game_body[3] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   game_body[3]->body->SetTransform(b2Vec2(0.0, -bottom * 0.8), 0.0);
+   game_body[3]->OGL_body->texture_ID = User_Data.CubeTexture;
 
 
 
@@ -388,82 +362,118 @@ void TESTFN_AddRandomBody(engine &engine){
 
 
 
-  IFAdapter.OrderBody();
-  IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
-  polyShape2 = new b2PolygonShape;
-  shapeCoords[8];
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+   polyShape2 = new b2PolygonShape;
+   zoom_factor = engine.width < engine.height ? engine.width : engine.height, dummy = 0.0;
+   zoom_factor /= 12.0 * 24.0;
+   zoom_factor += engine.width*0.5;
+   Window2ObjectCoordinates(zoom_factor, dummy, zDefaultLayer, engine.width, engine.height);
+   shapeCoords[0].x = zoom_factor * -12, shapeCoords[0].y = zoom_factor * -0.0;
+   shapeCoords[1].x = 0, shapeCoords[1].y = zoom_factor * -1.5;
+   shapeCoords[2].x = zoom_factor * 12, shapeCoords[2].y = zoom_factor * -0.0;
+   shapeCoords[3].x = zoom_factor * 12, shapeCoords[3].y = zoom_factor * 1;
+   shapeCoords[4].x = zoom_factor * -12, shapeCoords[4].y = zoom_factor * 1;
+   polyShape2->Set(shapeCoords, 5);
+   fixture = new b2FixtureDef;
+   fixture->shape = polyShape2;
+   fixture->density = 1.0;
+   fixture->friction = 0.0;
+   fixture->restitution = 1.000;
+   //fixture->filter.categoryBits = 0x0008;
+   //fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+   game_body[4] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   game_body[4]->body->SetTransform(b2Vec2(0.0, bottom * 0.8), 0.0);
+   game_body[4]->OGL_body->texture_ID = User_Data.CubeTexture;
+
+
+
+
+
+
+
+
+
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+   polyShape2 = new b2PolygonShape;
+   shapeCoords[8];
 #define  zoom_factor 1.8
-  //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
-  //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
-  //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
-  //shapeCoords[3] = { zoom_factor * 3,zoom_factor *-2};
-  //shapeCoords[4] = { zoom_factor * 5,zoom_factor * 0};
-  //shapeCoords[5] = { zoom_factor * 2,zoom_factor * 2};
-  //shapeCoords[6] = { zoom_factor * 0,zoom_factor * 3 };
-  //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
-  shapeCoords[0] = { zoom_factor *-6, zoom_factor *-2 };
-  shapeCoords[1] = { zoom_factor * 6, zoom_factor * -2 };
-  shapeCoords[2] = { zoom_factor * 6, zoom_factor * 2 };
-  shapeCoords[3] = { zoom_factor *-6, zoom_factor * 2 };
+   //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
+   //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
+   //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
+   //shapeCoords[3] = { zoom_factor * 3,zoom_factor *-2};
+   //shapeCoords[4] = { zoom_factor * 5,zoom_factor * 0};
+   //shapeCoords[5] = { zoom_factor * 2,zoom_factor * 2};
+   //shapeCoords[6] = { zoom_factor * 0,zoom_factor * 3 };
+   //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
+   shapeCoords[0] = { zoom_factor *-6, zoom_factor *-2 };
+   shapeCoords[1] = { zoom_factor * 6, zoom_factor * -2 };
+   shapeCoords[2] = { zoom_factor * 6, zoom_factor * 2 };
+   shapeCoords[3] = { zoom_factor *-6, zoom_factor * 2 };
 #undef zoom_factor
-  polyShape2->Set(shapeCoords, 4);
-  fixture = new b2FixtureDef;
-  fixture->shape = polyShape2;
-  fixture->density = 1.1;
-  fixture->friction = 0.3;
-  fixture->restitution = 0.001;
-  fixture->filter.categoryBits = 0x0008;
-  fixture->filter.maskBits = 0x0010;
-  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
-  game_body[5] = IFAdapter.OrderedBody();
-  if (!IFAdapter.MakeBody())
-   return;
-  game_body[5]->body->SetTransform(b2Vec2(-16.0, 0.0), 0.0);
-  game_body[5]->OGL_body->z_pos -= 0.1;
-  SetFaceSize(100 * 64, 60 * 64);
-  char outstring[120];
-  strcpy(outstring, "train");
-  //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
-  TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
-  //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
-  size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
-  for (int cntuv = 0; cntuv < UVsize; cntuv++) {
-   game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
-   cntuv++;
-   game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
+   polyShape2->Set(shapeCoords, 4);
+   fixture = new b2FixtureDef;
+   fixture->shape = polyShape2;
+   fixture->density = 1.1;
+   fixture->friction = 0.3;
+   fixture->restitution = 0.001;
+   fixture->filter.categoryBits = 0x0008;
+   fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+   game_body[5] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   game_body[5]->body->SetTransform(b2Vec2(-16.0, 0.0), 0.0);
+   game_body[5]->OGL_body->z_pos -= 0.1;
+   SetFaceSize(100 * 64, 60 * 64);
+   char outstring[120];
+   strcpy(outstring, "train");
+   //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
+   for (int cntuv = 0; cntuv < UVsize; cntuv++) {
+    game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
+    cntuv++;
+    game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
+   }
+
+
+
+
+
+
+
+
+
+
+   if (IFFANN::Check_Save_Cascade_FANN("pongpaddle", IFFANN::CnTrainedFannPostscript)) {
+    IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
+   }
+   if (!PaddleBrains.ann) IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+   //IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+
+   Pong_Learning_Phase = false;
+   input_data_sets = 0;
+
+   Network.NodeRegister.Register(&Node1);
+   IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
+   IFFANN::Save_Cascade_FANN(&PaddleBrains, IFFANN::CnFinalFannPostscript);
+   Node1.LoadCore("pongpaddle");
+
+
+
+
+
+   game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*500.0, (drand48() * 1.0 - 0.5) * 500.0), game_body[2]->body->GetPosition(), true);
+
+
   }
-
-
-
-
-
-
-
-
-
-
-  if (IFFANN::Check_Save_Cascade_FANN("pongpaddle", IFFANN::CnTrainedFannPostscript)) {
-   IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);   
-  }
-  if (!PaddleBrains.ann) IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
-  //IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
-  
-  Pong_Learning_Phase = false;
-  input_data_sets = 0;
-
-  Network.NodeRegister.Register(&Node1);
-  IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
-  IFFANN::Save_Cascade_FANN(&PaddleBrains, IFFANN::CnFinalFannPostscript);
-  Node1.LoadCore("pongpaddle");
-
-
-
-
-
-  game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*500.0, (drand48() * 1.0-0.5) * 500.0), game_body[2]->body->GetPosition(), true);
-
-
-  }else{
+  else {
 
 
    float maxx = engine.width;
@@ -474,13 +484,13 @@ void TESTFN_AddRandomBody(engine &engine){
    {
 
     b2Vec2 position = game_body[3]->body->GetPosition();
-    game_body[3]->body->SetTransform(b2Vec2(-last_x_acceleration * 2.4, -bottom), game_body[3]->body->GetAngle());
+    game_body[3]->body->SetTransform(b2Vec2(-last_x_acceleration * 2.4, -bottom*0.8), game_body[3]->body->GetAngle());
 
    }
 
    if (b2Distance(b2Vec2(game_body[2]->body->GetPosition().x, game_body[2]->body->GetPosition().y), b2Vec2(0, 0)) > cut_off_distance) {
     if (game_body[2]->body->GetPosition().y < 0) {
-     int deleteamount = output_data.size() - 30;
+     int deleteamount = check_input_data_sets;
      if (deleteamount >= 0) {
       while (input_data.size() > (deleteamount * 2))input_data.pop_back();
       while (output_data.size() > (deleteamount * 1))output_data.pop_back();
@@ -489,14 +499,15 @@ void TESTFN_AddRandomBody(engine &engine){
     }
     game_body[2]->body->SetTransform(b2Vec2(0, 0), game_body[2]->body->GetAngle());
     game_body[2]->body->SetLinearVelocity(b2Vec2(0, 0));
-    game_body[2]->body->SetAngularVelocity(0);   
-    game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48() * 500.0, (drand48() * 1.0 - 0.5) * 500.0), game_body[2]->body->GetPosition(), true);
-   }else{
+    game_body[2]->body->SetAngularVelocity(0);
+    game_body[2]->body->ApplyLinearImpulse((b2Vec2((drand48() - 0.5) * 100.0, (drand48() * 1.0 - 0.5) * 100.0)), game_body[2]->body->GetPosition(), true);
+   }
+   else {
 
 
 
-    if(abs(game_body[2]->body->GetLinearVelocity().y)<10.0){
-     game_body[2]->body->ApplyLinearImpulse(b2Vec2(0, (game_body[2]->body->GetLinearVelocity().y<0?-100.0:100.0)), game_body[2]->body->GetPosition(), true);
+    if (abs(game_body[2]->body->GetLinearVelocity().y) < 10.0) {
+     game_body[2]->body->ApplyLinearImpulse(b2Vec2(0, (game_body[2]->body->GetLinearVelocity().y < 0 ? -100.0 : 100.0)), game_body[2]->body->GetPosition(), true);
     }
 
 
@@ -513,13 +524,13 @@ void TESTFN_AddRandomBody(engine &engine){
 
        typename std::list<ifCB2Body*>::iterator iter;
        for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
-        if(game_body[5]==*iter){
+        if (game_body[5] == *iter) {
          if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {
           //while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
 
-          if(input_data_sets>20){
-           Pong_Learning_Phase = true;        
-          }
+          //if (input_data_sets > 20) {
+           Pong_Learning_Phase = true;
+          //}
 
           break;
          }
@@ -528,7 +539,7 @@ void TESTFN_AddRandomBody(engine &engine){
 
       }
       TEST_Last_Added_Body_Time = temp_timespec;
-     }   
+     }
     }
 
 
@@ -536,8 +547,8 @@ void TESTFN_AddRandomBody(engine &engine){
     {
 
 
-     if(Pong_Learning_Phase){
-      IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+     if (Pong_Learning_Phase) {
+      IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
       IFFANN::Train_Cascade_FANN(&PaddleBrains, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets);
       IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
       IFFANN::Save_Cascade_FANN(&PaddleBrains, IFFANN::CnFinalFannPostscript);
@@ -558,17 +569,17 @@ void TESTFN_AddRandomBody(engine &engine){
      float ball_angle_to_pad;
      b2Vec2 balllinvel = game_body[2]->body->GetLinearVelocity();
      b2Vec2 ballposition = game_body[2]->body->GetPosition();
-     b2Vec2 paddleposition ;
-     bool AIPaddle=false;
-     if( ballposition.y > 0 ){
+     b2Vec2 paddleposition;
+     bool AIPaddle = false;
+     if (ballposition.y > 0) {
       AIPaddle = true;
      }
-     if(AIPaddle){
-      paddleposition = game_body[4]->body->GetPosition();     
-     }else{
+     if (AIPaddle) {
+      paddleposition = game_body[4]->body->GetPosition();
+      check_input_data_sets = input_data_sets;
+     }
+     else {
       paddleposition = game_body[3]->body->GetPosition();
-      balllinvel.x *= -1.0;
-      balllinvel.y *= -1.0;
      }
      {
       if (AIPaddle) {
@@ -578,15 +589,24 @@ void TESTFN_AddRandomBody(engine &engine){
        Network.NodeRegister.InputPinRegister.input_pins.ResetIterator();
        int cnt = 0;
        while (0 <= Network.NodeRegister.InputPinRegister.input_pins.GetNextIterator(ID, pin_value)) {
-        switch(cnt++){
+        switch (cnt++) {
         case 0:
-         *pin_value = b2Distance(paddleposition, ballposition) / Node1.ifann.input_scale;
-        break;
+         *pin_value = (paddleposition.x ) / Node1.ifann.input_scale;//b2Distance(paddleposition, ballposition) / Node1.ifann.input_scale;
+         break;
         case 1:
-         *pin_value = atan2(balllinvel.x, balllinvel.y) / Node1.ifann.input_scale;
-        break;
-       
-        };       
+//         *pin_value = -ballposition.x / Node1.ifann.input_scale;
+         *pin_value = (ballposition.x) / Node1.ifann.input_scale;//b2Distance(paddleposition, ballposition) / Node1.ifann.input_scale;
+         break;
+        case 2:
+         *pin_value = -ballposition.y / Node1.ifann.input_scale;
+         break;
+        case 3:
+         *pin_value = -paddleposition.x / Node1.ifann.input_scale;
+         break;
+        case 4:
+         *pin_value = -paddleposition.y / Node1.ifann.input_scale;
+         break;
+        };
        }
        fann_scale_input(Node1.ifann.ann, Node1.inputs);
        Network.Run();
@@ -597,27 +617,43 @@ void TESTFN_AddRandomBody(engine &engine){
         if (pin_value) {
          fann_type val = *pin_value * Node1.ifann.output_scale;
          b2Vec2 position = game_body[4]->body->GetPosition();
-         game_body[4]->body->SetTransform(b2Vec2( val * 1.0, position.y), game_body[4]->body->GetAngle());
+         game_body[4]->body->SetTransform(b2Vec2(val * 1.0, position.y), game_body[4]->body->GetAngle());
+         if (game_body[4]->body->GetPosition().x < left)game_body[4]->body->SetTransform(b2Vec2(left, position.y), game_body[4]->body->GetAngle());
+         if (game_body[4]->body->GetPosition().x > right)game_body[4]->body->SetTransform(b2Vec2(right, position.y), game_body[4]->body->GetAngle());
         }
        }
-      }else{
+      }
+      else {
        static int skipCnt = 0;
-       if(skipCnt++==0){    
-        skipCnt = 0;
-        input_data.push_back( b2Distance(paddleposition, ballposition) / PaddleBrains.input_scale);
-        input_data.push_back(atan2(balllinvel.x, balllinvel.y) / PaddleBrains.input_scale);
-        output_data.push_back(paddleposition.x / PaddleBrains.output_scale);
-        input_data_sets++;
-        if (input_data.size() > ((60*60*60 *2 ) + 120)) {
-         input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (60 * 60 * 60 *2)));
-         input_data_sets = input_data.size() / 2;
-         output_data.erase(output_data.begin(), output_data.begin() + input_data_sets);
+       static float prev_dist = 0;
+       static float prev_padx = 0;
+       if (skipCnt++ ==1) {
+        skipCnt = 0;        
+     //   if((b2Distance(paddleposition, ballposition) < 5.0))
+        {
+         //input_data.push_back(b2Distance(paddleposition, ballposition) / PaddleBrains.input_scale);
+         //prev_dist = b2Distance(paddleposition, ballposition);
+         //input_data.push_back(((ballposition.x)) / PaddleBrains.input_scale);
+         //input_data.push_back(ballposition.y / PaddleBrains.input_scale);
+         //input_data.push_back((paddleposition.x) / PaddleBrains.input_scale);
+         //input_data.push_back((paddleposition.y) / PaddleBrains.input_scale);
+         //output_data.push_back(paddleposition.x / PaddleBrains.output_scale);
+         input_data.push_back((paddleposition.x) / PaddleBrains.input_scale);
+         input_data.push_back((ballposition.x) / PaddleBrains.input_scale);
+         output_data.push_back((paddleposition.x) / PaddleBrains.output_scale);
+         prev_padx = paddleposition.x;
+         input_data_sets++;
+         if (input_data.size() > ((60 * 60 * 60 * FANNPong.input_neurons) + 120)) {
+          input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (60 * 60 * 60 * FANNPong.input_neurons)));
+          input_data_sets = input_data.size() / FANNPong.input_neurons;
+          output_data.erase(output_data.begin(), output_data.begin() + input_data_sets);
+         }
         }
        }
       }
      }
     }
-   }  
+   }
   }
   //DEMO 4 - Simple Game - START
 
@@ -631,7 +667,7 @@ void TESTFN_AddRandomBody(engine &engine){
    BODY_DEMO_initialized = true;
 
    last_touched_object = NULL;
-   
+
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
    b2CircleShape *polyShape = new b2CircleShape;
@@ -658,7 +694,7 @@ void TESTFN_AddRandomBody(engine &engine){
    IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
    b2PolygonShape *polyShape2 = new b2PolygonShape;
    b2Vec2 shapeCoords[8];
-   #define  zoom_factor 2.0
+#define  zoom_factor 2.0
    //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
    //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
    //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
@@ -668,8 +704,8 @@ void TESTFN_AddRandomBody(engine &engine){
    //shapeCoords[6] = { zoom_factor * 0,zoom_factor * 3 };
    //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
    shapeCoords[0] = { zoom_factor *-6, zoom_factor *-2 };
-   shapeCoords[1] = { zoom_factor *6, zoom_factor * -2};
-   shapeCoords[2] = { zoom_factor *6, zoom_factor * 2 };
+   shapeCoords[1] = { zoom_factor * 6, zoom_factor * -2 };
+   shapeCoords[2] = { zoom_factor * 6, zoom_factor * 2 };
    shapeCoords[3] = { zoom_factor *-6, zoom_factor * 2 };
 #undef zoom_factor
    polyShape2->Set(shapeCoords, 4);
@@ -684,12 +720,12 @@ void TESTFN_AddRandomBody(engine &engine){
    buttons_body[1] = IFAdapter.OrderedBody();
    if (!IFAdapter.MakeBody())
     return;
-   buttons_body[1]->body->SetTransform(b2Vec2(0.0,-10.0), 0.0);
+   buttons_body[1]->body->SetTransform(b2Vec2(0.0, -10.0), 0.0);
    SetFaceSize(100 * 64, 60 * 64);
    char outstring[120];
-   strcpy(outstring,"Option 1");
+   strcpy(outstring, "Option 1");
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
-   TEST_GUI_Tex_Ary[0] = buttons_body[1]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 },0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   TEST_GUI_Tex_Ary[0] = buttons_body[1]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    size_t UVsize = buttons_body[1]->OGL_body->UVmapping_cnt;
    for (int cntuv = 0; cntuv < UVsize; cntuv++) {
@@ -744,7 +780,8 @@ void TESTFN_AddRandomBody(engine &engine){
    }
 
 
-  }else{
+  }
+  else {
 
    if (IFGameEditor::GetTouchEvent()) {
     while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
@@ -754,11 +791,11 @@ void TESTFN_AddRandomBody(engine &engine){
     //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
     unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
     if (temp_int64 > 2000) {
-//     if (touchy > (engine.height * 0.5)) {
-//     }else
+     //     if (touchy > (engine.height * 0.5)) {
+     //     }else
      {
       IFGameEditor::GetTouchEvent(&touchx, &touchy);
-     
+
       typename std::list<ifCB2Body*>::iterator iter;
       for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
        if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {
@@ -784,20 +821,20 @@ void TESTFN_AddRandomBody(engine &engine){
 
   }
 
- // return;
-//DEMO 3 - USER INTERFACE - STOP
-  //DEMO 2 - FANN - START
+  // return;
+ //DEMO 3 - USER INTERFACE - STOP
+   //DEMO 2 - FANN - START
 
-  if(!FANN_TEST_initialized){
+  if (!FANN_TEST_initialized) {
    FANN_TEST_initialized = true;
 
-   if(IFFANN::Check_Save_Cascade_FANN("forces01", IFFANN::CnTrainedFannPostscript )){
+   if (IFFANN::Check_Save_Cascade_FANN("forces01", IFFANN::CnTrainedFannPostscript)) {
     IFFANN::Load_Cascade_FANN(&LittleBrains, "forces01", IFFANN::CnTrainedFannPostscript);
    }
-   if(!LittleBrains.ann) IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
+   if (!LittleBrains.ann) IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
    FANN_Learning_Phase = false;
    input_data_sets = 0;
-   
+
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
    ifCB2Body *first_body = IFAdapter.OrderedBody();
@@ -830,7 +867,7 @@ void TESTFN_AddRandomBody(engine &engine){
    fixture->density = 1.1;
    fixture->friction = 0.3;
    fixture->restitution = 0.001;
-   fixture->filter.categoryBits= 0x0002;
+   fixture->filter.categoryBits = 0x0002;
    fixture->filter.maskBits = 0x0004;
    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
    anns_learned_body = IFAdapter.OrderedBody();
@@ -848,16 +885,17 @@ void TESTFN_AddRandomBody(engine &engine){
    //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
    unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
    if (temp_int64 > 2000) {
-    if(touchy > (engine.height * 0.5) ){
-     if(input_data_sets>1) FANN_Learning_Phase = true;
-    }else{
+    if (touchy > (engine.height * 0.5)) {
+     if (input_data_sets > 1) FANN_Learning_Phase = true;
+    }
+    else {
      FANN_Learning_Phase = false;
      IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);     //input_data_sets = 0;
      //input_data.clear();
      //output_data.clear();
     }
     TEST_Last_Added_Body_Time = temp_timespec;
-   }   
+   }
    while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
   }
 
@@ -866,27 +904,28 @@ void TESTFN_AddRandomBody(engine &engine){
   Window2ObjectCoordinates(maxx, maxy, zDefaultLayer, maxx, maxy);
   float cut_off_distance = b2Distance(b2Vec2(0, 0), b2Vec2(maxx / IFA_box2D_factor, maxy / IFA_box2D_factor)) * 1;
 
-  last_x_acceleration*=0.1;
-  last_y_acceleration *=0.1;  
+  last_x_acceleration *= 0.1;
+  last_y_acceleration *= 0.1;
   if (b2Distance(b2Vec2(anns_body->body->GetPosition().x, anns_body->body->GetPosition().y), b2Vec2(0, 0)) > cut_off_distance) {
    anns_body->body->SetTransform(b2Vec2(0, 0), anns_learned_body->body->GetAngle());
    anns_body->body->SetLinearVelocity(b2Vec2(0, 0));
    anns_body->body->SetAngularVelocity(0);
    last_pos_x = 0, last_pos_y = 0;
-  } else if (!FANN_Learning_Phase) {
+  }
+  else if (!FANN_Learning_Phase) {
    last_pos_x = anns_body->body->GetPosition().x;
    last_pos_y = anns_body->body->GetPosition().y;
-   
-anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetPosition().x, last_y_acceleration + anns_body->body->GetPosition().y), anns_body->body->GetAngle());//Has immediate effect, set last_pos_x before
 
-//float coordx = touchx;
-//float coordy = touchy;
-//Window2ObjectCoordinates(coordx , coordy , zDefaultLayer, engine.width, engine.height);
-//anns_body->body->SetTransform(b2Vec2(coordx / IFA_box2D_factor, coordy / IFA_box2D_factor), anns_body->body->GetAngle());
+   anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetPosition().x, last_y_acceleration + anns_body->body->GetPosition().y), anns_body->body->GetAngle());//Has immediate effect, set last_pos_x before
 
-//anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);//Has effect after world step, set last_pos_x after
+   //float coordx = touchx;
+   //float coordy = touchy;
+   //Window2ObjectCoordinates(coordx , coordy , zDefaultLayer, engine.width, engine.height);
+   //anns_body->body->SetTransform(b2Vec2(coordx / IFA_box2D_factor, coordy / IFA_box2D_factor), anns_body->body->GetAngle());
 
-   if ((last_pos_x != FLT_MAX)&&(last_pos_y != FLT_MAX)){
+   //anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);//Has effect after world step, set last_pos_x after
+
+   if ((last_pos_x != FLT_MAX) && (last_pos_y != FLT_MAX)) {
     input_data.push_back(IFA_World->GetGravity().y / LittleBrains.input_scale);
     //input_data[(input_data_sets+0) * 3 + 0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
     input_data.push_back(last_x_acceleration / LittleBrains.input_scale);
@@ -898,16 +937,16 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
     output_data.push_back((last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale);
     //output_data[input_data_sets * 2 + 1] = (last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale;
     input_data_sets++;
-    if (input_data.size() > ((60 * 60 * 60 *  3) + 120)) {
+    if (input_data.size() > ((60 * 60 * 60 * 3) + 120)) {
      input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (60 * 60 * 60 * 3)));
-     input_data_sets = input_data.size()/3;
-     output_data.erase(output_data.begin(), output_data.begin() + input_data_sets*2);
+     input_data_sets = input_data.size() / 3;
+     output_data.erase(output_data.begin(), output_data.begin() + input_data_sets * 2);
     }
    }
   }
-  if (FANN_Learning_Phase&&input_data_sets){
+  if (FANN_Learning_Phase&&input_data_sets) {
    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_layers, output_layers, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
-   IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback, input_data_sets);  
+   IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback, input_data_sets);
    //fann_set_scaling_params(LittleBrains.ann, LittleBrains.ann_train->train_data, -1, 1, min_output, max_output);
    //input_data_sets = 0;
    FANN_Learning_Phase = false;
@@ -917,17 +956,18 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
    output_data.clear();
 
 
-  }else{
-//   IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnFinalFannPostscript);
-//   IFFANNEngine::TestNetwork();
+  }
+  else {
+   //   IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnFinalFannPostscript);
+   //   IFFANNEngine::TestNetwork();
 
    fann_type inputs[3];
    inputs[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
    inputs[1] = last_x_acceleration / LittleBrains.input_scale;
-   inputs[2] = last_y_acceleration / LittleBrains.input_scale;   
+   inputs[2] = last_y_acceleration / LittleBrains.input_scale;
    fann_scale_input(LittleBrains.ann, inputs);
    fann_type *outputs = IFFANN::Run_Cascade_FANN(&LittleBrains, inputs);
-   fann_descale_output(LittleBrains.ann,outputs);
+   fann_descale_output(LittleBrains.ann, outputs);
    outputs[0] = anns_learned_body->body->GetPosition().x - outputs[0] * LittleBrains.output_scale;
    outputs[1] = anns_learned_body->body->GetPosition().y - outputs[1] * LittleBrains.output_scale;
    if (b2Distance(b2Vec2(outputs[0], outputs[1]), b2Vec2(0, 0)) <= cut_off_distance) {
@@ -938,40 +978,40 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
    }
   }
 
-  
+
 
 
   //DEMO 2 - FANN - STOP
   //return;
-  
+
  //OLD DEMO 1 START 
 
-  if (IFGameEditor::GetTouchEvent()){   
+  if (IFGameEditor::GetTouchEvent()) {
    int touchx, touchy;
 
    struct timespec temp_timespec;
    clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
    //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
    unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
-   if(temp_int64<200){
-    while(IFGameEditor::GetTouchEvent(&touchx, &touchy));
+   if (temp_int64 < 200) {
+    while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
     return;
    }
    TEST_Last_Added_Body_Time = temp_timespec;
 
-   IFGameEditor::GetTouchEvent(&touchx, &touchy);   
+   IFGameEditor::GetTouchEvent(&touchx, &touchy);
 
    typename std::list<ifCB2Body*>::iterator iter;
    for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
-    if( B2BodyUtils.RayTestHitpoint( touchx, touchy, *iter ) ){
+    if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {
      IFAdapter.Bodies.removeElement(*iter);
      return;
     }
    }
 
    IFAdapter.OrderBody();
-   IFAdapter.OrderedBody()->body_def->type = ((drand48()>0.5)?b2_staticBody: b2_dynamicBody);
-   if( drand48() > 0.3){
+   IFAdapter.OrderedBody()->body_def->type = ((drand48() > 0.5) ? b2_staticBody : b2_dynamicBody);
+   if (drand48() > 0.3) {
 
 
     b2EdgeShape *polyShape = new b2EdgeShape;
@@ -1005,7 +1045,8 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
     IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
 
 
-   }else{
+   }
+   else {
 
 
     b2CircleShape *polyShape = new b2CircleShape;
@@ -1061,8 +1102,8 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
  //   screeny = (screeny*zDefaultLayer)/IFA_box2D_factor;
     float screenx = touchx;
     float screeny = touchy;
-    Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height );
-    IFAdapter.OrderedBody()->body_def->position.Set(screenx/ IFA_box2D_factor, screeny/ IFA_box2D_factor);
+    Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height);
+    IFAdapter.OrderedBody()->body_def->position.Set(screenx / IFA_box2D_factor, screeny / IFA_box2D_factor);
     //shapeCoords[0] = { -1,  -1 };
     //shapeCoords[1] = { 16,  -1 };
     //shapeCoords[2] = { 16,   6 };
@@ -1094,27 +1135,27 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
    }
    return;
   }
- 
- 
+
+
 
   double xxxx = drand48();
-  if((xxxx *200)<80)
+  if ((xxxx * 200) < 80)
    return;
 
 
   IFAudioSLES::EngineServiceBufferMutex.EnterAndLock();
-  if(IFAudioSLES::audio_engine_created &&
-     !IFAudioSLES::EngineServiceBuffer.empty()){
- /////////////////////////////////////AUDIO PART
-   //IFAudioSLES::sample_buf *new_buf = nullptr;
+  if (IFAudioSLES::audio_engine_created &&
+   !IFAudioSLES::EngineServiceBuffer.empty()) {
+   /////////////////////////////////////AUDIO PART
+     //IFAudioSLES::sample_buf *new_buf = nullptr;
    unsigned int selected_buffer = -1;
-   if(IFAudioSLES::EngineServiceBuffer.size()){
+   if (IFAudioSLES::EngineServiceBuffer.size()) {
     selected_buffer = IFAudioSLES::EngineServiceBuffer.front();
     //while(IFAudioSLES::EngineServiceBuffer.size())
     // IFAudioSLES::EngineServiceBuffer.pop_back();
-    while(!IFAudioSLES::EngineServiceBuffer.empty()) IFAudioSLES::EngineServiceBuffer.pop();
-   }  
-   if(selected_buffer==-1){
+    while (!IFAudioSLES::EngineServiceBuffer.empty()) IFAudioSLES::EngineServiceBuffer.pop();
+   }
+   if (selected_buffer == -1) {
     IFAudioSLES::EngineServiceBufferMutex.LeaveAndUnlock();
     return;
    }
@@ -1123,12 +1164,12 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
    double average_value = 0;
    static double prev_average_value = 0;
    static unsigned int nMake = 0;
-   bool nMake_added=false;  
+   bool nMake_added = false;
    short sample_valueL, sample_valueR;
-   bool two_channels = false, LR_switch=true;
+   bool two_channels = false, LR_switch = true;
    std::vector<float> timevec;
 
-   #define TRESHOLD_COUNT 4
+#define TRESHOLD_COUNT 4
    static std::deque<float> treshold_history[TRESHOLD_COUNT];
    float treshold[TRESHOLD_COUNT];
 
@@ -1137,17 +1178,19 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
    float audio_db;
    if (IFAudioSLES::engine.sampleChannels_ == 2) {
     two_channels = true;
-   } 
+   }
    for (int cnt = 0; cnt < allocSize; cnt++) {
-    if(LR_switch){
+    if (LR_switch) {
      sample_valueL = IFAudioSLES::engine.record_buffer[selected_buffer].buf_[cnt];
-    }else{
+    }
+    else {
      sample_valueR = IFAudioSLES::engine.record_buffer[selected_buffer].buf_[cnt];
-     timevec.push_back((((float)IFAudioSLES::engine.record_buffer[selected_buffer].buf_[cnt] + sample_valueL) ) / 65535.0);
-    }      
-    if (two_channels){
+     timevec.push_back((((float)IFAudioSLES::engine.record_buffer[selected_buffer].buf_[cnt] + sample_valueL)) / 65535.0);
+    }
+    if (two_channels) {
      LR_switch = !LR_switch;
-    }else{
+    }
+    else {
      timevec.push_back((((float)sample_valueL)) / 32767.0);
     }
     //audio_db = 20 * (log10(abs(sample_valueL ) / 32767.0));
@@ -1156,10 +1199,10 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
    //dBFS = 20 * log([sample level] / [max level])
    //In a 16 bit system there are 2 ^ 16 = 65536 values.So this means values from - 32768 to + 32767. Excluding 0, let's say the minimum value is 1. So plugging this into the formula gives:
    //dBFS = 20 * log(1 / 32767) = -90.3
-  
+
    IFAudioSLES::EngineServiceBufferMutex.LeaveAndUnlock();
 
-   if(timevec.size()){
+   if (timevec.size()) {
 
     Eigen::FFT<float> fft;
 
@@ -1167,65 +1210,69 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
 
     fft.fwd(freqvec, timevec);
     int ssize = freqvec.size();
-    
-    for( int cntx = 0; cntx < freqvec.size(); cntx++){
-     float freq = (float)cntx*48000.0/ (float)ssize;
- //    float ampl = ((freqvec[cntx].real() >0)?20*log10(freqvec[cntx].real() / 4.0f):-1000.0);
- //    float phase = freqvec[cntx].imag();
-     if(freqvec[cntx].real()<0){
+
+    for (int cntx = 0; cntx < freqvec.size(); cntx++) {
+     float freq = (float)cntx*48000.0 / (float)ssize;
+     //    float ampl = ((freqvec[cntx].real() >0)?20*log10(freqvec[cntx].real() / 4.0f):-1000.0);
+     //    float phase = freqvec[cntx].imag();
+     if (freqvec[cntx].real() < 0) {
       continue;
      }
      if (freq > 60 && freq < 380) {
       if (treshold[0] < freqvec[cntx].real()) {
        treshold[0] = freqvec[cntx].real();
       }
-     }else if (freq > 400 && freq < 1200){
-      if( treshold[1] < freqvec[cntx].real()){
+     }
+     else if (freq > 400 && freq < 1200) {
+      if (treshold[1] < freqvec[cntx].real()) {
        treshold[1] = freqvec[cntx].real();
       }
-     } else if (freq > 1550 && freq < 4000) {
+     }
+     else if (freq > 1550 && freq < 4000) {
       if (treshold[2] < freqvec[cntx].real()) {
        treshold[2] = freqvec[cntx].real();
       }
-     }else if (freq > 1550 && freq < 4000) {
+     }
+     else if (freq > 1550 && freq < 4000) {
       if (treshold[3] < freqvec[cntx].real()) {
        treshold[3] = freqvec[cntx].real();
       }
      }
     }
-  
+
     typedef std::deque<float>::iterator TDFiter;
-    for( int cntt = 0; cntt < TRESHOLD_COUNT; cntt++){
+    for (int cntt = 0; cntt < TRESHOLD_COUNT; cntt++) {
      treshold_history[cntt].push_back(treshold[cntt]);
      treshold[cntt] = 0;
      for (TDFiter iter = treshold_history[cntt].begin(); iter != treshold_history[cntt].end(); iter++) {
       treshold[cntt] += *iter;
      }
      treshold[cntt] /= treshold_history[cntt].size();
-     while( treshold_history[cntt].size()*(IFAudioSLES::engine.frames_per_buffer / IFAudioSLES::engine.sample_rate)>3.0){
+     while (treshold_history[cntt].size()*(IFAudioSLES::engine.frames_per_buffer / IFAudioSLES::engine.sample_rate) > 3.0) {
       treshold_history[cntt].pop_front();
      }
      treshold[cntt] = 20 * log10(treshold[cntt] / 4.0f);
     }
-   
+
 
     for (int cntx = 0; cntx < freqvec.size(); cntx++) {
      float freq = (float)cntx*48000.0 / (float)ssize;
      float ampl = ((freqvec[cntx].real() > 0) ? 20 * log10(freqvec[cntx].real() / 4.0f) : -1000.0);
      float phase = freqvec[cntx].imag();
-     if(freq>60 && freq<380){
-      if(ampl> treshold[0]){
+     if (freq > 60 && freq < 380) {
+      if (ampl > treshold[0]) {
        for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
         if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
          IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0.0, abs(ampl) * 0.4), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
         }
        }
       }
-     }else if (freq > 400 && freq < 800 ) {
-      if(!nMake_added && ampl > treshold[1]){
+     }
+     else if (freq > 400 && freq < 800) {
+      if (!nMake_added && ampl > treshold[1]) {
        nMake += 1;
        nMake_added = true;
-      }     
+      }
      }
      else if (freq > 800 && freq < 1500) {
       if (ampl > treshold[2]) {
@@ -1244,7 +1291,8 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
         }
        }
       }
-     }else if(freq>4000){
+     }
+     else if (freq > 4000) {
       //nMake=0;
       break;
      }
@@ -1259,25 +1307,26 @@ anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetP
    //allocSize = 2;//count of buffers to release
    //IFAudioSLES::releaseSampleBufs(new_buf, allocSize );
    /////////////////////////////////////AUDIO PART
-  
-   average_value/=allocSize;
+
+   average_value /= allocSize;
 
    prev_average_value = average_value;
 
 
 
-nMake = 20;
-nMake_added = true;
+   nMake = 20;
+   nMake_added = true;
 
 
 
-   if(nMake==0)
+   if (nMake == 0)
     return;
    nMake--;
-   if(!nMake_added)
-    nMake=0;
+   if (!nMake_added)
+    nMake = 0;
 
-  }else{
+  }
+  else {
    IFAudioSLES::EngineServiceBufferMutex.LeaveAndUnlock();
    return;
   }
@@ -1291,7 +1340,7 @@ nMake_added = true;
   b2Vec2 shapeCoords[8];
   b2FixtureDef *fixture = new b2FixtureDef;
 
-  if(drand48()>0.3){
+  if (drand48() > 0.3) {
    IFAdapter.OrderedBody()->body_def->position.Set(drand48() * 10 - 5, drand48() * 50);
    shapeCoords[0] = { 0.8,  1.25 };
    shapeCoords[1] = { 1,   0.5 };
@@ -1303,10 +1352,11 @@ nMake_added = true;
    shapeCoords[7] = { 1,  2 };
    polyShape->Set(shapeCoords, 8);
    fixture->shape = polyShape;
-   fixture->density = drand48()*5.0+1.0;
+   fixture->density = drand48()*5.0 + 1.0;
    fixture->friction = drand48()*1.0;
-   fixture->restitution = ((drand48()>0.2)?drand48()*0.001:drand48()*2);
-  }else if(drand48()>0.6){
+   fixture->restitution = ((drand48() > 0.2) ? drand48()*0.001 : drand48() * 2);
+  }
+  else if (drand48() > 0.6) {
    IFAdapter.OrderedBody()->body_def->position.Set(drand48() * 10 - 5, drand48() * 50);
    shapeCoords[0] = { -1,  -1 };
    shapeCoords[1] = { 1,  -1 };
@@ -1317,7 +1367,8 @@ nMake_added = true;
    fixture->density = 1.1;
    fixture->friction = 0.3;
    fixture->restitution = 0.001;
-  }else{
+  }
+  else {
    IFAdapter.OrderedBody()->body_def->position.Set(-drand48()*4.0, 0.0);
    IFAdapter.OrderedBody()->body_def->angle = drand48()*360.0;
    shapeCoords[0] = b2Vec2(0.0, 0.0);
@@ -1345,10 +1396,10 @@ nMake_added = true;
   //shapeCoords[7] = { 10.0,  20.0 };
   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
   ifCB2Body *first_body = IFAdapter.OrderedBody();
-  if( !IFAdapter.MakeBody() )
-   return; 
+  if (!IFAdapter.MakeBody())
+   return;
   //Additional work on body  
-  if( drand48()>0.5 ){
+  if (drand48() > 0.5) {
    first_body->OGL_body->texture_ID = TEST_textid;
    size_t UVsize = first_body->OGL_body->UVmapping_cnt;
    for (int cntuv = 0; cntuv < UVsize; cntuv++) {
@@ -1357,7 +1408,8 @@ nMake_added = true;
     first_body->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
    }
 
-  }else{
+  }
+  else {
    first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
   }
  }
@@ -1372,7 +1424,7 @@ void Init_IFAdapter(engine &engine) {
   //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
   IFAdapter.screenResolutionX = engine.width;
   IFAdapter.screenResolutionY = engine.height;
-  IFAdapter.CalculateBox2DSizeFactor(1000*drand48()+500);
+  IFAdapter.CalculateBox2DSizeFactor(1000 * drand48() + 500);
 
   int twidth, theight;
   GLuint texint;
@@ -1386,7 +1438,7 @@ void Init_IFAdapter(engine &engine) {
 
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
-  IFAdapter.OrderedBody()->body_def->position.Set(-0.0,5.0);
+  IFAdapter.OrderedBody()->body_def->position.Set(-0.0, 5.0);
   b2PolygonShape *polyShape = new b2PolygonShape;
   b2Vec2 shapeCoords[8];
 
@@ -1400,8 +1452,8 @@ void Init_IFAdapter(engine &engine) {
   //shapeCoords[7] = { 0.10,  0.2 };
 
   shapeCoords[0] = { -1,  -1 };
-  shapeCoords[1] = {  16,  -1 };
-  shapeCoords[2] = {  16,   16 };
+  shapeCoords[1] = { 16,  -1 };
+  shapeCoords[2] = { 16,   16 };
   shapeCoords[3] = { -1,   16 };
   //shapeCoords[4] = { 4,  1 };
   //shapeCoords[5] = { 3,  2 };
@@ -1423,16 +1475,16 @@ void Init_IFAdapter(engine &engine) {
   fixture->friction = 0.3;
   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
   ifCB2Body *first_body = IFAdapter.OrderedBody();
-  if (IFAdapter.MakeBody()){
+  if (IFAdapter.MakeBody()) {
    //Additional work on body  
-   SetFaceSize(40*64, 40 * 64);
-   char outstring[20] = {'R','j','b',',','g','y','\0'};
+   SetFaceSize(40 * 64, 40 * 64);
+   char outstring[20] = { 'R','j','b',',','g','y','\0' };
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 160 * 64,40 * 64 }, 3.141593*0.250, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    size_t UVsize = first_body->OGL_body->UVmapping_cnt;
-   for( int cntuv = 0; cntuv < UVsize; cntuv++){
-    first_body->OGL_body->UVmapping[cntuv]*= TEST_text_ut;
+   for (int cntuv = 0; cntuv < UVsize; cntuv++) {
+    first_body->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
     cntuv++;
     first_body->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
    }
@@ -1440,17 +1492,17 @@ void Init_IFAdapter(engine &engine) {
   }
 
 
-//
-//
-//
-////////////////////////////second body
+  //
+  //
+  //
+  ////////////////////////////second body
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;
   IFAdapter.OrderedBody()->body_def->position.Set(-3.0, -3.0);
   polyShape = new b2PolygonShape;
   shapeCoords[0] = b2Vec2(0.0, -0.4);
-  shapeCoords[1] = b2Vec2( static_cast<float32>(engine.width) / 30.0, -0.4);
-  shapeCoords[2] = b2Vec2( static_cast<float32>(engine.width) / 30.0, 0.4);
+  shapeCoords[1] = b2Vec2(static_cast<float32>(engine.width) / 30.0, -0.4);
+  shapeCoords[2] = b2Vec2(static_cast<float32>(engine.width) / 30.0, 0.4);
   shapeCoords[3] = b2Vec2(0.0, 0.4);
   polyShape->Set(shapeCoords, 4);
   fixture = new b2FixtureDef;
@@ -1471,7 +1523,7 @@ void Init_IFAdapter(engine &engine) {
 
 
 
-/////////////////////////third body
+  /////////////////////////third body
   IFAdapter.OrderBody();
   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
   IFAdapter.OrderedBody()->body_def->position.Set(-2, 10.0);
@@ -1509,94 +1561,94 @@ void Init_IFAdapter(engine &engine) {
 * Initialize an EGL context for the current display.
 */
 static int engine_init_display(struct engine* engine) {
-	// initialize OpenGL ES and EGL
-	engine->EGL_initialized = false;
-	/*
-	* Here specify the attributes of the desired configuration.
-	* Below, we select an EGLConfig with at least 8 bits per color
-	* component compatible with on-screen windows
-	*/
-	const EGLint attribs[] = {
-		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-		EGL_BLUE_SIZE, 8,
-		EGL_GREEN_SIZE, 8,
-		EGL_RED_SIZE, 8,
-		EGL_NONE
-	};
-	EGLint w, h, format;
-	EGLint numConfigs;
-	EGLConfig config;
-	EGLSurface surface;
-	EGLContext context;
+ // initialize OpenGL ES and EGL
+ engine->EGL_initialized = false;
+ /*
+ * Here specify the attributes of the desired configuration.
+ * Below, we select an EGLConfig with at least 8 bits per color
+ * component compatible with on-screen windows
+ */
+ const EGLint attribs[] = {
+  EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+  EGL_BLUE_SIZE, 8,
+  EGL_GREEN_SIZE, 8,
+  EGL_RED_SIZE, 8,
+  EGL_NONE
+ };
+ EGLint w, h, format;
+ EGLint numConfigs;
+ EGLConfig config;
+ EGLSurface surface;
+ EGLContext context;
 
-	EGLDisplay display = eglGetDisplay( EGL_DEFAULT_DISPLAY );
-	if( display == EGL_NO_DISPLAY ) {
+ EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+ if (display == EGL_NO_DISPLAY) {
   LOGW("EGL Init Error 1");
   return -1;
  }
 
  EGLint verMaj, verMin;
-	if( !eglInitialize( display, &verMaj, &verMin) ) {
+ if (!eglInitialize(display, &verMaj, &verMin)) {
   LOGW("EGL Init Error 2");
   return -1;
  }
 
-	/* Here, the application chooses the configuration it desires. In this
-	* sample, we have a very simplified selection process, where we pick
-	* the first EGLConfig that matches our criteria */
-	if( EGL_FALSE == eglChooseConfig( display, attribs, &config, 1, &numConfigs ) ) {
+ /* Here, the application chooses the configuration it desires. In this
+ * sample, we have a very simplified selection process, where we pick
+ * the first EGLConfig that matches our criteria */
+ if (EGL_FALSE == eglChooseConfig(display, attribs, &config, 1, &numConfigs)) {
   LOGW("EGL Init Error 3");
   return -1;
  }
 
-	/* EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is
-	* guaranteed to be accepted by ANativeWindow_setBuffersGeometry().
-	* As soon as we picked a EGLConfig, we can safely reconfigure the
-	* ANativeWindow buffers to match, using EGL_NATIVE_VISUAL_ID. */
-	if( !eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format) ) {
+ /* EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is
+ * guaranteed to be accepted by ANativeWindow_setBuffersGeometry().
+ * As soon as we picked a EGLConfig, we can safely reconfigure the
+ * ANativeWindow buffers to match, using EGL_NATIVE_VISUAL_ID. */
+ if (!eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format)) {
   LOGW("EGL Init Error 4");
   return -1;
  }
 
-	if( ANativeWindow_setBuffersGeometry(engine->app->window, 0, 0, format) < 0 ) {
+ if (ANativeWindow_setBuffersGeometry(engine->app->window, 0, 0, format) < 0) {
   LOGW("EGL Init Error 5");
   return -1;
  }
 
- if( EGL_NO_SURFACE == ( surface = eglCreateWindowSurface(display, config, engine->app->window, NULL) ) ) {
+ if (EGL_NO_SURFACE == (surface = eglCreateWindowSurface(display, config, engine->app->window, NULL))) {
   LOGW("EGL Init Error 6");
   return -1;
  }
-	if( EGL_NO_CONTEXT == ( context = eglCreateContext(display, config, NULL, NULL) ) ){
+ if (EGL_NO_CONTEXT == (context = eglCreateContext(display, config, NULL, NULL))) {
   LOGW("EGL Init Error 7");
   return -1;
  }
 
-	if( eglMakeCurrent(display, surface, surface, context) == EGL_FALSE ) {
+ if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
   LOGW("EGL Init Error 8");
-		return -1;
-	}
+  return -1;
+ }
 
-	eglQuerySurface(display, surface, EGL_WIDTH, &w);
-	eglQuerySurface(display, surface, EGL_HEIGHT, &h);
+ eglQuerySurface(display, surface, EGL_WIDTH, &w);
+ eglQuerySurface(display, surface, EGL_HEIGHT, &h);
 
-	engine->EGL_initialized = true;
-	engine->display = display;
-	engine->context = context;
-	engine->surface = surface;
-	engine->width = w;
-	engine->height = h;
-	engine->state.angle = 0;
+ engine->EGL_initialized = true;
+ engine->display = display;
+ engine->context = context;
+ engine->surface = surface;
+ engine->width = w;
+ engine->height = h;
+ engine->state.angle = 0;
 
-	// Initialize GL state.
-	//CubeTest_setupGL(w, h);
- Setup_OpenGL(w,h);
+ // Initialize GL state.
+ //CubeTest_setupGL(w, h);
+ Setup_OpenGL(w, h);
 
  Init_IFAdapter(*engine);
 
  IFAudioSLES::BuildAudioEngine(User_Data.state->activity);
 
-	return 0;
+ return 0;
 }
 
 /**
@@ -1604,10 +1656,10 @@ static int engine_init_display(struct engine* engine) {
 */
 
 static void engine_draw_frame(struct engine* engine) {
-	if (engine->display == NULL) {
-		// No display.
-		return;
-	}
+ if (engine->display == NULL) {
+  // No display.
+  return;
+ }
 
 
  //cleanup far bodies
@@ -1624,10 +1676,10 @@ static void engine_draw_frame(struct engine* engine) {
 
  TESTFN_PostOperations(*engine);
 
-	//CubeTest_draw();
+ //CubeTest_draw();
  DrawBodies();
 
-	eglSwapBuffers(engine->display, engine->surface);
+ eglSwapBuffers(engine->display, engine->surface);
 }
 
 
@@ -1635,33 +1687,33 @@ static void engine_draw_frame(struct engine* engine) {
 * Tear down the EGL context currently associated with the display.
 */
 static void engine_term_display(struct engine* engine) {
-	if (engine->display != EGL_NO_DISPLAY) {
-		eglMakeCurrent(engine->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-		if (engine->context != EGL_NO_CONTEXT) {
-			eglDestroyContext(engine->display, engine->context);
-		}
-		if (engine->surface != EGL_NO_SURFACE) {
-			eglDestroySurface(engine->display, engine->surface);
-		}
-		eglTerminate(engine->display);
-	}
-	engine->animating = 0;
-	engine->display = EGL_NO_DISPLAY;
-	engine->context = EGL_NO_CONTEXT;
-	engine->surface = EGL_NO_SURFACE;
+ if (engine->display != EGL_NO_DISPLAY) {
+  eglMakeCurrent(engine->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+  if (engine->context != EGL_NO_CONTEXT) {
+   eglDestroyContext(engine->display, engine->context);
+  }
+  if (engine->surface != EGL_NO_SURFACE) {
+   eglDestroySurface(engine->display, engine->surface);
+  }
+  eglTerminate(engine->display);
+ }
+ engine->animating = 0;
+ engine->display = EGL_NO_DISPLAY;
+ engine->context = EGL_NO_CONTEXT;
+ engine->surface = EGL_NO_SURFACE;
 
-	//CubeTest_tearDownGL();  
+ //CubeTest_tearDownGL();  
  glDeleteTextures(1, &TEST_textid);
  TEST_textid = GL_INVALID_VALUE;
  glDeleteTextures(1, &User_Data.CubeTexture);
- User_Data.CubeTexture = GL_INVALID_VALUE; 
+ User_Data.CubeTexture = GL_INVALID_VALUE;
  glDeleteTextures(10, TEST_GUI_Tex_Ary);
- memset(TEST_GUI_Tex_Ary, GL_INVALID_VALUE,sizeof(TEST_GUI_Tex_Ary[0])*sizeof(TEST_GUI_Tex_Ary));
+ memset(TEST_GUI_Tex_Ary, GL_INVALID_VALUE, sizeof(TEST_GUI_Tex_Ary[0]) * sizeof(TEST_GUI_Tex_Ary));
 
 
  IFAudioSLES::TearDownAudioEngine();
 
- if(FANN_TEST_initialized){
+ if (FANN_TEST_initialized) {
   IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnTrainedFannPostscript);
  }
 
@@ -1673,54 +1725,54 @@ static void engine_term_display(struct engine* engine) {
 * Process the next input event.
 */
 static int32_t engine_handle_input(struct android_app* app, AInputEvent* event) {
-	struct engine* engine = (struct engine*)app->userData;
+ struct engine* engine = (struct engine*)app->userData;
  int32_t EventType = AInputEvent_getType(event);
  switch (EventType)
  {
-  case AINPUT_EVENT_TYPE_MOTION:
-   engine->state.x = AMotionEvent_getX(event, 0);
-   engine->state.y = AMotionEvent_getY(event, 0);
-   User_Data.Touch_Input_X = engine->state.x;
-   User_Data.Touch_Input_Y = engine->state.y;
-   User_Data.Event_Indicator_Touch_Input++;
-   return 1;
+ case AINPUT_EVENT_TYPE_MOTION:
+  engine->state.x = AMotionEvent_getX(event, 0);
+  engine->state.y = AMotionEvent_getY(event, 0);
+  User_Data.Touch_Input_X = engine->state.x;
+  User_Data.Touch_Input_Y = engine->state.y;
+  User_Data.Event_Indicator_Touch_Input++;
+  return 1;
  };
-	return 0;
+ return 0;
 }
 
 /**
 * Process the next main command.
 */
 static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
-	struct engine* engine = (struct engine*)app->userData;
+ struct engine* engine = (struct engine*)app->userData;
 
-	switch (cmd) {
-	case APP_CMD_SAVE_STATE:
-		// The system has asked us to save our current state.  Do so.
-		engine->app->savedState = malloc(sizeof(struct saved_state));
-		*((struct saved_state*)engine->app->savedState) = engine->state;
-		engine->app->savedStateSize = sizeof(struct saved_state);
-		break;
-	case APP_CMD_INIT_WINDOW:
-		// The window is being shown, get it ready.
-		if (engine->app->window != NULL) {			
-			engine_init_display(engine);
-			engine_draw_frame(engine);
-		}
-		break;
-	case APP_CMD_TERM_WINDOW:
-		// The window is being hidden or closed, clean it up.
-		engine_term_display(engine);
-		break;
-	case APP_CMD_GAINED_FOCUS:
-		// When our app gains focus, we start monitoring the accelerometer.
-		if (engine->accelerometerSensor != NULL) {
-			ASensorEventQueue_enableSensor(engine->sensorEventQueue,
-				engine->accelerometerSensor);
-			// We'd like to get 60 events per second (in us).
-			ASensorEventQueue_setEventRate(engine->sensorEventQueue,
-				engine->accelerometerSensor, (1000L / 60) * 1000);
-		}
+ switch (cmd) {
+ case APP_CMD_SAVE_STATE:
+  // The system has asked us to save our current state.  Do so.
+  engine->app->savedState = malloc(sizeof(struct saved_state));
+  *((struct saved_state*)engine->app->savedState) = engine->state;
+  engine->app->savedStateSize = sizeof(struct saved_state);
+  break;
+ case APP_CMD_INIT_WINDOW:
+  // The window is being shown, get it ready.
+  if (engine->app->window != NULL) {
+   engine_init_display(engine);
+   engine_draw_frame(engine);
+  }
+  break;
+ case APP_CMD_TERM_WINDOW:
+  // The window is being hidden or closed, clean it up.
+  engine_term_display(engine);
+  break;
+ case APP_CMD_GAINED_FOCUS:
+  // When our app gains focus, we start monitoring the accelerometer.
+  if (engine->accelerometerSensor != NULL) {
+   ASensorEventQueue_enableSensor(engine->sensorEventQueue,
+    engine->accelerometerSensor);
+   // We'd like to get 60 events per second (in us).
+   ASensorEventQueue_setEventRate(engine->sensorEventQueue,
+    engine->accelerometerSensor, (1000L / 60) * 1000);
+  }
   if (engine->sensor2 != NULL) {
    ASensorEventQueue_enableSensor(engine->sensorEventQueue2,
     engine->sensor2);
@@ -1731,23 +1783,23 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
   // Also stop animating.
   engine->animating = 1;
   engine_draw_frame(engine);
-		break;
-	case APP_CMD_LOST_FOCUS:
-		// When our app loses focus, we stop monitoring the accelerometer.
-		// This is to avoid consuming battery while not being used.
-		if (engine->accelerometerSensor != NULL) {
-			ASensorEventQueue_disableSensor(engine->sensorEventQueue,
-				engine->accelerometerSensor);
-		}
+  break;
+ case APP_CMD_LOST_FOCUS:
+  // When our app loses focus, we stop monitoring the accelerometer.
+  // This is to avoid consuming battery while not being used.
+  if (engine->accelerometerSensor != NULL) {
+   ASensorEventQueue_disableSensor(engine->sensorEventQueue,
+    engine->accelerometerSensor);
+  }
   if (engine->sensor2 != NULL) {
    ASensorEventQueue_disableSensor(engine->sensorEventQueue2,
-    engine->sensor2 );
+    engine->sensor2);
   }
   // Also stop animating.
-		engine->animating = 0;
-		engine_draw_frame(engine);
-		break;
-	}
+  engine->animating = 0;
+  engine_draw_frame(engine);
+  break;
+ }
 }
 
 /**
@@ -1763,44 +1815,44 @@ void android_main(struct android_app* state) {
 
  Init_IFEngine();
  //               FREETYPE               SAMPLE START
- if( !InitFreeType(state) ){
+ if (!InitFreeType(state)) {
   return;
  }
 
- 
+
 
  User_Data.state = state;
- 
-//User_Data.state->activity->env;
 
-	struct engine engine;
+ //User_Data.state->activity->env;
 
-	memset(&engine, 0, sizeof(engine));
-	state->userData = &engine;
-	state->onAppCmd = engine_handle_cmd;
-	state->onInputEvent = engine_handle_input;
-	engine.app = state;
+ struct engine engine;
 
-	// Prepare to monitor accelerometer
-	engine.sensorManager = ASensorManager_getInstance();
-	engine.accelerometerSensor = ASensorManager_getDefaultSensor(engine.sensorManager,	ASENSOR_TYPE_ACCELEROMETER);
-	engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager, state->looper, LOOPER_ID_USER, NULL, NULL);
+ memset(&engine, 0, sizeof(engine));
+ state->userData = &engine;
+ state->onAppCmd = engine_handle_cmd;
+ state->onInputEvent = engine_handle_input;
+ engine.app = state;
+
+ // Prepare to monitor accelerometer
+ engine.sensorManager = ASensorManager_getInstance();
+ engine.accelerometerSensor = ASensorManager_getDefaultSensor(engine.sensorManager, ASENSOR_TYPE_ACCELEROMETER);
+ engine.sensorEventQueue = ASensorManager_createEventQueue(engine.sensorManager, state->looper, LOOPER_ID_USER, NULL, NULL);
 
  engine.sensorManager2 = ASensorManager_getInstance();
- engine.sensor2 = ASensorManager_getDefaultSensor(engine.sensorManager2,	ASENSOR_TYPE_LIGHT);
- engine.sensorEventQueue2 = ASensorManager_createEventQueue(engine.sensorManager2, state->looper, LOOPER_ID_USER+1, NULL, NULL);
+ engine.sensor2 = ASensorManager_getDefaultSensor(engine.sensorManager2, ASENSOR_TYPE_LIGHT);
+ engine.sensorEventQueue2 = ASensorManager_createEventQueue(engine.sensorManager2, state->looper, LOOPER_ID_USER + 1, NULL, NULL);
 
 
  p_user_data = &User_Data;
 
 
 
-	if (state->savedState != NULL) {
-		// We are starting with a previous saved state; restore from it.
-		engine.state = *(struct saved_state*)state->savedState;
-	}
+ if (state->savedState != NULL) {
+  // We are starting with a previous saved state; restore from it.
+  engine.state = *(struct saved_state*)state->savedState;
+ }
 
-	engine.animating = 1;
+ engine.animating = 1;
 
 
 
@@ -1820,13 +1872,13 @@ void android_main(struct android_app* state) {
  //----------------------------------------------------                   FANN NETWORK TEST STOP
 
 
-	// loop waiting for stuff to do.
+ // loop waiting for stuff to do.
 
-	while (1) {
-		// Read all pending events.
-		int ident;
-		int events;
-		struct android_poll_source* source;
+ while (1) {
+  // Read all pending events.
+  int ident;
+  int events;
+  struct android_poll_source* source;
 
 
 
@@ -1851,31 +1903,32 @@ void android_main(struct android_app* state) {
   // Check if we are exiting.
 
 
-		// If not animating, we will block forever waiting for events.
-		// If animating, we loop until all events are read, then continue
-		// to draw the next frame of animation.
-		while ((ident = ALooper_pollAll(engine.animating ? 0 : -1, NULL, &events,
-			(void**)&source)) >= 0) {
+  // If not animating, we will block forever waiting for events.
+  // If animating, we loop until all events are read, then continue
+  // to draw the next frame of animation.
+  while ((ident = ALooper_pollAll(engine.animating ? 0 : -1, NULL, &events,
+   (void**)&source)) >= 0) {
 
-			// Process this event.
-			if (source != NULL) {
-				source->process(state, source);
-			}
+   // Process this event.
+   if (source != NULL) {
+    source->process(state, source);
+   }
 
-			// If a sensor has data, process it now.
-			if (ident == LOOPER_ID_USER ) {
-				if (engine.accelerometerSensor != NULL) {
-					ASensorEvent event;
-					while (ASensorEventQueue_getEvents(engine.sensorEventQueue,
-						&event, 1) > 0) {
-						//LOGI("accelerometer: x=%f y=%f z=%f",
-						//	event.acceleration.x, event.acceleration.y,
-						//	event.acceleration.z);
+   // If a sensor has data, process it now.
+   if (ident == LOOPER_ID_USER) {
+    if (engine.accelerometerSensor != NULL) {
+     ASensorEvent event;
+     while (ASensorEventQueue_getEvents(engine.sensorEventQueue,
+      &event, 1) > 0) {
+      //LOGI("accelerometer: x=%f y=%f z=%f",
+      //	event.acceleration.x, event.acceleration.y,
+      //	event.acceleration.z);
       last_x_acceleration = event.acceleration.x;
       last_y_acceleration = event.acceleration.y;
-					}
-				}
-			} else if (ident == (LOOPER_ID_USER + 1)) {
+     }
+    }
+   }
+   else if (ident == (LOOPER_ID_USER + 1)) {
     if (engine.sensor2 != NULL) {
      ASensorEvent event;
      while (ASensorEventQueue_getEvents(engine.sensorEventQueue2,
@@ -1900,12 +1953,12 @@ void android_main(struct android_app* state) {
 
 
 
-			if (state->destroyRequested != 0) {
-				engine_term_display(&engine);
+   if (state->destroyRequested != 0) {
+    engine_term_display(&engine);
     DoneFreeType();
-				return;
-			}
-		}
+    return;
+   }
+  }
 
 
 
@@ -1920,15 +1973,15 @@ void android_main(struct android_app* state) {
 
 
 
-		if (engine.EGL_initialized && engine.animating) {
-			// Done with events; draw next animation frame.
-
-   
+  if (engine.EGL_initialized && engine.animating) {
+   // Done with events; draw next animation frame.
 
 
-			// Drawing is throttled to the screen update rate, so there
-			// is no need to do timing here.
-			engine_draw_frame(&engine);   
-		}
-	}
+
+
+   // Drawing is throttled to the screen update rate, so there
+   // is no need to do timing here.
+   engine_draw_frame(&engine);
+  }
+ }
 }
