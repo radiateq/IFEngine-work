@@ -140,7 +140,7 @@ namespace IFFANNEngine{
   bool LoadCore(char const * const core_name);
   bool UnloadCore();
   bool SaveCore() {
-   IFFANN::Save_Cascade_FANN(&ifann, IFFANN::CnFinalFannPostscript);
+   return IFFANN::Save_Cascade_FANN(&ifann, IFFANN::CnFinalFannPostscript);
   }
  };
  //node map:
