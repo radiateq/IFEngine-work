@@ -49,7 +49,7 @@ IFFANNEngine::CNetwork Network;
 IFFANNEngine::CNode *Node1;
 IFFANNEngine::CNode *Node2;
 unsigned int check_input_data_sets = 0, check_input_data_sets_AI = 0;;
-
+unsigned int input_data_head, input_data_head_count = 0;
 
 
 
@@ -111,8 +111,6 @@ sprintf(char_buffer, "%f\r\n", output[0]);
 FileSystem.Write(char_buffer, strlen(char_buffer));
 FileSystem.Free();
 
- int a = 1;
- a = 3;
 }
 void TESTFN_PostOperations(engine &engine) {
  if (engine.EGL_initialized) {
@@ -454,6 +452,7 @@ void TESTFN_AddRandomBody(engine &engine) {
     }else{
      deleteamount = check_input_data_sets_AI;
     }
+    input_data_head_count--;
     //deleteamount = 0;
 //int ertert = input_data.size();
 //int edddrtert = output_data.size();
@@ -468,10 +467,10 @@ void TESTFN_AddRandomBody(engine &engine) {
     game_body[2]->body->SetTransform(b2Vec2(0, 0), game_body[2]->body->GetAngle());
     game_body[2]->body->SetLinearVelocity(b2Vec2(0, 0));
     game_body[2]->body->SetAngularVelocity(0);
-    static float direction_x = -1.0;
-    game_body[2]->body->ApplyLinearImpulse((b2Vec2((direction_x)* 200.0, (drand48() * -1.0) * 100.0)), game_body[2]->body->GetPosition(), true);
-    direction_x+=0.05;
-    if(direction_x>1.0)direction_x = -1.0;
+    //static float direction_x = -1.0;
+    game_body[2]->body->ApplyLinearImpulse((b2Vec2((drand48()*2.0-1.0)* 350.0, (drand48() * -1.0) * 100.0)), game_body[2]->body->GetPosition(), true);
+    //direction_x+=0.1;
+    //if(direction_x>1.0)direction_x = -1.0;
    }  else {
     //If ball is traveling too slowly towards player (any) accelerate it
     if (abs(game_body[2]->body->GetLinearVelocity().y) < 10.0) {
@@ -563,8 +562,12 @@ void TESTFN_AddRandomBody(engine &engine) {
      if(AIPaddle != LastAIPaddle ){
       if(AIPaddle){
        check_input_data_sets_AI = input_data_sets;
+       input_data_head = input_data_sets;
+       input_data_head_count++;
       }else{
        check_input_data_sets = input_data_sets;
+       input_data_head = input_data_sets;
+       input_data_head_count++;
       }
       LastAIPaddle = AIPaddle;
      }
@@ -645,9 +648,13 @@ void TESTFN_AddRandomBody(engine &engine) {
        //}else{
        // skipnum = 0;
        //}
+       //if (bal_pad_distance < 6.0)
+       // skipnum = 0; 
+       //else
+       // skipnum = bal_pad_distance / 6 ;
        if (skipCnt++ >= skipnum) {
         skipCnt = 0;        
-        if(bal_pad_distance < 6.0)
+        //if(bal_pad_distance < 16.0)
         {
          static float prev_val01 = 0.0f;
          if(AIPaddle){   
@@ -704,12 +711,13 @@ void TESTFN_AddRandomBody(engine &engine) {
          }
          
          input_data_sets=input_data.size() / FANNPong.input_neurons;
-         if (input_data.size() > (250 * FANNPong.input_neurons)) {
-          input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (250 * FANNPong.input_neurons)));
+         if (input_data_head_count >= 5) {
+          input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (input_data_head * FANNPong.input_neurons)));
 //input_data_sets = input_data.size();
           input_data_sets = input_data.size() / FANNPong.input_neurons;
-          output_data.erase(output_data.begin(), output_data.begin() + output_data.size() - 250);
-         }
+          output_data.erase(output_data.begin(), output_data.begin() + output_data.size() - input_data_head);
+          input_data_head_count--;
+         }         
         }
        }
       }
