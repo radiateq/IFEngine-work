@@ -103,13 +103,13 @@ void Train_Cascade_FANN_PaddleBrains_Callback(unsigned int num_data, unsigned in
  //input[4] = input_data[num_data * 5 + 4];
  output[0] = output_data[(num_data) * 1 + 0];
  
-IFGeneralUtils::CFileSystem FileSystem;
-FileSystem.OpenFile(RQNDKUtils::Make_storageDataPath(char_buffer,BUFSIZ,"traindata"), "a");
-sprintf(char_buffer,"%f %f %f %f\r\n", input[0], input[1], input[2], input[3]);
-FileSystem.Write(char_buffer,strlen(char_buffer));
-sprintf(char_buffer, "%f\r\n", output[0]);
-FileSystem.Write(char_buffer, strlen(char_buffer));
-FileSystem.Free();
+//IFGeneralUtils::CFileSystem FileSystem;
+//FileSystem.OpenFile(RQNDKUtils::Make_storageDataPath(char_buffer,BUFSIZ,"traindata"), "a");
+//sprintf(char_buffer,"%f %f %f %f\r\n", input[0], input[1], input[2], input[3]);
+//FileSystem.Write(char_buffer,strlen(char_buffer));
+//sprintf(char_buffer, "%f\r\n", output[0]);
+//FileSystem.Write(char_buffer, strlen(char_buffer));
+//FileSystem.Free();
 
 }
 void TESTFN_PostOperations(engine &engine) {
