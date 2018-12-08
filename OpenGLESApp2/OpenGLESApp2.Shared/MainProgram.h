@@ -45,7 +45,7 @@ struct engine {
 
 struct SFANNPong {
  int max_neurons = 30, neurons_between_reports = 0, input_neurons = 4, output_neurons = 1;
- float desired_error = 0.0, input_scale = 0.001, output_scale = 10.0;
+ float desired_error = 0, input_scale = 0.001, output_scale = 1.00;
 };
 
 
