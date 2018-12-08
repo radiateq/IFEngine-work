@@ -49,7 +49,7 @@ IFFANNEngine::CNetwork Network;
 IFFANNEngine::CNode *Node1;
 IFFANNEngine::CNode *Node2;
 unsigned int check_input_data_sets = 0, check_input_data_sets_AI = 0;;
-unsigned int input_data_head, input_data_head_count = 0;
+unsigned int input_data_head, input_data_head_count = 1;
 
 
 
@@ -517,7 +517,7 @@ void TESTFN_AddRandomBody(engine &engine) {
       TEST_Last_Added_Body_Time = temp_timespec;
      }
     }else{
-     //game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
+     game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x + (drand48()-0.5)*10.0, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
     }
 
 
@@ -560,14 +560,13 @@ void TESTFN_AddRandomBody(engine &engine) {
       AIPaddle = true;
      }
      if(AIPaddle != LastAIPaddle ){
+      input_data_head_count++;
       if(AIPaddle){
        check_input_data_sets_AI = input_data_sets;
-       input_data_head = input_data_sets;
-       input_data_head_count++;
+       input_data_head = input_data_sets;       
       }else{
        check_input_data_sets = input_data_sets;
        input_data_head = input_data_sets;
-       input_data_head_count++;
       }
       LastAIPaddle = AIPaddle;
      }
@@ -608,7 +607,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           *pin_value = -ballposition.x ;
           break;
          case 3:
-          *pin_value = (-paddleposition.y + ballposition.y)* 10.0;
+          *pin_value = (-paddleposition.y + ballposition.y);
           break;
          case 4:
           *pin_value = -paddleposition.y / Node1->ifann.input_scale;
@@ -654,7 +653,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        // skipnum = bal_pad_distance / 6 ;
        if (skipCnt++ >= skipnum) {
         skipCnt = 0;        
-        //if(bal_pad_distance < 16.0)
+        if(bal_pad_distance < 10.0)
         {
          static float prev_val01 = 0.0f;
          if(AIPaddle){   
@@ -674,7 +673,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           }
 
           input_data.push_back(-ballposition.x);
-          input_data.push_back((-paddleposition.y + ballposition.y) * 10.0);
+          input_data.push_back((-paddleposition.y + ballposition.y));
           if (paddleposition.x) {
            output_data.push_back((-paddleposition.x) / PaddleBrains.output_scale);
           }
@@ -696,7 +695,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           }
           //prev_dist = b2Distance(paddleposition, ballposition);
           input_data.push_back(ballposition.x);
-          input_data.push_back((paddleposition.y - ballposition.y) * 10.0);
+          input_data.push_back((paddleposition.y - ballposition.y) );
           //input_data.push_back((paddleposition.x) / PaddleBrains.input_scale);
           //input_data.push_back((paddleposition.y) / PaddleBrains.input_scale);
           //output_data.push_back(paddleposition.x / PaddleBrains.output_scale);
@@ -711,7 +710,7 @@ void TESTFN_AddRandomBody(engine &engine) {
          }
          
          input_data_sets=input_data.size() / FANNPong.input_neurons;
-         if (input_data_head_count >= 5) {
+         if (input_data_head_count >= 150) {
           input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (input_data_head * FANNPong.input_neurons)));
 //input_data_sets = input_data.size();
           input_data_sets = input_data.size() / FANNPong.input_neurons;

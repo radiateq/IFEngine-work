@@ -43,17 +43,27 @@ namespace IFFANN {
 
   //Setup network
   fann_set_training_algorithm(ifann->ann, FANN_TRAIN_RPROP);//Option is FANN_TRAIN_QUICKPROP FANN_TRAIN_RPROP
-  fann_set_activation_function_hidden(ifann->ann, FANN_SIGMOID_SYMMETRIC);//FANN_LINEAR FANN_SIGMOID_SYMMETRIC
+  fann_set_activation_function_hidden(ifann->ann, FANN_LINEAR);//FANN_LINEAR FANN_SIGMOID_SYMMETRIC
   fann_set_activation_function_output(ifann->ann, FANN_LINEAR);
   fann_set_train_error_function(ifann->ann, FANN_ERRORFUNC_LINEAR);
-  fann_type steepness;
-  steepness = 0.5;
+  fann_type steepness[10];
+  steepness[0]=0.1;
+  steepness[1] = 0.2;
+  steepness[2] = 0.3;
+  steepness[3] = 0.4;
+  steepness[4] = 0.5;
+  steepness[5] = 0.6;
+  steepness[6] = 0.7;
+  steepness[7] = 0.8;
+  steepness[8] = 0.9;
+  steepness[9] = 1.0;
+  
   //steepness = 1;
-  fann_set_cascade_activation_steepnesses(ifann->ann, &steepness, 1);
-  enum fann_activationfunc_enum activation;
+  fann_set_cascade_activation_steepnesses(ifann->ann, steepness, 10);
+  enum fann_activationfunc_enum activation[]= {FANN_SIGMOID, FANN_SIGMOID_SYMMETRIC, FANN_GAUSSIAN, FANN_GAUSSIAN_SYMMETRIC, FANN_ELLIOT, FANN_ELLIOT_SYMMETRIC};
   //activation = FANN_SIN_SYMMETRIC;
-  activation = FANN_SIGMOID_SYMMETRIC;
-  fann_set_cascade_activation_functions(ifann->ann, &activation, 1);
+  //activation = FANN_SIGMOID_SYMMETRIC;
+  fann_set_cascade_activation_functions(ifann->ann, activation, 6);
   fann_set_cascade_num_candidate_groups(ifann->ann, 8);
   //For multi layer neworks STOP 
   if (ifann->ann->training_algorithm == FANN_TRAIN_QUICKPROP) {

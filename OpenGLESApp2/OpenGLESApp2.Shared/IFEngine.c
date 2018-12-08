@@ -72,10 +72,10 @@ void DrawBodies() {
   ifTbodyDefinition *pifebody = BodiesList.bodies[bodies_count];
   //pifebody->vertices;
   //pifebody->indices;
-  if (pifebody->vertices_mode == GL_LINES) {
-   int a = 0;
-   a++;
-  }
+  //if (pifebody->vertices_mode == GL_LINES) {
+  // int a = 0;
+  // a++;
+  //}
   //load vertices
   
   //GLfloat *vertices = new GLfloat[ 1 * 2];
