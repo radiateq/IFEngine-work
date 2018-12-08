@@ -488,6 +488,8 @@ void TESTFN_AddRandomBody(engine &engine) {
       }
       TEST_Last_Added_Body_Time = temp_timespec;
      }
+    }else{
+     //game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
     }
 
 
@@ -581,10 +583,14 @@ void TESTFN_AddRandomBody(engine &engine) {
        while (0 <= Network.NodeRegister.OutputPinRegister.output_pins.GetNextIterator(ID, pin_value)) {
         if (pin_value) {
          fann_type val = *pin_value * Node1->ifann.output_scale;
-         b2Vec2 position = game_body[4]->body->GetPosition();
-         game_body[4]->body->SetTransform(b2Vec2(-val * 1.0, position.y), game_body[4]->body->GetAngle());
-         //if (game_body[4]->body->GetPosition().x < left)game_body[4]->body->SetTransform(b2Vec2(left, position.y), game_body[4]->body->GetAngle());
-         //if (game_body[4]->body->GetPosition().x > right)game_body[4]->body->SetTransform(b2Vec2(right, position.y), game_body[4]->body->GetAngle());
+         b2Vec2 position = game_body[4]->body->GetPosition();        
+         
+         //float positionx = position.x+((val - position.x) * 0.001) / (IFAdapter.timeStep*speedFactor);
+         //game_body[4]->body->SetTransform(b2Vec2(positionx, position.y), game_body[4]->body->GetAngle());
+         game_body[4]->body->SetTransform(b2Vec2(-val, position.y), game_body[4]->body->GetAngle());
+
+         if (game_body[4]->body->GetPosition().x < left)game_body[4]->body->SetTransform(b2Vec2(left, position.y), game_body[4]->body->GetAngle());
+         if (game_body[4]->body->GetPosition().x > right)game_body[4]->body->SetTransform(b2Vec2(right, position.y), game_body[4]->body->GetAngle());
         }
        }
       }
@@ -594,7 +600,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        static float prev_padx = 0;
        if (skipCnt++ == 0) {
         skipCnt = 0;        
-        if((b2Distance(paddleposition, ballposition) < 3.0))
+        if((b2Distance(paddleposition, ballposition) < 7.0))
         {
          static float prev_val01 = 0.0f;
          if(AIPaddle){   
