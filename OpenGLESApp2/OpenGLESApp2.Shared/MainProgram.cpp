@@ -49,8 +49,13 @@ IFFANNEngine::CNetwork Network;
 IFFANNEngine::CNode *Node1;
 IFFANNEngine::CNode *Node2;
 unsigned int check_input_data_sets = 0, check_input_data_sets_AI = 0;;
-unsigned int input_data_head, input_data_head_count = 1;
-
+unsigned int input_data_head, input_data_head_count = 0; 
+//#define TEST_DELTAS 4
+//float ndelta_x[TEST_DELTAS+1];
+//float ndelta_y[TEST_DELTAS +1];
+//float train_ndelta_x[TEST_DELTAS +1];
+//float train_ndelta_y[TEST_DELTAS+1];
+bool LastAIPaddle = false;
 
 
 void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
@@ -96,21 +101,24 @@ void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_
 
 }
 void Train_Cascade_FANN_PaddleBrains_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
- input[0] = input_data[num_data * 4 + 0];
- input[1] = input_data[num_data * 4 + 1];
- input[2] = input_data[num_data * 4 + 2];
- input[3] = input_data[num_data * 4 + 3];
+ for(unsigned int cnt = 0; cnt < FANNPong.input_neurons; cnt++ ){
+  input[cnt] = input_data[num_data * FANNPong.input_neurons + cnt];
+ }
+ //input[1] = input_data[num_data * 4 + 1];
+ //input[2] = input_data[num_data * 4 + 2];
+ //input[3] = input_data[num_data * 4 + 3];
  //input[4] = input_data[num_data * 5 + 4];
  output[0] = output_data[(num_data) * 1 + 0];
  
-IFGeneralUtils::CFileSystem FileSystem;
-FileSystem.OpenFile(RQNDKUtils::Make_storageDataPath(char_buffer,BUFSIZ,"traindata"), "a");
-sprintf(char_buffer,"%f %f %f %f\r\n", input[0], input[1], input[2], input[3]);
-FileSystem.Write(char_buffer,strlen(char_buffer));
-sprintf(char_buffer, "%f\r\n", output[0]);
-FileSystem.Write(char_buffer, strlen(char_buffer));
-FileSystem.Free();
-
+//IFGeneralUtils::CFileSystem FileSystem;
+//FileSystem.OpenFile(RQNDKUtils::Make_storageDataPath(char_buffer,BUFSIZ,"traindata"), "a");
+////sprintf(char_buffer,"%f %f %f %f %f\r\n", input[0], input[1], input[2], input[3], input[4]);
+//sprintf(char_buffer, "%f %f %f %f\r\n", input[0], input[1], input[2], input[3]);
+//FileSystem.Write(char_buffer,strlen(char_buffer));
+//sprintf(char_buffer, "%f\r\n", output[0]);
+//FileSystem.Write(char_buffer, strlen(char_buffer));
+//FileSystem.Free();
+//
 }
 void TESTFN_PostOperations(engine &engine) {
  if (engine.EGL_initialized) {
@@ -388,11 +396,12 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
 
-   memset(&PaddleBrains,0,sizeof(PaddleBrains));
+   //memset(&PaddleBrains,0,sizeof(PaddleBrains)/);
    if (IFFANN::Check_Save_Cascade_FANN("pongpaddle", IFFANN::CnTrainedFannPostscript)) {
     IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
-   }
-   if (!PaddleBrains.ann) IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+   }   
+   FANNPong.input_neurons = 4;
+   if ((!PaddleBrains.ann)|| (PaddleBrains.ann->num_input != FANNPong.input_neurons) || (PaddleBrains.ann->num_output != FANNPong.output_neurons)) IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
    //IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
 
    Pong_Learning_Phase = false;
@@ -407,7 +416,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
    FANNPongBounce.input_neurons = 3;
    Node2 = new IFFANNEngine::CNode;
-   memset(&Node2->ifann, 0, sizeof(Node2->ifann));
+   //memset(&Node2->ifann, 0, sizeof(Node2->ifann));
    if (IFFANN::Check_Save_Cascade_FANN("pongpaddlebounce", IFFANN::CnTrainedFannPostscript)) {
     IFFANN::Load_Cascade_FANN(&Node2->ifann, "pongpaddlebounce", IFFANN::CnTrainedFannPostscript);
    }
@@ -471,6 +480,11 @@ void TESTFN_AddRandomBody(engine &engine) {
     game_body[2]->body->ApplyLinearImpulse((b2Vec2((drand48()*2.0-1.0)* 350.0, (drand48() * -1.0) * 100.0)), game_body[2]->body->GetPosition(), true);
     //direction_x+=0.1;
     //if(direction_x>1.0)direction_x = -1.0;
+
+    //for(unsigned int cnt = 0; cnt < sizeof(ndelta_x)/ sizeof(ndelta_x[0]); cnt++){
+    // ndelta_x[cnt] = ndelta_y[cnt] = 0;
+    //}
+
    }  else {
     //If ball is traveling too slowly towards player (any) accelerate it
     if (abs(game_body[2]->body->GetLinearVelocity().y) < 10.0) {
@@ -555,7 +569,7 @@ void TESTFN_AddRandomBody(engine &engine) {
      b2Vec2 ballposition = game_body[2]->body->GetPosition();
      b2Vec2 paddleposition;
      bool AIPaddle = false;
-     static bool LastAIPaddle = AIPaddle;
+     
      if (ballposition.y > 0) {
       AIPaddle = true;
      }
@@ -569,23 +583,31 @@ void TESTFN_AddRandomBody(engine &engine) {
        input_data_head = input_data_sets;
       }
       LastAIPaddle = AIPaddle;
+      //for (unsigned int cnt = 0; cnt < sizeof(train_ndelta_x)/ sizeof(train_ndelta_x[0]); cnt++) {
+      // train_ndelta_x[cnt] = train_ndelta_y[cnt] = 0;
+      //}
+
+
      }
 
-     if (AIPaddle) {
-      paddleposition = game_body[4]->body->GetPosition();
-     }
-     else {
-      paddleposition = game_body[3]->body->GetPosition();
-     }
      {
-      if (AIPaddle) {
+      if (AIPaddle == AIPaddle) {
+       paddleposition = game_body[4]->body->GetPosition();
        unsigned int ID;
        fann_type *pin_value;
        //Set all inputs to some value
        Network.NodeRegister.InputPinRegister.input_pins.ResetIterator();
-       while (0 <= Network.NodeRegister.InputPinRegister.input_pins.GetNextIterator(ID, pin_value)) {        
+       //ndelta_x[0] = -ballposition.x;
+       //ndelta_y[0] = -ballposition.y;
+       while (0 <= Network.NodeRegister.InputPinRegister.input_pins.GetNextIterator(ID, pin_value)) {
         if(Node1 == Network.GetNodeByPinID(ID)){
-         switch (Network.GetNodeByPinID(ID)->GetInPinByID(ID)->fann_index) {
+         unsigned int pinindex = Network.GetNodeByPinID(ID)->GetInPinByID(ID)->fann_index;
+         //if(pinindex <20){
+         // *pin_value = ndelta_x[pinindex] = ndelta_x[pinindex +1]- ndelta_x[pinindex];
+         //}else if (pinindex < 40) {
+         // *pin_value = ndelta_y[pinindex -20] = ndelta_y[pinindex + 1-20] - ndelta_y[pinindex -20];
+         //}
+         switch (pinindex) {
          case 0:
           static float prev_val01 = 0.0f;
           if((prev_val01 - b2Distance(ballposition, paddleposition))){
@@ -604,7 +626,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           }
           break;
          case 2:
-          *pin_value = -ballposition.x ;
+          *pin_value = -ballposition.x/10.0 ;
           break;
          case 3:
           if(ballposition.x< 0){
@@ -615,7 +637,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           *pin_value/=10.0;
           break;
          case 4:
-          *pin_value = -paddleposition.y / Node1->ifann.input_scale;
+          *pin_value = -game_body[4]->body->GetPosition().x;
           break;
          };
         }
@@ -635,18 +657,24 @@ void TESTFN_AddRandomBody(engine &engine) {
           //game_body[4]->body->SetTransform(b2Vec2(positionx, position.y), game_body[4]->body->GetAngle());
           game_body[4]->body->SetTransform(b2Vec2(-val, position.y), game_body[4]->body->GetAngle());
 
-          if (game_body[4]->body->GetPosition().x < left)game_body[4]->body->SetTransform(b2Vec2(left, position.y), game_body[4]->body->GetAngle());
-          if (game_body[4]->body->GetPosition().x > right)game_body[4]->body->SetTransform(b2Vec2(right, position.y), game_body[4]->body->GetAngle());
+          if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
+          if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
          }
         }
        }
       }
-      if(true==true) {
+      if (!AIPaddle) {
+       paddleposition = game_body[3]->body->GetPosition();
+      }
+
+      //Store data to train
+      if(abs(paddleposition.y) >= abs(ballposition.y)) {
        static int skipCnt = 0;
        static float prev_dist = 0;
        static float prev_padx = 0;
        static float skipnum = 0;
        float bal_pad_distance = b2Distance(paddleposition, ballposition);
+
        //if (bal_pad_distance > 6.0){
        // skipnum = bal_pad_distance*2;
        //}else{
@@ -655,10 +683,10 @@ void TESTFN_AddRandomBody(engine &engine) {
        //if (bal_pad_distance < 6.0)
        // skipnum = 0; 
        //else
-       // skipnum = bal_pad_distance / 6 ;
+       // skipnum = 2;
        if (skipCnt++ >= skipnum) {
         skipCnt = 0;        
-        //if(bal_pad_distance < 6.0)
+        if(bal_pad_distance < 8.0)
         {
          static float prev_val01 = 0.0f;
          if(AIPaddle){   
@@ -677,7 +705,7 @@ void TESTFN_AddRandomBody(engine &engine) {
            input_data.push_back(0);
           }
 
-          input_data.push_back(-ballposition.x);
+          input_data.push_back(-ballposition.x/10.0);
 
 
           if (ballposition.x < 0) {
@@ -686,9 +714,16 @@ void TESTFN_AddRandomBody(engine &engine) {
           else {
            input_data.push_back((right - ballposition.x) / 10.0);
           }
-          //input_data.push_back((-paddleposition.y + ballposition.y));
+         // input_data.push_back(-game_body[4]->body->GetPosition().x);
 
-
+          //train_ndelta_x[0] = -ballposition.x;
+          //train_ndelta_y[0] = -ballposition.y;
+          //for(unsigned int cnt = 0; cnt < sizeof(train_ndelta_x)/ sizeof(train_ndelta_x[0]); cnt++){
+          // input_data.push_back((train_ndelta_x[cnt] = train_ndelta_x[cnt+1] - train_ndelta_x[cnt]));
+          //}
+          //for (unsigned int cnt = 0; cnt < sizeof(train_ndelta_y)/ sizeof(train_ndelta_y[0]); cnt++) {
+          // input_data.push_back((train_ndelta_y[cnt] = train_ndelta_y[cnt + 1] - train_ndelta_y[cnt]));
+          //}
           if (paddleposition.x) {
            output_data.push_back((-paddleposition.x) / PaddleBrains.output_scale);
           }
@@ -697,6 +732,15 @@ void TESTFN_AddRandomBody(engine &engine) {
           }
           prev_padx = -paddleposition.x;
          }else{
+
+          //train_ndelta_x[0] = ballposition.x;
+          //train_ndelta_y[0] = ballposition.y;
+          //for (unsigned int cnt = 0; cnt < sizeof(train_ndelta_x)/ sizeof(train_ndelta_x[0]); cnt++) {
+          // input_data.push_back((train_ndelta_x[cnt] = train_ndelta_x[cnt + 1] - train_ndelta_x[cnt]));
+          //}
+          //for (unsigned int cnt = 0; cnt < sizeof(train_ndelta_y)/sizeof(train_ndelta_y[0]); cnt++) {
+          // input_data.push_back((train_ndelta_y[cnt] = train_ndelta_y[cnt + 1] - train_ndelta_y[cnt]));
+          //}
           if((prev_val01 - b2Distance(paddleposition, ballposition))){
            input_data.push_back((prev_val01 - b2Distance(paddleposition, ballposition)) / PaddleBrains.input_scale);
           }else{
@@ -709,13 +753,14 @@ void TESTFN_AddRandomBody(engine &engine) {
            input_data.push_back(0);
           }
           //prev_dist = b2Distance(paddleposition, ballposition);
-          input_data.push_back(ballposition.x);
+          input_data.push_back(ballposition.x/10.0);
           if (ballposition.x < 0) {
            input_data.push_back((left - ballposition.x)/10.0);
           }
           else {
            input_data.push_back(-(right - ballposition.x)/10.0);
           }
+         // input_data.push_back(game_body[3]->body->GetPosition().x);
           //input_data.push_back((paddleposition.y - ballposition.y) );
           //input_data.push_back((paddleposition.x) / PaddleBrains.input_scale);
           //input_data.push_back((paddleposition.y) / PaddleBrains.input_scale);
@@ -731,7 +776,7 @@ void TESTFN_AddRandomBody(engine &engine) {
          }
          
          input_data_sets=input_data.size() / FANNPong.input_neurons;
-         if (input_data_head_count >= 10) {
+         if (input_data_head_count >= 20) {
           input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (input_data_head * FANNPong.input_neurons)));
 //input_data_sets = input_data.size();
           input_data_sets = input_data.size() / FANNPong.input_neurons;
@@ -776,8 +821,9 @@ void TESTFN_AddRandomBody(engine &engine) {
     return;
    buttons_body[0]->OGL_body->texture_ID = User_Data.CubeTexture;
 
-
-   memset(TEST_GUI_Tex_Ary, GL_INVALID_VALUE, sizeof(TEST_GUI_Tex_Ary[0]) * sizeof(TEST_GUI_Tex_Ary));
+   for (unsigned int cnt = 0; cnt < sizeof(TEST_GUI_Tex_Ary)/ sizeof(TEST_GUI_Tex_Ary[0]); cnt++) {
+    TEST_GUI_Tex_Ary[cnt] = GL_INVALID_VALUE;
+   }
 
 
    IFAdapter.OrderBody();

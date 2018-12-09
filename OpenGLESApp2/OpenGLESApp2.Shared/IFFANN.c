@@ -45,7 +45,7 @@ namespace IFFANN {
   fann_set_training_algorithm(ifann->ann, FANN_TRAIN_RPROP);//Option is FANN_TRAIN_QUICKPROP FANN_TRAIN_RPROP
   fann_set_activation_function_hidden(ifann->ann, FANN_LINEAR);//FANN_LINEAR FANN_SIGMOID_SYMMETRIC
   fann_set_activation_function_output(ifann->ann, FANN_LINEAR);
-  fann_set_train_error_function(ifann->ann, FANN_ERRORFUNC_LINEAR);
+  fann_set_train_error_function(ifann->ann, FANN_ERRORFUNC_TANH);
   fann_type steepness[10];
   steepness[0]=0.1;
   steepness[1] = 0.2;
@@ -67,10 +67,10 @@ namespace IFFANN {
   //fann_set_cascade_num_candidate_groups(ifann->ann, 8);
   //For multi layer neworks STOP 
   if (ifann->ann->training_algorithm == FANN_TRAIN_QUICKPROP) {
-   fann_set_learning_rate(ifann->ann, 0.35f);
+   fann_set_learning_rate(ifann->ann, 0.3f);
    fann_randomize_weights(ifann->ann, -2.0f, 2.0f);
   }
-  fann_set_bit_fail_limit(ifann->ann, (fann_type)0.1);
+  fann_set_bit_fail_limit(ifann->ann, (fann_type)0.9);
   fann_set_train_stop_function(ifann->ann, FANN_STOPFUNC_BIT);
   //fann_print_parameters(ifann->ann);
   Save_Cascade_FANN(ifann, CnCleanFannPostscript);

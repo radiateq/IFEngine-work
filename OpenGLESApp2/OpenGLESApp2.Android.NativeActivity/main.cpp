@@ -196,7 +196,9 @@ static void engine_term_display(struct engine* engine) {
  glDeleteTextures(1, &User_Data.CubeTexture);
  User_Data.CubeTexture = GL_INVALID_VALUE;
  glDeleteTextures(10, TEST_GUI_Tex_Ary);
- memset(TEST_GUI_Tex_Ary, GL_INVALID_VALUE, sizeof(TEST_GUI_Tex_Ary[0]) * sizeof(TEST_GUI_Tex_Ary));
+ for(unsigned int cnt = 0; cnt < sizeof(TEST_GUI_Tex_Ary)/ sizeof(TEST_GUI_Tex_Ary[0]); cnt++){
+  TEST_GUI_Tex_Ary[cnt] = GL_INVALID_VALUE;
+ }
 
 
  IFAudioSLES::TearDownAudioEngine();
