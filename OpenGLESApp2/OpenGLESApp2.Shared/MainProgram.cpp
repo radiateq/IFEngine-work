@@ -531,7 +531,8 @@ void TESTFN_AddRandomBody(engine &engine) {
       TEST_Last_Added_Body_Time = temp_timespec;
      }
     }else{
-     game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x + (drand48()-0.5)*2.0, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
+     //Auto paddle
+     //game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x + (drand48()-0.5)*2.0, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
     }
 
 
