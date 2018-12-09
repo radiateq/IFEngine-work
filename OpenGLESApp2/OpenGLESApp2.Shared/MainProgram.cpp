@@ -103,13 +103,13 @@ void Train_Cascade_FANN_PaddleBrains_Callback(unsigned int num_data, unsigned in
  //input[4] = input_data[num_data * 5 + 4];
  output[0] = output_data[(num_data) * 1 + 0];
  
-//IFGeneralUtils::CFileSystem FileSystem;
-//FileSystem.OpenFile(RQNDKUtils::Make_storageDataPath(char_buffer,BUFSIZ,"traindata"), "a");
-//sprintf(char_buffer,"%f %f %f %f\r\n", input[0], input[1], input[2], input[3]);
-//FileSystem.Write(char_buffer,strlen(char_buffer));
-//sprintf(char_buffer, "%f\r\n", output[0]);
-//FileSystem.Write(char_buffer, strlen(char_buffer));
-//FileSystem.Free();
+IFGeneralUtils::CFileSystem FileSystem;
+FileSystem.OpenFile(RQNDKUtils::Make_storageDataPath(char_buffer,BUFSIZ,"traindata"), "a");
+sprintf(char_buffer,"%f %f %f %f\r\n", input[0], input[1], input[2], input[3]);
+FileSystem.Write(char_buffer,strlen(char_buffer));
+sprintf(char_buffer, "%f\r\n", output[0]);
+FileSystem.Write(char_buffer, strlen(char_buffer));
+FileSystem.Free();
 
 }
 void TESTFN_PostOperations(engine &engine) {
@@ -517,7 +517,7 @@ void TESTFN_AddRandomBody(engine &engine) {
       TEST_Last_Added_Body_Time = temp_timespec;
      }
     }else{
-     game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x + (drand48()-0.5)*10.0, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
+     game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x + (drand48()-0.5)*2.0, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
     }
 
 
@@ -607,7 +607,12 @@ void TESTFN_AddRandomBody(engine &engine) {
           *pin_value = -ballposition.x ;
           break;
          case 3:
-          *pin_value = (-paddleposition.y + ballposition.y);
+          if(ballposition.x< 0){
+           *pin_value = -(left- ballposition.x)/10.0;
+           }else{
+           *pin_value = (right - ballposition.x)/10.0;
+          }
+          *pin_value/=10.0;
           break;
          case 4:
           *pin_value = -paddleposition.y / Node1->ifann.input_scale;
@@ -653,7 +658,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        // skipnum = bal_pad_distance / 6 ;
        if (skipCnt++ >= skipnum) {
         skipCnt = 0;        
-        if(bal_pad_distance < 10.0)
+        //if(bal_pad_distance < 6.0)
         {
          static float prev_val01 = 0.0f;
          if(AIPaddle){   
@@ -673,7 +678,17 @@ void TESTFN_AddRandomBody(engine &engine) {
           }
 
           input_data.push_back(-ballposition.x);
-          input_data.push_back((-paddleposition.y + ballposition.y));
+
+
+          if (ballposition.x < 0) {
+           input_data.push_back(-(left - ballposition.x)/10.0);
+          }
+          else {
+           input_data.push_back((right - ballposition.x) / 10.0);
+          }
+          //input_data.push_back((-paddleposition.y + ballposition.y));
+
+
           if (paddleposition.x) {
            output_data.push_back((-paddleposition.x) / PaddleBrains.output_scale);
           }
@@ -695,7 +710,13 @@ void TESTFN_AddRandomBody(engine &engine) {
           }
           //prev_dist = b2Distance(paddleposition, ballposition);
           input_data.push_back(ballposition.x);
-          input_data.push_back((paddleposition.y - ballposition.y) );
+          if (ballposition.x < 0) {
+           input_data.push_back((left - ballposition.x)/10.0);
+          }
+          else {
+           input_data.push_back(-(right - ballposition.x)/10.0);
+          }
+          //input_data.push_back((paddleposition.y - ballposition.y) );
           //input_data.push_back((paddleposition.x) / PaddleBrains.input_scale);
           //input_data.push_back((paddleposition.y) / PaddleBrains.input_scale);
           //output_data.push_back(paddleposition.x / PaddleBrains.output_scale);
@@ -710,7 +731,7 @@ void TESTFN_AddRandomBody(engine &engine) {
          }
          
          input_data_sets=input_data.size() / FANNPong.input_neurons;
-         if (input_data_head_count >= 150) {
+         if (input_data_head_count >= 10) {
           input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (input_data_head * FANNPong.input_neurons)));
 //input_data_sets = input_data.size();
           input_data_sets = input_data.size() / FANNPong.input_neurons;

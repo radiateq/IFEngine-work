@@ -64,13 +64,13 @@ namespace IFFANN {
   //activation = FANN_SIN_SYMMETRIC;
   //activation = FANN_SIGMOID_SYMMETRIC;
   fann_set_cascade_activation_functions(ifann->ann, activation, 6);
-  fann_set_cascade_num_candidate_groups(ifann->ann, 8);
+  //fann_set_cascade_num_candidate_groups(ifann->ann, 8);
   //For multi layer neworks STOP 
   if (ifann->ann->training_algorithm == FANN_TRAIN_QUICKPROP) {
    fann_set_learning_rate(ifann->ann, 0.35f);
    fann_randomize_weights(ifann->ann, -2.0f, 2.0f);
   }
-  fann_set_bit_fail_limit(ifann->ann, (fann_type)0.9);
+  fann_set_bit_fail_limit(ifann->ann, (fann_type)0.1);
   fann_set_train_stop_function(ifann->ann, FANN_STOPFUNC_BIT);
   //fann_print_parameters(ifann->ann);
   Save_Cascade_FANN(ifann, CnCleanFannPostscript);
