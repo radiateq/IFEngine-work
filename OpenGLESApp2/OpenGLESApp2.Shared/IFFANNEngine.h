@@ -97,6 +97,8 @@ namespace IFFANNEngine{
  // -node ID
  class CNode{
  public:
+ //When this value is set to false, node is not added to run queue in CNetwork::Run command
+  bool IsRunning = true;
   CNodeRegister *NodeRegister;
   unsigned int ID;
   IFS_Cascade_FANN ifann;
@@ -292,7 +294,9 @@ namespace IFFANNEngine{
    while(0<=NodeRegister.InputPinRegister.input_pins.GetNextIterator(pin_ID, pin_data)){
     NodeRegister.PinToNode.pin_to_node_ID.Get(pin_ID, node_ID);
     NodeRegister.nodes_by_ID.Get(node_ID, ExecuteContainer.Node);
-    NodesToRun.Add(node_ID, ExecuteContainer);
+    if( (*NodeRegister.nodes_by_ID.GetRef(node_ID))->IsRunning ){
+     NodesToRun.Add(node_ID, ExecuteContainer);
+    }
    }
    while(NodesToRun.Map.size()>0){
     //2. execute all those nodes
