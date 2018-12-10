@@ -64,6 +64,7 @@ bool train_bounce_network = false, train_input_bounce_set = false;
 unsigned int BounceBrainTrainSizeLimit = 60, PaddleBrainsTrainSizeLimit = 10;
 //NODE 3 -------   TEMPLATE FOR CLASS START
 //node 3 selects what node to use based on x and y and linvel immediately after leaving players pad
+
 //NODE 3 -------   TEMPLATE FOR CLASS STOP
 
 
