@@ -54,7 +54,7 @@ namespace IFFANN{
 //Returns true if save exists
  bool const Check_Save_Cascade_FANN(char const * const unique_name, char const * const state_name);
 
- void Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback, unsigned int num_data);
+ bool Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback, unsigned int num_data, int load_save_train = 0 );
 
  fann_type *Run_Cascade_FANN(IFS_Cascade_FANN *ifann, fann_type *inputs);
 };

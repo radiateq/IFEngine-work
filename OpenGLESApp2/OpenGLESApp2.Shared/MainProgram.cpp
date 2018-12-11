@@ -36,6 +36,8 @@ ifCB2Body *last_touched_object = NULL;
 GLuint TEST_GUI_Tex_Ary[10] = { 0 };
 ifCB2Body *buttons_body[10];
 //DEMO 4 - Simple Game
+struct timespec Last_GUI_Click_Time;
+bool AutoPlayer = true;
 char char_buffer[BUFSIZ];
 ifCB2Body *game_body[10];
 bool DEMO4_initialized = false;
@@ -61,7 +63,7 @@ unsigned int bounce_data_counter = 0;
 int ball_state = -1;
 int ball_enter_leave = -1;
 bool train_bounce_network = false, train_input_bounce_set = false;
-unsigned int BounceBrainTrainSizeLimit = 60, PaddleBrainsTrainSizeLimit = 10;
+unsigned int BounceBrainTrainSizeLimit = 40, PaddleBrainsTrainSizeLimit = 20;
 //NODE 3 -------   TEMPLATE FOR CLASS START
 //selects what node to use based on x and y and linvel immediately after leaving players pad
 
@@ -482,13 +484,14 @@ void TESTFN_AddRandomBody(engine &engine) {
    IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
    IFFANN::Save_Cascade_FANN(&PaddleBrains, IFFANN::CnFinalFannPostscript);
    Node1->LoadCore("pongpaddle");
+   
 
 
    FANNPongBounce.input_neurons = 6;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
-   FANNPongBounce.max_neurons = 25;
-   FANNPongBounce.desired_error = 0.000001;
-   FANNPongBounce.input_scale = 0.1;
-   FANNPongBounce.output_scale = 0.1;
+   FANNPongBounce.max_neurons = 300;
+   FANNPongBounce.desired_error = 0.000000;
+   FANNPongBounce.input_scale = 1.0;
+   FANNPongBounce.output_scale = 1.0;
    Node2 = new IFFANNEngine::CNode;   
    Node2->IsRunning = false;
    if (IFFANN::Check_Save_Cascade_FANN("pongpaddlebounce", IFFANN::CnTrainedFannPostscript)) {
@@ -498,6 +501,20 @@ void TESTFN_AddRandomBody(engine &engine) {
     IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node2->ifann), FANNPongBounce.input_neurons, FANNPongBounce.output_neurons, "pongpaddlebounce"), FANNPongBounce.max_neurons, FANNPongBounce.neurons_between_reports, FANNPongBounce.desired_error, FANNPongBounce.input_scale, FANNPongBounce.output_scale);
    Network.NodeRegister.Register(Node2);
    IFFANN::Load_Cascade_FANN(&Node2->ifann, "pongpaddlebounce", IFFANN::CnTrainedFannPostscript);
+   if (IFFANN::Train_Cascade_FANN(&Node2->ifann, NULL, 0, 1)) {
+    bounce_input_data.clear();
+    bounce_output_data.clear();
+    for (unsigned int cnt = 0; cnt < Node2->ifann.ann_train->train_data->num_data; cnt++) {
+     for (unsigned int inputcnt = 0; inputcnt < Node2->ifann.ann_train->train_data->num_input; inputcnt++) {
+      bounce_input_data.push_back(Node2->ifann.ann_train->train_data->input[cnt][inputcnt]);
+     }
+     for (unsigned int outputcnt = 0; outputcnt < Node2->ifann.ann_train->train_data->num_output; outputcnt++) {
+      bounce_output_data.push_back(Node2->ifann.ann_train->train_data->output[cnt][outputcnt]);
+     }
+    }
+    bounce_data_counter = Node2->ifann.ann_train->train_data->num_data;
+   }
+
    IFFANN::Save_Cascade_FANN(&Node2->ifann, IFFANN::CnFinalFannPostscript);
    Node2->LoadCore("pongpaddlebounce");
    
@@ -593,7 +610,7 @@ void TESTFN_AddRandomBody(engine &engine) {
      clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
      //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
      unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
-     if (temp_int64 > 1) {
+     if (temp_int64 > 0) {
       {
        IFGameEditor::GetTouchEvent(&touchx, &touchy);
 
@@ -604,7 +621,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        game_body[3]->body->SetTransform(b2Vec2(screenx / IFA_box2D_factor, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
        
        //Player may press train button but not more often than once per second
-       if (temp_int64 > 1000) {
+       if (temp_int64 > 300) {
         typename std::list<ifCB2Body*>::iterator iter;
         for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
          if (game_body[5] == *iter) {
@@ -612,21 +629,22 @@ void TESTFN_AddRandomBody(engine &engine) {
            //while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
 
            //if (input_data_sets > 20) {
-           Pong_Learning_Phase = true;
+           //Pong_Learning_Phase = true;
+           AutoPlayer = !AutoPlayer;
            //}
 
            break;
           }
          }
-        }
+        }        
+        Last_GUI_Click_Time = temp_timespec;
        }
 
-      }
-      TEST_Last_Added_Body_Time = temp_timespec;
+      }      
      }
     }else{
-     //Auto paddle
-     game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x + (drand48()-0.5)*2.0, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
+     if(AutoPlayer)
+      game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x + (drand48()-0.5)*2.0, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
     }
 
 
@@ -654,6 +672,24 @@ void TESTFN_AddRandomBody(engine &engine) {
       clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
       TEST_Last_Added_Body_Time = temp_timespec;
      }
+     //Train network
+     if (train_bounce_network) {
+      train_bounce_network = false;
+      ball_state = -1;
+      IFFANNEngine::IFS_Cascade_FANN PaddleBounceBrains;
+      IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBounceBrains), FANNPongBounce.input_neurons, FANNPongBounce.output_neurons, "pongpaddlebounce"), FANNPongBounce.max_neurons, FANNPongBounce.neurons_between_reports, FANNPongBounce.desired_error, FANNPongBounce.input_scale, FANNPongBounce.output_scale);
+      IFFANN::Train_Cascade_FANN(&PaddleBounceBrains, Train_Cascade_FANN_PaddleBrainsBounce_Callback, bounce_data_counter,2);
+      IFFANN::Load_Cascade_FANN(&PaddleBounceBrains, "pongpaddlebounce", IFFANN::CnTrainedFannPostscript);
+      IFFANN::Save_Cascade_FANN(&PaddleBounceBrains, IFFANN::CnFinalFannPostscript);
+      Node2->UnloadCore();
+      Network.NodeRegister.Unregister(Node2);
+      bool noderun = Node2->IsRunning;
+      delete Node2;
+      Node2 = new IFFANNEngine::CNode;
+      Node2->IsRunning = noderun;
+      Network.NodeRegister.Register(Node2);
+      Node2->LoadCore("pongpaddlebounce");
+     }
 
      //input_data_sets = 0;
      //input_data.clear();
@@ -679,6 +715,7 @@ void TESTFN_AddRandomBody(engine &engine) {
       }else{
        check_input_data_sets = input_data_sets;
        input_data_head = input_data_sets;
+       Node1->IsRunning = true;
       }
       LastAIPaddle = AIPaddle;
       //for (unsigned int cnt = 0; cnt < sizeof(train_ndelta_x)/ sizeof(train_ndelta_x[0]); cnt++) {
@@ -729,15 +766,15 @@ void TESTFN_AddRandomBody(engine &engine) {
         if(ball_enter_leave==2){
          ball_enter_leave = 0;
          if(ball_state == 0){         //user paddle (start - input)         
-          Node2->inputs[0] = game_body[2]->body->GetPosition().x * Node2->ifann.input_scale;
-          Node2->inputs[1] = game_body[2]->body->GetPosition().y * Node2->ifann.input_scale;
-          Node2->inputs[2] = atan2(balllinvel.y, balllinvel.x) ;
+          Node2->inputs[0] = (right+game_body[2]->body->GetPosition().x) * Node2->ifann.input_scale;
+          Node2->inputs[1] = (top + game_body[2]->body->GetPosition().y) * Node2->ifann.input_scale;
+          Node2->inputs[2] = atan2(balllinvel.y, balllinvel.x) * Node2->ifann.input_scale;
           train_input_bounce_set = true;
          }else if(ball_state == 1){       //leaving the wall   
           train_input_bounce_set = false;
-          Node2->inputs[3] = game_body[2]->body->GetPosition().x * Node2->ifann.input_scale;
-          Node2->inputs[4] = game_body[2]->body->GetPosition().y * Node2->ifann.input_scale;
-          Node2->inputs[5] = atan2(balllinvel.y, balllinvel.x) ;
+          Node2->inputs[3] = (right+game_body[2]->body->GetPosition().x) * Node2->ifann.input_scale;
+          Node2->inputs[4] = (top + game_body[2]->body->GetPosition().y) * Node2->ifann.input_scale;
+          Node2->inputs[5] = atan2(balllinvel.y, balllinvel.x) * Node2->ifann.input_scale;
 
           Node2->IsRunning = true;
           Node1->IsRunning = false;
@@ -759,10 +796,8 @@ void TESTFN_AddRandomBody(engine &engine) {
           bounce_input_data.push_back(Node2->inputs[3]);
           bounce_input_data.push_back(Node2->inputs[4]);
           bounce_input_data.push_back(Node2->inputs[5]);
-          bounce_output_data.push_back(game_body[2]->body->GetPosition().x*Node2->ifann.output_scale);
-          bounce_data_counter = bounce_output_data.size();
-          train_bounce_network = true;
-          Node1->IsRunning = true;
+          bounce_output_data.push_back((right+game_body[2]->body->GetPosition().x)*Node2->ifann.output_scale);
+          bounce_data_counter = bounce_output_data.size();          
           ball_state = -2;
          }
          //           LIMIT DATA TO NEW ONES
@@ -774,25 +809,8 @@ void TESTFN_AddRandomBody(engine &engine) {
           bounce_output_data.erase(bounce_output_data.begin(), bounce_output_data.begin() + bounce_output_data.size() - bounce_data_counter);
          }
         }
-        if(ball_enter_leave==1)
+        if(ball_enter_leave==1){
          ball_enter_leave = 2;
-        //Train network
-        if(train_bounce_network){
-         train_bounce_network = false;
-         ball_state = -1;
-         IFFANNEngine::IFS_Cascade_FANN PaddleBounceBrains;
-         IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBounceBrains), FANNPongBounce.input_neurons, FANNPongBounce.output_neurons, "pongpaddlebounce"), FANNPongBounce.max_neurons, FANNPongBounce.neurons_between_reports, FANNPongBounce.desired_error, FANNPongBounce.input_scale, FANNPongBounce.output_scale);
-         IFFANN::Train_Cascade_FANN(&PaddleBounceBrains, Train_Cascade_FANN_PaddleBrainsBounce_Callback, bounce_data_counter);
-         IFFANN::Load_Cascade_FANN(&PaddleBounceBrains, "pongpaddlebounce", IFFANN::CnTrainedFannPostscript);
-         IFFANN::Save_Cascade_FANN(&PaddleBounceBrains, IFFANN::CnFinalFannPostscript);
-         Node2->UnloadCore();
-         Network.NodeRegister.Unregister(Node2);
-         bool noderun = Node2->IsRunning;
-         delete Node2;
-         Node2 = new IFFANNEngine::CNode;
-         Node2->IsRunning = noderun;
-         Network.NodeRegister.Register(Node2);
-         Node2->LoadCore("pongpaddlebounce");
         }
        }
        /////////////////////////////////////////////////////////////////////////////////////////////////////BOUNCE TRAIN STOP
@@ -918,15 +936,16 @@ void TESTFN_AddRandomBody(engine &engine) {
        bounce_input_data.push_back(Node2->inputs[3]);
        bounce_input_data.push_back(Node2->inputs[4]);
        bounce_input_data.push_back(Node2->inputs[5]);
-       bounce_output_data.push_back(game_body[2]->body->GetPosition().x*Node2->ifann.output_scale);
+       bounce_output_data.push_back((right+game_body[2]->body->GetPosition().x)*Node2->ifann.output_scale);
        bounce_data_counter = bounce_output_data.size();
        ball_state = -2;
-       train_bounce_network = true;
-       Node1->IsRunning = true;
       }else{
        if(ball_state != -2){
         ball_state = -1;
         ball_enter_leave = -1;
+       }else if (ball_state == -2){
+        ball_state = -3;
+        train_bounce_network = true;
        }
       }
 
@@ -1007,7 +1026,7 @@ void TESTFN_AddRandomBody(engine &engine) {
         }else if(Node2->IsRunning && Node2 == Network.GetNodeByPinID(ID)){
          Node2->IsRunning = false;
          b2Vec2 position = game_body[4]->body->GetPosition();
-         game_body[4]->body->SetTransform(b2Vec2(Node2->outputs[0] / Node2->ifann.output_scale, position.y), game_body[4]->body->GetAngle());
+         game_body[4]->body->SetTransform(b2Vec2(Node2->outputs[0] / Node2->ifann.output_scale-right, position.y), game_body[4]->body->GetAngle());
          if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
          if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
         }else if(Select1_Node == Network.GetNodeByPinID(ID)){

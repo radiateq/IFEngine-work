@@ -182,10 +182,27 @@ namespace IFFANN {
   return true;
  }
  //User must descale output after running only 
- void Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback, unsigned int num_data ) {
+ bool Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback, unsigned int num_data, int load_save_train) {
 
   //ifann->ann_train->num_data = num_data;
-  ifann->ann_train->train_data = fann_create_train_from_callback(num_data, ifann->ann->num_input, ifann->ann->num_output, train_callback);
+  char buffer[BUFSIZ + 1];
+  if (load_save_train >0) {
+   RQNDKUtils::Make_storageDataPath(buffer, BUFSIZ, ifann->unique_name);
+   strcpy(&buffer[strlen(buffer)], "train");
+  }
+  if (load_save_train != 1) {
+   ifann->ann_train->train_data = fann_create_train_from_callback(num_data, ifann->ann->num_input, ifann->ann->num_output, train_callback);
+  }
+  if (load_save_train == 1) {
+   ifann->ann_train->train_data = fann_read_train_from_file(buffer);
+   if (ifann->ann_train->train_data == NULL) {
+    return false;
+   }
+  }
+  if (load_save_train == 2) {   
+   fann_save_train(ifann->ann_train->train_data, buffer);
+  }
+
   //fann_scale_train_data(ifann->ann_train->train_data, -1, 1);
   //ifann->ann->scale_factor_in
   fann_set_scaling_params(ifann->ann, ifann->ann_train->train_data, -1, 1, -1, 1);
@@ -199,6 +216,7 @@ namespace IFFANN {
 
   Save_Cascade_FANN(ifann, CnTrainedFannPostscript);
 
+  return true;
  }
 
  fann_type *Run_Cascade_FANN(IFS_Cascade_FANN *ifann, fann_type *inputs) {
