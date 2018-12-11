@@ -63,7 +63,7 @@ unsigned int bounce_data_counter = 0;
 int ball_state = -1;
 int ball_enter_leave = -1;
 bool train_bounce_network = false, train_input_bounce_set = false;
-unsigned int BounceBrainTrainSizeLimit = 90, PaddleBrainsTrainSizeLimit = 30;
+unsigned int BounceBrainTrainSizeLimit = 60, PaddleBrainsTrainSizeLimit = 30;
 //NODE 3 -------   TEMPLATE FOR CLASS START
 //selects what node to use based on x and y and linvel immediately after leaving players pad
 
@@ -352,9 +352,9 @@ void TESTFN_AddRandomBody(engine &engine) {
    //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
    shapeCoords[0].x = zoom_factor * -12, shapeCoords[0].y = zoom_factor * -1;
    shapeCoords[1].x = zoom_factor * 12, shapeCoords[1].y = zoom_factor * -1;
-   shapeCoords[2].x = zoom_factor * 12, shapeCoords[2].y = zoom_factor * 0.0;
-   shapeCoords[3].x = 0,                shapeCoords[3].y = zoom_factor * 1.5;
-   shapeCoords[4].x = zoom_factor * -12, shapeCoords[4].y = zoom_factor * 0.0;
+   shapeCoords[2].x = zoom_factor * 12, shapeCoords[2].y = zoom_factor * -1.0;
+   shapeCoords[3].x = 0,                shapeCoords[3].y = zoom_factor * 2.5;
+   shapeCoords[4].x = zoom_factor * -12, shapeCoords[4].y = zoom_factor * -1.0;
    polyShape2->Set(shapeCoords, 5);
    fixture = new b2FixtureDef;
    fixture->shape = polyShape2;
@@ -385,9 +385,9 @@ void TESTFN_AddRandomBody(engine &engine) {
    zoom_factor /= 12.0 * 24.0;
    zoom_factor += engine.width*0.5;
    Window2ObjectCoordinates(zoom_factor, dummy, zDefaultLayer, engine.width, engine.height);
-   shapeCoords[0].x = zoom_factor * -12, shapeCoords[0].y = zoom_factor * -0.0;
-   shapeCoords[1].x = 0, shapeCoords[1].y = zoom_factor * -1.5;
-   shapeCoords[2].x = zoom_factor * 12, shapeCoords[2].y = zoom_factor * -0.0;
+   shapeCoords[0].x = zoom_factor * -12, shapeCoords[0].y = zoom_factor * 1.0;
+   shapeCoords[1].x = 0, shapeCoords[1].y = zoom_factor * -2.5;
+   shapeCoords[2].x = zoom_factor * 12, shapeCoords[2].y = zoom_factor * 1.0;
    shapeCoords[3].x = zoom_factor * 12, shapeCoords[3].y = zoom_factor * 1;
    shapeCoords[4].x = zoom_factor * -12, shapeCoords[4].y = zoom_factor * 1;
    polyShape2->Set(shapeCoords, 5);
@@ -487,9 +487,9 @@ void TESTFN_AddRandomBody(engine &engine) {
    
 
 
-   FANNPongBounce.input_neurons = 3;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
+   FANNPongBounce.input_neurons = 6;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
    FANNPongBounce.max_neurons = 30;
-   FANNPongBounce.desired_error = 0.000000;
+   FANNPongBounce.desired_error = 0.000;
    FANNPongBounce.input_scale = 0.1;
    FANNPongBounce.output_scale = 0.1;
    Node2 = new IFFANNEngine::CNode;   
@@ -753,7 +753,7 @@ void TESTFN_AddRandomBody(engine &engine) {
          }else{
           hit_body_fix = c->GetFixtureA();
          }//train_input_bounce_set is here if ball touches wall and pad at the same time //train_input_bounce_set&&//
-         if((ball_state<=1)&&((hit_body_fix->GetBody() == game_body[0]->body )|| (hit_body_fix->GetBody() == game_body[1]->body))){
+         if((ball_state<=3)&&((hit_body_fix->GetBody() == game_body[0]->body )|| (hit_body_fix->GetBody() == game_body[1]->body))){
           //hitting the wall   
           ball_state = 1;
           ball_enter_leave = 1;
@@ -761,15 +761,26 @@ void TESTFN_AddRandomBody(engine &engine) {
          // //user paddle (start - input)
          // ball_state = 0;
          // ball_enter_leave = 1;
-         }else if (ball_state == 1&&hit_body_fix->GetBody() == game_body[4]->body){
+         }else if (ball_state == 3&&hit_body_fix->GetBody() == game_body[4]->body){
           //AI paddle (end - desired output)
-          ball_state = 2;
+          ball_state = 4;
           ball_enter_leave = 2;//We need input as soon as possible
          }
         }
         if(!has_contact){
          if (ball_enter_leave == 1) {
-          ball_enter_leave = 2;
+          ball_enter_leave = 2;          
+         }
+         if(ball_state==2){
+          if(b2Distance(ballposition,b2Vec2(Node2->inputs[0], Node2->inputs[1]))>(((right-left)*0.15)/IFA_box2D_factor )){
+           Node2->inputs[3] = (right + ballposition.x) * Node2->ifann.input_scale;
+           Node2->inputs[4] = (top + ballposition.y) * Node2->ifann.input_scale;
+           Node2->inputs[5] = atan2(balllinvel.y, balllinvel.x) * Node2->ifann.input_scale;
+           train_input_bounce_set = false;
+           Node2->IsRunning = true;
+           Node1->IsRunning = false;
+           ball_state = 3;
+          }
          }
         }
         if(ball_enter_leave==2){
@@ -781,13 +792,11 @@ void TESTFN_AddRandomBody(engine &engine) {
          // train_input_bounce_set = true;
          //}else 
          if(ball_state == 1){       //leaving the wall   
-          train_input_bounce_set = false;
-          Node2->inputs[0] = (right+game_body[2]->body->GetPosition().x) * Node2->ifann.input_scale;
-          Node2->inputs[1] = (top + game_body[2]->body->GetPosition().y) * Node2->ifann.input_scale;
+          ball_state = 2;
+          Node2->inputs[0] = (right+ballposition.x) * Node2->ifann.input_scale;
+          Node2->inputs[1] = (top + ballposition.y) * Node2->ifann.input_scale;
           Node2->inputs[2] = atan2(balllinvel.y, balllinvel.x) * Node2->ifann.input_scale;
 
-          Node2->IsRunning = true;
-          Node1->IsRunning = false;
 
           ////fann_scale_input(Node2->ifann.ann, Node2->inputs);
           //Network.Run();
@@ -799,14 +808,14 @@ void TESTFN_AddRandomBody(engine &engine) {
           //if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
          
 
-         }else if (ball_state == 2) {      //AI paddle (end - desired output)
+         }else if (ball_state == 4) {      //AI paddle (end - desired output)
           bounce_input_data.push_back(Node2->inputs[0]);
           bounce_input_data.push_back(Node2->inputs[1]);
           bounce_input_data.push_back(Node2->inputs[2]);
-          //bounce_input_data.push_back(Node2->inputs[3]);
-          //bounce_input_data.push_back(Node2->inputs[4]);
-          //bounce_input_data.push_back(Node2->inputs[5]);
-          bounce_output_data.push_back((right+game_body[2]->body->GetPosition().x)*Node2->ifann.output_scale);
+          bounce_input_data.push_back(Node2->inputs[3]);
+          bounce_input_data.push_back(Node2->inputs[4]);
+          bounce_input_data.push_back(Node2->inputs[5]);
+          bounce_output_data.push_back((right+(ballposition.x))*Node2->ifann.output_scale);
           bounce_data_counter = bounce_output_data.size();          
           ball_state = -2;
          }
@@ -936,14 +945,14 @@ void TESTFN_AddRandomBody(engine &engine) {
          }         
         }
        }
-      }else if ((AIPaddle) && (ball_state == 1) && (ball_enter_leave == 0)) {      //AI paddle (end - desired output)
+      }else if ((AIPaddle) && (ball_state == 3) && (ball_enter_leave == 0)) {      //AI paddle (end - desired output)
        bounce_input_data.push_back(Node2->inputs[0]);
        bounce_input_data.push_back(Node2->inputs[1]);
        bounce_input_data.push_back(Node2->inputs[2]);
-       //bounce_input_data.push_back(Node2->inputs[3]);
-       //bounce_input_data.push_back(Node2->inputs[4]);
-       //bounce_input_data.push_back(Node2->inputs[5]);
-       bounce_output_data.push_back((right+game_body[2]->body->GetPosition().x)*Node2->ifann.output_scale);
+       bounce_input_data.push_back(Node2->inputs[3]);
+       bounce_input_data.push_back(Node2->inputs[4]);
+       bounce_input_data.push_back(Node2->inputs[5]);
+       bounce_output_data.push_back((right+ (ballposition.x))*Node2->ifann.output_scale);
        bounce_data_counter = bounce_output_data.size();
        ball_state = -2;
       }else{
