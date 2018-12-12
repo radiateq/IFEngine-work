@@ -5,7 +5,9 @@ namespace IFFANNEngine {
 
 
  bool CNode::LoadCore(char const * const core_name) {
+  UnloadCore();  
   if( !IFFANN::Load_Cascade_FANN(&ifann, core_name, IFFANN::CnFinalFannPostscript) ) return false;
+  core_loaded = true;
   outputs = NULL;
   free(inputs);
   inputs = (fann_type*)malloc(sizeof(fann_type)*ifann.ann->num_input);
@@ -31,27 +33,49 @@ namespace IFFANNEngine {
 
  bool CNode::UnloadCore() {
   
+  if(!core_loaded) return false;
+
   if(ifann.ann==NULL) return false;
+
+  core_loaded = false;
 
   CPin *temp_pin;
 
   for (unsigned int cnt = 0; cnt < ifann.ann->num_input; cnt++) {
    input_pins.Get(cnt, temp_pin);
    NodeRegister->InputPinRegister.input_pins.Remove(temp_pin->ID);
-   NodeRegister->PinToNode.Unregister(temp_pin);
+
+   unsigned int pin_out_ID;
+   for (temp_pin->connected_pins.Iter_Set = temp_pin->connected_pins.Set.begin(); temp_pin->connected_pins.Iter_Set != temp_pin->connected_pins.Set.end(); temp_pin->connected_pins.Iter_Set++) {
+    pin_out_ID = *temp_pin->connected_pins.Iter_Set;
+    NodeRegister->Network->DisconnectPins(pin_out_ID, temp_pin->ID);
+   }
+   temp_pin->connected_pins.Set.clear();
+
    input_pins.Remove(cnt);
+   NodeRegister->PinToNode.Unregister(temp_pin);
    delete temp_pin;
   }
   for (unsigned int cnt = 0; cnt < ifann.ann->num_output; cnt++) {
    output_pins.Get(cnt, temp_pin);
    NodeRegister->OutputPinRegister.output_pins.Remove(temp_pin->ID);
-   NodeRegister->PinToNode.Unregister(temp_pin);
+
+   unsigned int pin_in_ID;
+   for (temp_pin->connected_pins.Iter_Set = temp_pin->connected_pins.Set.begin(); temp_pin->connected_pins.Iter_Set != temp_pin->connected_pins.Set.end(); temp_pin->connected_pins.Iter_Set++) {
+    pin_in_ID = *temp_pin->connected_pins.Iter_Set;
+    NodeRegister->Network->DisconnectPins(temp_pin->ID, pin_in_ID);
+   }
+   temp_pin->connected_pins.Set.clear();
+
    output_pins.Remove(cnt);
+   temp_pin->connected_pins.Set.clear();
+   NodeRegister->PinToNode.Unregister(temp_pin);
    delete temp_pin;
   }
 
   outputs = NULL;
   free(inputs);
+  inputs = NULL;
 
   Cleanup_Cascade_FANN(&ifann);
 

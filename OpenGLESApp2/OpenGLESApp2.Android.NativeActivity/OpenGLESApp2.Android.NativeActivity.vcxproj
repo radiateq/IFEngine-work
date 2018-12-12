@@ -127,12 +127,14 @@
     <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\lodepng-master;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\freetype2\include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\fann-master\src\include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D;$(IncludePath)</IncludePath>
     <LibraryPath>
     </LibraryPath>
+    <PackageDebugSymbols>true</PackageDebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ReferencePath>$(ReferencePath)</ReferencePath>
     <IncludePath>$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\lodepng-master;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\eigen-git-mirror-master;c:/Microsoft/AndroidNDK64/toolchain/sysroot/usr/include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\Android.Build\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\libpng-libpng16\;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\freetype2\include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\fann-master\src\include;$(SolutionDir)OpenGLESApp2\OpenGLESApp2.Shared\common\External\Box2D-master\Box2D;$(IncludePath)</IncludePath>
     <LibraryPath>
     </LibraryPath>
+    <PackageDebugSymbols>true</PackageDebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />

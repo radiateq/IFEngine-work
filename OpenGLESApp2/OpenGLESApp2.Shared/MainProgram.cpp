@@ -730,12 +730,12 @@ void TESTFN_AddRandomBody(engine &engine) {
        IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
        IFFANN::Save_Cascade_FANN(&PaddleBrains, IFFANN::CnFinalFannPostscript);
        //Node1->UnloadCore();
-       Network.NodeRegister.Unregister(Node1);      
+       //Network.NodeRegister.Unregister(Node1);      
        //bool noderun = Node1->IsRunning;
        //delete Node1;
        //Node1 = new IFFANNEngine::CNode;
        //Node1->IsRunning = noderun;
-       Network.NodeRegister.Register(Node1);
+       //Network.NodeRegister.Register(Node1);
        Node1->LoadCore("pongpaddle");
       
       
@@ -754,12 +754,12 @@ void TESTFN_AddRandomBody(engine &engine) {
        IFFANN::Load_Cascade_FANN(&PaddleBounceBrains, "pongpaddlebounce", IFFANN::CnTrainedFannPostscript);
        IFFANN::Save_Cascade_FANN(&PaddleBounceBrains, IFFANN::CnFinalFannPostscript);
        //Node2->UnloadCore();
-       Network.NodeRegister.Unregister(Node2);//UNREGISTRE REGISTER SHOULD NOT BE NEEDED - DEBUG it crashes app - only leave unloadcore
+       //Network.NodeRegister.Unregister(Node2);//UNREGISTRE REGISTER SHOULD NOT BE NEEDED - DEBUG it crashes app - only leave unloadcore
        //bool noderun = Node2->IsRunning;
        //delete Node2;
        //Node2 = new IFFANNEngine::CNode;
        //Node2->IsRunning = noderun;
-       Network.NodeRegister.Register(Node2);
+       //Network.NodeRegister.Register(Node2);
        Node2->LoadCore("pongpaddlebounce");
       }
      }

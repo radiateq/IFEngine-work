@@ -30,6 +30,7 @@ namespace IFFANNEngine{
  //IFS_Cascade_FANN
 
  class CNodeRegister;
+ class CNetwork;
 
  //input pin set:
  //all input pins that are not connected are listed here(user set before execution)
@@ -68,8 +69,8 @@ namespace IFFANNEngine{
   
   }
   void Unregister(CPin *Pin) {
-   Pin->ID = UINT_MAX;
    pin_to_node_ID.Remove(Pin->ID);
+   Pin->ID = UINT_MAX;
   }
   unsigned int NewID() {
    if (pin_to_node_ID.Map.empty()) {
@@ -144,6 +145,8 @@ namespace IFFANNEngine{
   bool SaveCore() {
    return IFFANN::Save_Cascade_FANN(&ifann, IFFANN::CnFinalFannPostscript);
   }
+ private:
+  bool core_loaded = false;
  };
  //node map:
  // -map node ID = key, pointer to node = value
@@ -152,6 +155,7 @@ namespace IFFANNEngine{
   CInputPinRegister InputPinRegister;
   COutputPinRegister OutputPinRegister;
   CPinToNode PinToNode;
+  CNetwork *Network;
  public:
   CNodeRegister(){
    InputPinRegister.NodeRegister = OutputPinRegister.NodeRegister = PinToNode.NodeRegister = this;
@@ -163,10 +167,10 @@ namespace IFFANNEngine{
    nodes_by_ID.Add(Node->ID,Node);
   }
   void Unregister(CNode *Node) {
+   nodes_by_ID.Remove(Node->ID);
    Node->UnloadCore();
    Node->ID = UINT_MAX;
    Node->NodeRegister = NULL;
-   nodes_by_ID.Remove(Node->ID);
   }
 
   unsigned int NewID(){
@@ -205,6 +209,9 @@ namespace IFFANNEngine{
   CNodeRegister NodeRegister;
   IFGeneralUtils::SMapWrap<int, std::set<unsigned int> > LayerToPins;
   IFGeneralUtils::SMapWrap<unsigned int, int > PinToLayer;
+  CNetwork(){
+   NodeRegister.Network = this;
+  }
   CNode *GetNodeByPinID(unsigned int pinID) {
    CNode *Node;
    NodeRegister.PinToNode.pin_to_node_ID.Get(pinID, pinID);
