@@ -63,25 +63,37 @@ unsigned int bounce_data_counter = 0;
 int ball_state = -1;
 int ball_enter_leave = -1;
 bool train_bounce_network = false, train_input_bounce_set = false;
-unsigned int BounceBrainTrainSizeLimit = 60, PaddleBrainsTrainSizeLimit = 30;
+unsigned int BounceBrainTrainSizeLimit = 10, PaddleBrainsTrainSizeLimit = 30;
 //NODE 3 -------   TEMPLATE FOR CLASS START
-//selects what node to use based on x and y and linvel immediately after leaving players pad
-
-//This node tries to determine what output to use, Node1 or Node2. Node has following inputs:
+//Selects what node to use for paddle x output based on 
 //Input pins
-// 1 Node1 output
-// 2 Node2 output
+// 1 Node2 output
+// 2 Node4 output
 // 3 ball x position after leaving player paddle 
 // 4 ball y position after leaving player paddle
 // 5 ball linear vel atan2
+// 6 length of the linear speed vector ( b2Distance (b2Vec2(0,0),b2Vec2(balllinvel)) )
 //Output pins
-// 1 0 or 1 for selecting node 1 or 2
+// 1 0 or 1 for selecting node 2 or 4
+typedef std::vector<fann_type> TFannVector;
 SFANNPong Select1_FANNPong;
 IFFANNEngine::CNode *Select1_Node;
-std::vector<fann_type> select1_input_data, select1_output_data;
+TFannVector select1_input_data, select1_output_data;
 unsigned int select1_data_counter = 0;
+char Select1_unique_name[1024];
 //NODE 3 -------   TEMPLATE FOR CLASS STOP
-
+//NODE 4 -------   Predict paddle intersection from linear velocity and position of the ball after leaving paddle if ball does not hit the wall (replace node 1 but leave node 1 for reference)
+//NODE 5 -------   
+// Inputs:
+//Same as Node2 and Node2 output
+// Outputs:
+//paddle x
+SFANNPong Node2_1_FANNPong;
+IFFANNEngine::CNode *Node2_1_Node;
+TFannVector Node2_1_input_data, Node2_1_output_data;
+unsigned int Node2_1_data_counter = 0;
+char Node2_1_unique_name[1024];
+//NODE 5 -------  STOP
 
 
 
@@ -188,6 +200,31 @@ void Train_Cascade_FANN_PaddleBrainsSelect1_Callback(unsigned int num_data, unsi
  //FileSystem.Write(char_buffer, strlen(char_buffer));
  //FileSystem.Free();
  //
+}
+
+
+TFannVector *train_input_vector, *train_output_vector;
+struct fann *train_ann;
+void Train_Cascade_FANN_Train_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
+ for (unsigned int cnt = 0; cnt < train_ann->num_input; cnt++) {
+  input[cnt] = (*train_input_vector)[num_data * train_ann->num_input + cnt];
+ }
+ for (unsigned int cnt = 0; cnt < train_ann->num_output; cnt++) {
+  output[cnt] = (*train_output_vector)[num_data * train_ann->num_output + cnt];
+ }
+
+ //IFGeneralUtils::CFileSystem FileSystem;
+ //FileSystem.OpenFile(RQNDKUtils::Make_storageDataPath(char_buffer,BUFSIZ,"traindatabounce"), "a");
+ ////sprintf(char_buffer,"%f %f %f %f %f\r\n", input[0], input[1], input[2], input[3], input[4]);
+ //sprintf(char_buffer, "%f %f %f %f %f %f\r\n", input[0], input[1], input[2], input[3], input[4], input[5]);
+ //FileSystem.Write(char_buffer,strlen(char_buffer));
+ //sprintf(char_buffer, "%f\r\n", output[0]);
+ //FileSystem.Write(char_buffer, strlen(char_buffer));
+ //FileSystem.Free();
+ //
+}
+void ConnectNetwork01(){
+ //Network.ConnectPins(Node1->
 }
 void TESTFN_PostOperations(engine &engine) {
  if (engine.EGL_initialized) {
@@ -519,30 +556,64 @@ void TESTFN_AddRandomBody(engine &engine) {
    Node2->LoadCore("pongpaddlebounce");
    
    
-   Select1_FANNPong.input_neurons = 5;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
+   strcpy(Select1_unique_name,"pongpaddleselect");
+   Select1_FANNPong.input_neurons = 5;//
    Select1_FANNPong.max_neurons = 25;
    Select1_FANNPong.desired_error = 0.000001;
    Select1_FANNPong.input_scale = 0.1;
    Select1_FANNPong.output_scale = 0.1;
-   Select1_Node = new IFFANNEngine::CNode;      
-   if (IFFANN::Check_Save_Cascade_FANN("pongpaddleselect", IFFANN::CnTrainedFannPostscript)) {
-    IFFANN::Load_Cascade_FANN(&Select1_Node->ifann, "pongpaddleselect", IFFANN::CnTrainedFannPostscript);
+   Select1_Node = new IFFANNEngine::CNode;
+   if (IFFANN::Check_Save_Cascade_FANN(Select1_unique_name, IFFANN::CnTrainedFannPostscript)) {
+    IFFANN::Load_Cascade_FANN(&Select1_Node->ifann, Select1_unique_name, IFFANN::CnTrainedFannPostscript);
    }
    if (!Select1_Node->ifann.ann){
     IFFANN::Setup_Train_Cascade_FANN(
      IFFANN::Create_Cascade_FANN(
-      IFFANN::Init_Cascade_FANN(&Select1_Node->ifann), Select1_FANNPong.input_neurons, Select1_FANNPong.output_neurons, "pongpaddleselect" ), 
+      IFFANN::Init_Cascade_FANN(&Select1_Node->ifann), Select1_FANNPong.input_neurons, Select1_FANNPong.output_neurons, Select1_unique_name ), 
       Select1_FANNPong.max_neurons, Select1_FANNPong.neurons_between_reports, 
       Select1_FANNPong.desired_error, Select1_FANNPong.input_scale, Select1_FANNPong.output_scale );
    }
    Network.NodeRegister.Register(Select1_Node);
-   IFFANN::Load_Cascade_FANN(&Select1_Node->ifann, "pongpaddleselect", IFFANN::CnTrainedFannPostscript);
+   IFFANN::Load_Cascade_FANN(&Select1_Node->ifann, Select1_unique_name, IFFANN::CnTrainedFannPostscript);
    IFFANN::Save_Cascade_FANN(&Select1_Node->ifann, IFFANN::CnFinalFannPostscript);
-   Select1_Node->LoadCore("pongpaddleselect");
+   Select1_Node->LoadCore(Select1_unique_name);
+
+
+
+
+
+
+
+
+   strcpy(Node2_1_unique_name, "pongpaddlebouncetune");
+   Node2_1_FANNPong.input_neurons = 5;//
+   Node2_1_FANNPong.max_neurons = 25;
+   Node2_1_FANNPong.desired_error = 0.000001;
+   Node2_1_FANNPong.input_scale = 0.1;
+   Node2_1_FANNPong.output_scale = 0.1;
+   Node2_1_Node = new IFFANNEngine::CNode;
+   if (IFFANN::Check_Save_Cascade_FANN(Node2_1_unique_name, IFFANN::CnTrainedFannPostscript)) {
+    IFFANN::Load_Cascade_FANN(&Node2_1_Node->ifann, Node2_1_unique_name, IFFANN::CnTrainedFannPostscript);
+   }
+   if (!Node2_1_Node->ifann.ann) {
+    IFFANN::Setup_Train_Cascade_FANN(
+     IFFANN::Create_Cascade_FANN(
+      IFFANN::Init_Cascade_FANN(&Node2_1_Node->ifann), Node2_1_FANNPong.input_neurons, Node2_1_FANNPong.output_neurons, Node2_1_unique_name),
+     Node2_1_FANNPong.max_neurons, Node2_1_FANNPong.neurons_between_reports,
+     Node2_1_FANNPong.desired_error, Node2_1_FANNPong.input_scale, Node2_1_FANNPong.output_scale);
+   }
+   Network.NodeRegister.Register(Node2_1_Node);
+   IFFANN::Load_Cascade_FANN(&Node2_1_Node->ifann, Node2_1_unique_name, IFFANN::CnTrainedFannPostscript);
+   IFFANN::Save_Cascade_FANN(&Node2_1_Node->ifann, IFFANN::CnFinalFannPostscript);
+   Node2_1_Node->LoadCore(Node2_1_unique_name);
+
+
+
+   ConnectNetwork01();
 
 
    //Launch the ball in AI direction
-   game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*500.0, (drand48() * 0.5) * 500.0), game_body[2]->body->GetPosition(), true);
+   game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*1000.0-500.0, (drand48()) * 500.0), game_body[2]->body->GetPosition(), true);
 
 
   }
@@ -658,12 +729,12 @@ void TESTFN_AddRandomBody(engine &engine) {
        IFFANN::Train_Cascade_FANN(&PaddleBrains, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets);
        IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
        IFFANN::Save_Cascade_FANN(&PaddleBrains, IFFANN::CnFinalFannPostscript);
-       Node1->UnloadCore();
+       //Node1->UnloadCore();
        Network.NodeRegister.Unregister(Node1);      
-       bool noderun = Node1->IsRunning;
-       delete Node1;
-       Node1 = new IFFANNEngine::CNode;
-       Node1->IsRunning = noderun;
+       //bool noderun = Node1->IsRunning;
+       //delete Node1;
+       //Node1 = new IFFANNEngine::CNode;
+       //Node1->IsRunning = noderun;
        Network.NodeRegister.Register(Node1);
        Node1->LoadCore("pongpaddle");
       
@@ -682,12 +753,12 @@ void TESTFN_AddRandomBody(engine &engine) {
        IFFANN::Train_Cascade_FANN(&PaddleBounceBrains, Train_Cascade_FANN_PaddleBrainsBounce_Callback, bounce_data_counter,2);
        IFFANN::Load_Cascade_FANN(&PaddleBounceBrains, "pongpaddlebounce", IFFANN::CnTrainedFannPostscript);
        IFFANN::Save_Cascade_FANN(&PaddleBounceBrains, IFFANN::CnFinalFannPostscript);
-       Node2->UnloadCore();
-       Network.NodeRegister.Unregister(Node2);
-       bool noderun = Node2->IsRunning;
-       delete Node2;
-       Node2 = new IFFANNEngine::CNode;
-       Node2->IsRunning = noderun;
+       //Node2->UnloadCore();
+       Network.NodeRegister.Unregister(Node2);//UNREGISTRE REGISTER SHOULD NOT BE NEEDED - DEBUG it crashes app - only leave unloadcore
+       //bool noderun = Node2->IsRunning;
+       //delete Node2;
+       //Node2 = new IFFANNEngine::CNode;
+       //Node2->IsRunning = noderun;
        Network.NodeRegister.Register(Node2);
        Node2->LoadCore("pongpaddlebounce");
       }
@@ -1020,6 +1091,8 @@ void TESTFN_AddRandomBody(engine &engine) {
 
         }else if(Select1_Node == Network.GetNodeByPinID(ID)) {
         }
+        else if (Node2_1_Node == Network.GetNodeByPinID(ID)) {
+        }
        }
        if(Node1->IsRunning)
         fann_scale_input(Node1->ifann.ann, Node1->inputs);
@@ -1046,6 +1119,8 @@ void TESTFN_AddRandomBody(engine &engine) {
          if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
          if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
         }else if(Select1_Node == Network.GetNodeByPinID(ID)){
+        }
+        else if (Node2_1_Node == Network.GetNodeByPinID(ID)) {
         }
        }
       }

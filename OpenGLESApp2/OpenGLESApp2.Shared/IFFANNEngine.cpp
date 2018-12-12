@@ -42,7 +42,6 @@ namespace IFFANNEngine {
    input_pins.Remove(cnt);
    delete temp_pin;
   }
-  
   for (unsigned int cnt = 0; cnt < ifann.ann->num_output; cnt++) {
    output_pins.Get(cnt, temp_pin);
    NodeRegister->OutputPinRegister.output_pins.Remove(temp_pin->ID);
