@@ -70,7 +70,7 @@ namespace IFFANN {
    fann_set_learning_rate(ifann->ann, 0.3f);
    fann_randomize_weights(ifann->ann, -2.0f, 2.0f);
   }
-  fann_set_bit_fail_limit(ifann->ann, (fann_type)0.9);
+  fann_set_bit_fail_limit(ifann->ann, (fann_type)0.1);
   fann_set_train_stop_function(ifann->ann, FANN_STOPFUNC_BIT);
   //fann_print_parameters(ifann->ann);
   Save_Cascade_FANN(ifann, CnCleanFannPostscript);
