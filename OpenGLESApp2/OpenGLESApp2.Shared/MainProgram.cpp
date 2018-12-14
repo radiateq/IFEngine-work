@@ -95,7 +95,7 @@ char Node2_1_unique_name[1024];
 bool Node2_1_train = false;
 //NODE 5 -------  STOP
 
-unsigned int BounceBrainTrainSizeLimit = 60, PaddleBrainsTrainSizeLimit = 30;
+unsigned int BounceBrainTrainSizeLimit = 60, PaddleBrainsTrainSizeLimit = 12;
 unsigned int Node2_1_train_size_limit = 90;
 bool trained[3] = { 0 }; 
 fann_type Node1_train_error = 0.0;
@@ -209,6 +209,22 @@ void Train_Cascade_FANN_PaddleBrainsSelect1_Callback(unsigned int num_data, unsi
 }
 
 
+void AIPong_Load_Node(IFFANNEngine::CNode **LoadedNode, char const * const unique_name, SFANNPong const * const FANNPong, bool is_running = true) {
+ *LoadedNode = new IFFANNEngine::CNode;
+ (*LoadedNode)->IsRunning = is_running;
+ Network.NodeRegister.Register(*LoadedNode);
+
+ if (IFFANN::Check_Save_Cascade_FANN(unique_name, IFFANN::CnFinalFannPostscript)) {
+  IFFANN::Load_Cascade_FANN(&(*LoadedNode)->ifann, unique_name, IFFANN::CnFinalFannPostscript);
+ }
+ if (!(*LoadedNode)->ifann.ann) {
+  IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&(*LoadedNode)->ifann), FANNPong->input_neurons, FANNPong->output_neurons, unique_name), FANNPong->max_neurons, FANNPong->neurons_between_reports, FANNPong->desired_error, FANNPong->input_scale, FANNPong->output_scale);
+  IFFANN::Save_Cascade_FANN(&(*LoadedNode)->ifann, IFFANN::CnFinalFannPostscript);
+ }
+ (*LoadedNode)->LoadCore(unique_name);
+
+}
+
 TFannVector *train_input_vector, *train_output_vector;
 struct fann *train_ann;
 void Train_Cascade_FANN_Train_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
@@ -285,6 +301,13 @@ void TESTFN_AddRandomBody(engine &engine) {
 
   if (!DEMO4_initialized) {
    DEMO4_initialized = true;
+
+
+
+
+
+   ///////////////////////////////////////////////////////////////////////    LOAD GRAPHICS START
+
    thickness = RQNDKUtils::getDensityDpi(android_app_state) / 25.4;
    left = thickness; bottom = thickness; right = engine.width - thickness; top = engine.height - thickness;
    Window2ObjectCoordinates(left, bottom, zDefaultLayer, engine.width, engine.height);
@@ -492,6 +515,7 @@ void TESTFN_AddRandomBody(engine &engine) {
     cntuv++;
     game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
    }
+   ///////////////////////////////////////////////////////////////////////    LOAD GRAPHICS STOP
 
 
 
@@ -500,29 +524,28 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
 
+   //Node1 = new IFFANNEngine::CNode;
+   //Node1->IsRunning = true;
+   //if (IFFANN::Check_Save_Cascade_FANN("pongpaddle", IFFANN::CnFinalFannPostscript)) {
+   // IFFANN::Load_Cascade_FANN(&Node1->ifann, "pongpaddle", IFFANN::CnFinalFannPostscript);
+   //}   
+   //FANNPong.input_neurons = 4;
+   //FANNPong.max_neurons = 30;
+   //FANNPong.desired_error = 0.00000;
+   //FANNPong.input_scale = 10.0;
+   //FANNPong.output_scale = 10.0;
+   //if (!Node1->ifann.ann){
+   // IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node1->ifann), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+   // IFFANN::Save_Cascade_FANN(&Node1->ifann, IFFANN::CnFinalFannPostscript);
+   //}
+   //Node1->LoadCore("pongpaddle");
+   /////////////////////////////////////
 
-   //memset(&Node1->ifann,0,sizeof(Node1->ifann)/);
-   Node1 = new IFFANNEngine::CNode;
-   Node1->IsRunning = true;
-   if (IFFANN::Check_Save_Cascade_FANN("pongpaddle", IFFANN::CnFinalFannPostscript)) {
-    IFFANN::Load_Cascade_FANN(&Node1->ifann, "pongpaddle", IFFANN::CnFinalFannPostscript);
-   }   
-   FANNPong.input_neurons = 4;
-   FANNPong.max_neurons = 30;
-   FANNPong.desired_error = 0.00000;
-   FANNPong.input_scale = 10.0;
-   FANNPong.output_scale = 10.0;
-   if ((!Node1->ifann.ann)|| (Node1->ifann.ann->num_input != FANNPong.input_neurons) || (Node1->ifann.ann->num_output != FANNPong.output_neurons)){
-    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node1->ifann), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
-    IFFANN::Save_Cascade_FANN(&Node1->ifann, IFFANN::CnFinalFannPostscript);
-   }
-   //IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node1->ifann), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
 
+
+   ////////////////////////////  Load Nodes START
+   AIPong_Load_Node(&Node1, "pongpaddle", &FANNPong);
    Pong_Learning_Phase = false;
-   //input_data_sets = 0;
-
-   Network.NodeRegister.Register(Node1);
-   IFFANN::Load_Cascade_FANN(&Node1->ifann, "pongpaddle", IFFANN::CnFinalFannPostscript);
    if (IFFANN::Train_Cascade_FANN(&Node1->ifann, NULL, 0, 1, false)) {
     input_data.clear();
     output_data.clear();
@@ -538,9 +561,9 @@ void TESTFN_AddRandomBody(engine &engine) {
     input_data_head= input_data_sets;
     input_data_head_count = PaddleBrainsTrainSizeLimit+1;
    }
-   //IFFANN::Save_Cascade_FANN(&Node1->ifann, IFFANN::CnFinalFannPostscript);
-   Node1->LoadCore("pongpaddle");
    
+   
+
 
 
    FANNPongBounce.input_neurons = 6;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
@@ -548,15 +571,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    FANNPongBounce.desired_error = 0.000;
    FANNPongBounce.input_scale = 0.1;
    FANNPongBounce.output_scale = 0.1;
-   Node2 = new IFFANNEngine::CNode;   
-   Node2->IsRunning = false;
-   if (IFFANN::Check_Save_Cascade_FANN("pongpaddlebounce", IFFANN::CnFinalFannPostscript)) {
-    IFFANN::Load_Cascade_FANN(&Node2->ifann, "pongpaddlebounce", IFFANN::CnFinalFannPostscript);
-   }
-   if (!Node2->ifann.ann) 
-    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node2->ifann), FANNPongBounce.input_neurons, FANNPongBounce.output_neurons, "pongpaddlebounce"), FANNPongBounce.max_neurons, FANNPongBounce.neurons_between_reports, FANNPongBounce.desired_error, FANNPongBounce.input_scale, FANNPongBounce.output_scale);
-   Network.NodeRegister.Register(Node2);
-   IFFANN::Load_Cascade_FANN(&Node2->ifann, "pongpaddlebounce", IFFANN::CnFinalFannPostscript);
+   AIPong_Load_Node(&Node2, "pongpaddlebounce", &FANNPongBounce, false);
    if (IFFANN::Train_Cascade_FANN(&Node2->ifann, NULL, 0, 1, false)) {
     bounce_input_data.clear();
     bounce_output_data.clear();
@@ -570,10 +585,6 @@ void TESTFN_AddRandomBody(engine &engine) {
     }
     bounce_data_counter = Node2->ifann.ann_train->train_data->num_data;
    }
-
-   IFFANN::Save_Cascade_FANN(&Node2->ifann, IFFANN::CnFinalFannPostscript);
-   Node2->LoadCore("pongpaddlebounce");
-   
    
    strcpy(Select1_unique_name,"pongpaddleselect");
    Select1_FANNPong.input_neurons = 5;//
@@ -610,24 +621,21 @@ void TESTFN_AddRandomBody(engine &engine) {
    Node2_1_FANNPong.desired_error = 0.001;
    Node2_1_FANNPong.input_scale = FANNPongBounce.input_scale;
    Node2_1_FANNPong.output_scale = FANNPongBounce.output_scale;
-   Node2_1_Node = new IFFANNEngine::CNode;
-   Node2_1_Node->IsRunning = false;
-   if (IFFANN::Check_Save_Cascade_FANN(Node2_1_unique_name, IFFANN::CnTrainedFannPostscript)) {
-    IFFANN::Load_Cascade_FANN(&Node2_1_Node->ifann, Node2_1_unique_name, IFFANN::CnTrainedFannPostscript);
+   AIPong_Load_Node(&Node2_1_Node, Node2_1_unique_name, &Node2_1_FANNPong, false);
+   if (IFFANN::Train_Cascade_FANN(&Node2->ifann, NULL, 0, 1, false)) {
+    bounce_input_data.clear();
+    bounce_output_data.clear();
+    for (unsigned int cnt = 0; cnt < Node2->ifann.ann_train->train_data->num_data; cnt++) {
+     for (unsigned int inputcnt = 0; inputcnt < Node2->ifann.ann_train->train_data->num_input; inputcnt++) {
+      bounce_input_data.push_back(Node2->ifann.ann_train->train_data->input[cnt][inputcnt]);
+     }
+     for (unsigned int outputcnt = 0; outputcnt < Node2->ifann.ann_train->train_data->num_output; outputcnt++) {
+      bounce_output_data.push_back(Node2->ifann.ann_train->train_data->output[cnt][outputcnt]);
+     }
+    }
+    bounce_data_counter = Node2->ifann.ann_train->train_data->num_data;
    }
-   if (!Node2_1_Node->ifann.ann) {
-    IFFANN::Setup_Train_Cascade_FANN(
-     IFFANN::Create_Cascade_FANN(
-      IFFANN::Init_Cascade_FANN(&Node2_1_Node->ifann), Node2_1_FANNPong.input_neurons, Node2_1_FANNPong.output_neurons, Node2_1_unique_name),
-     Node2_1_FANNPong.max_neurons, Node2_1_FANNPong.neurons_between_reports,
-     Node2_1_FANNPong.desired_error, Node2_1_FANNPong.input_scale, Node2_1_FANNPong.output_scale);
-    IFFANN::Load_Cascade_FANN(&Node2_1_Node->ifann, Node2_1_unique_name, IFFANN::CnTrainedFannPostscript);
-   }
-   Network.NodeRegister.Register(Node2_1_Node);
-   
-   IFFANN::Save_Cascade_FANN(&Node2_1_Node->ifann, IFFANN::CnFinalFannPostscript);
-   Node2_1_Node->LoadCore(Node2_1_unique_name);
-
+   ////////////////////////////  Load Nodes STOP
 
 
 

@@ -21,7 +21,7 @@ namespace IFFANN {
  }
 
  //unique_name parameter is used for file operations to generate multiple different file names
- IFS_Cascade_FANN *Create_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int inputs_number, unsigned int outputs_number, char *unique_name) {
+ IFS_Cascade_FANN *Create_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int inputs_number, unsigned int outputs_number, char const  * const unique_name) {
   Cleanup_Cascade_FANN(ifann);
   ifann->ann = fann_create_shortcut(2, inputs_number, outputs_number);
   ifann->unique_name = (char*)malloc(strlen(unique_name) * sizeof(ifann->unique_name[0]) + 1);

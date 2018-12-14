@@ -40,7 +40,7 @@ namespace IFFANN{
  void Cleanup_Cascade_FANN(IFS_Cascade_FANN  * const ifann);
 
  //unique_name parameter is used for file operations to generate multiple different file names
- IFS_Cascade_FANN *Create_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int inputs_number, unsigned int outputs_number, char *unique_name );
+ IFS_Cascade_FANN *Create_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int inputs_number, unsigned int outputs_number, char const * const unique_name );
  
  IFS_Cascade_FANN *Setup_Train_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int max_neurons, unsigned int neurons_between_reports, fann_type desired_error, fann_type input_scale, fann_type output_scale );
 
