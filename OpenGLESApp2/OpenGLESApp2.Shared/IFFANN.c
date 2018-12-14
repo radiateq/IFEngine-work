@@ -182,7 +182,7 @@ namespace IFFANN {
   return true;
  }
  //User must descale output after running only 
- bool Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback, unsigned int num_data, int load_save_train) {
+ bool Train_Cascade_FANN(IFS_Cascade_FANN *ifann, TTrain_Cascade_FANN_Callback *train_callback, unsigned int num_data, int load_save_train, bool _train) {
 
   //ifann->ann_train->num_data = num_data;
   char buffer[BUFSIZ + 1];
@@ -206,7 +206,9 @@ namespace IFFANN {
   //fann_scale_train_data(ifann->ann_train->train_data, -1, 1);
   //ifann->ann->scale_factor_in
   fann_set_scaling_params(ifann->ann, ifann->ann_train->train_data, -1, 1, -1, 1);
-  fann_cascadetrain_on_data(ifann->ann, ifann->ann_train->train_data, ifann->ann_train->max_neurons, ifann->ann_train->neurons_between_reports, ifann->ann_train->desired_error);
+
+  if(_train)
+   fann_cascadetrain_on_data(ifann->ann, ifann->ann_train->train_data, ifann->ann_train->max_neurons, ifann->ann_train->neurons_between_reports, ifann->ann_train->desired_error);
    
 
 

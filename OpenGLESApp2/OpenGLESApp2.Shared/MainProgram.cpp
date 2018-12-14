@@ -44,7 +44,7 @@ bool DEMO4_initialized = false;
 float thickness;
 float left, bottom, right, top;
 float radius, dummy;
-IFFANN::IFS_Cascade_FANN PaddleBrains;
+//IFFANN::IFS_Cascade_FANN Node1->ifann;
 bool Pong_Learning_Phase = false;
 SFANNPong FANNPong, FANNPongBounce;
 IFFANNEngine::CNetwork Network;
@@ -95,9 +95,10 @@ char Node2_1_unique_name[1024];
 bool Node2_1_train = false;
 //NODE 5 -------  STOP
 
-unsigned int BounceBrainTrainSizeLimit = 60, PaddleBrainsTrainSizeLimit = 40;
-unsigned int Node2_1_train_size_limit = 60;
+unsigned int BounceBrainTrainSizeLimit = 60, PaddleBrainsTrainSizeLimit = 30;
+unsigned int Node2_1_train_size_limit = 90;
 bool trained[3] = { 0 }; 
+fann_type Node1_train_error = 0.0;
 //unsigned int BounceBrainTrainSizeLimit = 2, PaddleBrainsTrainSizeLimit = 4;
 //unsigned int Node2_1_train_size_limit = 6;
 
@@ -500,24 +501,44 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
 
-   //memset(&PaddleBrains,0,sizeof(PaddleBrains)/);
-   if (IFFANN::Check_Save_Cascade_FANN("pongpaddle", IFFANN::CnTrainedFannPostscript)) {
-    IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
+   //memset(&Node1->ifann,0,sizeof(Node1->ifann)/);
+   Node1 = new IFFANNEngine::CNode;
+   Node1->IsRunning = true;
+   if (IFFANN::Check_Save_Cascade_FANN("pongpaddle", IFFANN::CnFinalFannPostscript)) {
+    IFFANN::Load_Cascade_FANN(&Node1->ifann, "pongpaddle", IFFANN::CnFinalFannPostscript);
    }   
    FANNPong.input_neurons = 4;
    FANNPong.max_neurons = 30;
-   FANNPong.desired_error = 0.05;
-   if ((!PaddleBrains.ann)|| (PaddleBrains.ann->num_input != FANNPong.input_neurons) || (PaddleBrains.ann->num_output != FANNPong.output_neurons)) IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
-   //IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+   FANNPong.desired_error = 0.00000;
+   FANNPong.input_scale = 10.0;
+   FANNPong.output_scale = 10.0;
+   if ((!Node1->ifann.ann)|| (Node1->ifann.ann->num_input != FANNPong.input_neurons) || (Node1->ifann.ann->num_output != FANNPong.output_neurons)){
+    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node1->ifann), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+    IFFANN::Save_Cascade_FANN(&Node1->ifann, IFFANN::CnFinalFannPostscript);
+   }
+   //IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node1->ifann), FANNPong.input_layers, FANNPong.output_layers, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
 
    Pong_Learning_Phase = false;
    //input_data_sets = 0;
 
-   Node1 = new IFFANNEngine::CNode;
-   Node1->IsRunning = true;
    Network.NodeRegister.Register(Node1);
-   IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
-   IFFANN::Save_Cascade_FANN(&PaddleBrains, IFFANN::CnFinalFannPostscript);
+   IFFANN::Load_Cascade_FANN(&Node1->ifann, "pongpaddle", IFFANN::CnFinalFannPostscript);
+   if (IFFANN::Train_Cascade_FANN(&Node1->ifann, NULL, 0, 1, false)) {
+    input_data.clear();
+    output_data.clear();
+    for (unsigned int cnt = 0; cnt < Node1->ifann.ann_train->train_data->num_data; cnt++) {
+     for (unsigned int inputcnt = 0; inputcnt < Node1->ifann.ann_train->train_data->num_input; inputcnt++) {
+      input_data.push_back(Node1->ifann.ann_train->train_data->input[cnt][inputcnt]);
+     }
+     for (unsigned int outputcnt = 0; outputcnt < Node1->ifann.ann_train->train_data->num_output; outputcnt++) {
+      output_data.push_back(Node1->ifann.ann_train->train_data->output[cnt][outputcnt]);
+     }
+    }
+    input_data_sets = Node1->ifann.ann_train->train_data->num_data;
+    input_data_head= input_data_sets;
+    input_data_head_count = PaddleBrainsTrainSizeLimit;
+   }
+   //IFFANN::Save_Cascade_FANN(&Node1->ifann, IFFANN::CnFinalFannPostscript);
    Node1->LoadCore("pongpaddle");
    
 
@@ -536,7 +557,7 @@ void TESTFN_AddRandomBody(engine &engine) {
     IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node2->ifann), FANNPongBounce.input_neurons, FANNPongBounce.output_neurons, "pongpaddlebounce"), FANNPongBounce.max_neurons, FANNPongBounce.neurons_between_reports, FANNPongBounce.desired_error, FANNPongBounce.input_scale, FANNPongBounce.output_scale);
    Network.NodeRegister.Register(Node2);
    IFFANN::Load_Cascade_FANN(&Node2->ifann, "pongpaddlebounce", IFFANN::CnTrainedFannPostscript);
-   if (IFFANN::Train_Cascade_FANN(&Node2->ifann, NULL, 0, 1)) {
+   if (IFFANN::Train_Cascade_FANN(&Node2->ifann, NULL, 0, 1, false)) {
     bounce_input_data.clear();
     bounce_output_data.clear();
     for (unsigned int cnt = 0; cnt < Node2->ifann.ann_train->train_data->num_data; cnt++) {
@@ -556,8 +577,8 @@ void TESTFN_AddRandomBody(engine &engine) {
    
    strcpy(Select1_unique_name,"pongpaddleselect");
    Select1_FANNPong.input_neurons = 5;//
-   Select1_FANNPong.max_neurons = 30;
-   Select1_FANNPong.desired_error = 0.000001;
+   Select1_FANNPong.max_neurons = 35;
+   Select1_FANNPong.desired_error = 0.00000;
    Select1_FANNPong.input_scale = 0.1;
    Select1_FANNPong.output_scale = 0.1;
    Select1_Node = new IFFANNEngine::CNode;
@@ -585,8 +606,8 @@ void TESTFN_AddRandomBody(engine &engine) {
 
    strcpy(Node2_1_unique_name, "pongpaddlebouncetune");
    Node2_1_FANNPong.input_neurons = 7;//
-   Node2_1_FANNPong.max_neurons = 30;
-   Node2_1_FANNPong.desired_error = 0.000000;
+   Node2_1_FANNPong.max_neurons = 35;
+   Node2_1_FANNPong.desired_error = 0.001;
    Node2_1_FANNPong.input_scale = FANNPongBounce.input_scale;
    Node2_1_FANNPong.output_scale = FANNPongBounce.output_scale;
    Node2_1_Node = new IFFANNEngine::CNode;
@@ -600,9 +621,10 @@ void TESTFN_AddRandomBody(engine &engine) {
       IFFANN::Init_Cascade_FANN(&Node2_1_Node->ifann), Node2_1_FANNPong.input_neurons, Node2_1_FANNPong.output_neurons, Node2_1_unique_name),
      Node2_1_FANNPong.max_neurons, Node2_1_FANNPong.neurons_between_reports,
      Node2_1_FANNPong.desired_error, Node2_1_FANNPong.input_scale, Node2_1_FANNPong.output_scale);
+    IFFANN::Load_Cascade_FANN(&Node2_1_Node->ifann, Node2_1_unique_name, IFFANN::CnTrainedFannPostscript);
    }
    Network.NodeRegister.Register(Node2_1_Node);
-   IFFANN::Load_Cascade_FANN(&Node2_1_Node->ifann, Node2_1_unique_name, IFFANN::CnTrainedFannPostscript);
+   
    IFFANN::Save_Cascade_FANN(&Node2_1_Node->ifann, IFFANN::CnFinalFannPostscript);
    Node2_1_Node->LoadCore(Node2_1_unique_name);
 
@@ -610,9 +632,13 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
    //Launch the ball
-   float launch_y = (drand48()) * 500.0 - 250.0;
+   float launch_y = 200;//(drand48()) * 500.0 - 250.0;
    game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*1000.0-500.0, launch_y), game_body[2]->body->GetPosition(), true);
-
+   if(launch_y>0){
+    Node1->IsRunning = true;
+    Node2->IsRunning = false;
+    Node2_1_Node->IsRunning = false;
+   }
    
 
 
@@ -653,15 +679,19 @@ void TESTFN_AddRandomBody(engine &engine) {
      deleteamount = check_input_data_sets_AI;
     }
     input_data_head_count--;
+
+    IFFANN::Train_Cascade_FANN(&Node1->ifann, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets, 2,false);
+    Node1_train_error = 1.0;
+
     //deleteamount = 0;
 //int ertert = input_data.size();
 //int edddrtert = output_data.size();
 
-    while (input_data.size() > (deleteamount * FANNPong.input_neurons))
+    while (input_data.size() > (deleteamount * Node1->ifann.ann->num_input))
      input_data.pop_back();
     while (output_data.size() > (deleteamount * 1))
      output_data.pop_back();
-    input_data_sets = input_data.size() / FANNPong.input_neurons;
+    input_data_sets = input_data.size() / Node1->ifann.ann->num_input;
 
     //Reset the ball to the center
     game_body[2]->body->SetTransform(b2Vec2(0, 0), game_body[2]->body->GetAngle());
@@ -669,7 +699,14 @@ void TESTFN_AddRandomBody(engine &engine) {
     game_body[2]->body->SetAngularVelocity(0);
     //static float direction_x = -1.0;
     //game_body[2]->body->ApplyLinearImpulse((b2Vec2((drand48()*2.0-1.0)* 550.0, (drand48() * -1.0) * 300.0)), game_body[2]->body->GetPosition(), true);
-    game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*1000.0-500.0, drand48()*1000.0-500.0), game_body[2]->body->GetPosition(), true);
+    float launch_y = 200;//drand48()*1000.0 - 500.0;
+    game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*1000.0-500.0, launch_y), game_body[2]->body->GetPosition(), true);
+    if(launch_y>0){
+     LastAIPaddle = false;
+     Node1->IsRunning = true;
+     Node2->IsRunning = false;
+     Node2_1_Node->IsRunning = false;
+    }
     //direction_x+=0.1;
     //if(direction_x>1.0)direction_x = -1.0;
 
@@ -727,15 +764,19 @@ void TESTFN_AddRandomBody(engine &engine) {
     }
 
 
-    
+
     {
      if(AutoPlayer){
       if (!trained[0] && input_data_head_count >= PaddleBrainsTrainSizeLimit && Pong_Learning_Phase) {
        trained[0] = true;
-       IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBrains), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
-       IFFANN::Train_Cascade_FANN(&PaddleBrains, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets);
-       IFFANN::Load_Cascade_FANN(&PaddleBrains, "pongpaddle", IFFANN::CnTrainedFannPostscript);
-       IFFANN::Save_Cascade_FANN(&PaddleBrains, IFFANN::CnFinalFannPostscript);
+       
+       IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node1->ifann), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
+       IFFANN::Train_Cascade_FANN(&Node1->ifann, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets,2, false);
+       Node1_train_error = fann_train_epoch(Node1->ifann.ann, Node1->ifann.ann_train->train_data);
+
+       IFFANN::IFS_Cascade_FANN temp_ifann;
+       IFFANN::Load_Cascade_FANN(&temp_ifann, "pongpaddle", IFFANN::CnTrainedFannPostscript);
+       IFFANN::Save_Cascade_FANN(&temp_ifann, IFFANN::CnFinalFannPostscript);
        //Node1->UnloadCore();
        //Network.NodeRegister.Unregister(Node1);      
        //bool noderun = Node1->IsRunning;
@@ -743,24 +784,24 @@ void TESTFN_AddRandomBody(engine &engine) {
        //Node1 = new IFFANNEngine::CNode;
        //Node1->IsRunning = noderun;
        //Network.NodeRegister.Register(Node1);
-       Node1->LoadCore("pongpaddle");
+       //Node1->LoadCore("pongpaddle");
       
       
        Pong_Learning_Phase = false;
-       struct timespec temp_timespec;
-       clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
-       TEST_Last_Added_Body_Time = temp_timespec;
+       //struct timespec temp_timespec;
+       //clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+       //TEST_Last_Added_Body_Time = temp_timespec;
       }
       //Train network
       if (!trained[1] && bounce_data_counter >= BounceBrainTrainSizeLimit && train_bounce_network) {
        trained[1] = true;
        train_bounce_network = false;
        ball_state = -1;
-       IFFANNEngine::IFS_Cascade_FANN PaddleBounceBrains;
-       IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&PaddleBounceBrains), FANNPongBounce.input_neurons, FANNPongBounce.output_neurons, "pongpaddlebounce"), FANNPongBounce.max_neurons, FANNPongBounce.neurons_between_reports, FANNPongBounce.desired_error, FANNPongBounce.input_scale, FANNPongBounce.output_scale);
-       IFFANN::Train_Cascade_FANN(&PaddleBounceBrains, Train_Cascade_FANN_PaddleBrainsBounce_Callback, bounce_data_counter,2);
-       IFFANN::Load_Cascade_FANN(&PaddleBounceBrains, "pongpaddlebounce", IFFANN::CnTrainedFannPostscript);
-       IFFANN::Save_Cascade_FANN(&PaddleBounceBrains, IFFANN::CnFinalFannPostscript);
+       //IFFANNEngine::IFS_Cascade_FANN PaddleBounceBrains;
+       IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node2->ifann), FANNPongBounce.input_neurons, FANNPongBounce.output_neurons, "pongpaddlebounce"), FANNPongBounce.max_neurons, FANNPongBounce.neurons_between_reports, FANNPongBounce.desired_error, FANNPongBounce.input_scale, FANNPongBounce.output_scale);
+       IFFANN::Train_Cascade_FANN(&Node2->ifann, Train_Cascade_FANN_PaddleBrainsBounce_Callback, bounce_data_counter,2);
+       IFFANN::Load_Cascade_FANN(&Node2->ifann, "pongpaddlebounce", IFFANN::CnTrainedFannPostscript);
+       IFFANN::Save_Cascade_FANN(&Node2->ifann, IFFANN::CnFinalFannPostscript);
        Node2->LoadCore("pongpaddlebounce");
       }
       if(!trained[2] && Node2_1_output_data.size() >= Node2_1_train_size_limit && Node2_1_train){
@@ -784,6 +825,10 @@ void TESTFN_AddRandomBody(engine &engine) {
        AutoPlayer = false;
       }
      }
+     if (Node1_train_error > 0.02) {
+      Node1_train_error = fann_train_epoch(Node1->ifann.ann, Node1->ifann.ann_train->train_data);
+     }
+
 
      //input_data_sets = 0;
      //input_data.clear();
@@ -820,7 +865,9 @@ void TESTFN_AddRandomBody(engine &engine) {
      }
 
      {
-      if (!AIPaddle) {
+      if (ballposition.y>0) {
+       paddleposition = game_body[4]->body->GetPosition();
+      }else{
        paddleposition = game_body[3]->body->GetPosition();
       }
       //Store data to train
@@ -949,6 +996,13 @@ void TESTFN_AddRandomBody(engine &engine) {
        static float prev_dist = 0;
        static float prev_padx = 0;
        static float skipnum = 0;
+       ballposition = game_body[2]->body->GetPosition();
+       if (ballposition.y > 0) {
+        paddleposition = game_body[4]->body->GetPosition();
+       }
+       else {
+        paddleposition = game_body[3]->body->GetPosition();
+       }
        float bal_pad_distance = b2Distance(paddleposition, ballposition);
 
        //if (bal_pad_distance > 6.0){
@@ -981,14 +1035,14 @@ void TESTFN_AddRandomBody(engine &engine) {
            input_data.push_back(0);
           }
 
-          input_data.push_back(-ballposition.x/10.0);
+          input_data.push_back(-ballposition.x/ Node1->ifann.input_scale);
 
 
           if (ballposition.x < 0) {
-           input_data.push_back(-(left - ballposition.x)/10.0);
+           input_data.push_back(-(left - ballposition.x)/ Node1->ifann.input_scale);
           }
           else {
-           input_data.push_back((right - ballposition.x) / 10.0);
+           input_data.push_back((right - ballposition.x) / Node1->ifann.input_scale);
           }
          // input_data.push_back(-game_body[4]->body->GetPosition().x);
 
@@ -1001,7 +1055,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           // input_data.push_back((train_ndelta_y[cnt] = train_ndelta_y[cnt + 1] - train_ndelta_y[cnt]));
           //}
           if (paddleposition.x) {
-           output_data.push_back((-paddleposition.x) / PaddleBrains.output_scale);
+           output_data.push_back((-paddleposition.x) / Node1->ifann.output_scale);
           }
           else {
            output_data.push_back(0);
@@ -1018,7 +1072,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           // input_data.push_back((train_ndelta_y[cnt] = train_ndelta_y[cnt + 1] - train_ndelta_y[cnt]));
           //}
           if((prev_val01 - b2Distance(paddleposition, ballposition))){
-           input_data.push_back((prev_val01 - b2Distance(paddleposition, ballposition)) / PaddleBrains.input_scale);
+           input_data.push_back((prev_val01 - b2Distance(paddleposition, ballposition)) / Node1->ifann.input_scale);
           }else{
            input_data.push_back(0);
           }
@@ -1029,32 +1083,34 @@ void TESTFN_AddRandomBody(engine &engine) {
            input_data.push_back(0);
           }
           //prev_dist = b2Distance(paddleposition, ballposition);
-          input_data.push_back(ballposition.x/10.0);
+          input_data.push_back(ballposition.x/ Node1->ifann.input_scale);
+
           if (ballposition.x < 0) {
-           input_data.push_back((left - ballposition.x)/10.0);
+           input_data.push_back((left - ballposition.x)/ Node1->ifann.input_scale);
           }
           else {
-           input_data.push_back(-(right - ballposition.x)/10.0);
+           input_data.push_back(-(right - ballposition.x)/ Node1->ifann.input_scale);
           }
          // input_data.push_back(game_body[3]->body->GetPosition().x);
           //input_data.push_back((paddleposition.y - ballposition.y) );
-          //input_data.push_back((paddleposition.x) / PaddleBrains.input_scale);
-          //input_data.push_back((paddleposition.y) / PaddleBrains.input_scale);
-          //output_data.push_back(paddleposition.x / PaddleBrains.output_scale);
-          //input_data.push_back((paddleposition.x) / PaddleBrains.input_scale);
-          //input_data.push_back((ballposition.x) / PaddleBrains.input_scale);
+          //input_data.push_back((paddleposition.x) / Node1->ifann.input_scale);
+          //input_data.push_back((paddleposition.y) / Node1->ifann.input_scale);
+          //output_data.push_back(paddleposition.x / Node1->ifann.output_scale);
+          //input_data.push_back((paddleposition.x) / Node1->ifann.input_scale);
+          //input_data.push_back((ballposition.x) / Node1->ifann.input_scale);
           if(paddleposition.x){
-           output_data.push_back((paddleposition.x) / PaddleBrains.output_scale);
+           output_data.push_back((paddleposition.x) / Node1->ifann.output_scale);
           }else{
            output_data.push_back(0);
           }
           prev_padx = paddleposition.x;
          }
          
-         input_data_sets=input_data.size() / FANNPong.input_neurons;
+         //Limit size of training set
+         input_data_sets=input_data.size() / Node1->ifann.ann->num_input;
          if (input_data_head_count >= PaddleBrainsTrainSizeLimit) {
-          input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (input_data_head * FANNPong.input_neurons)));
-          input_data_sets = input_data.size() / FANNPong.input_neurons;
+          input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (input_data_head * Node1->ifann.ann->num_input)));
+          input_data_sets = input_data.size() / Node1->ifann.ann->num_input;
           output_data.erase(output_data.begin(), output_data.begin() + output_data.size() - input_data_head);
           input_data_head_count--;
          }         
@@ -1072,6 +1128,7 @@ void TESTFN_AddRandomBody(engine &engine) {
         bounce_data_counter = bounce_output_data.size();
        //}
 
+       //Load train data for node 1
        Node2_1_input_data.push_back(Node2->inputs[0]);
        Node2_1_input_data.push_back(Node2->inputs[1]);
        Node2_1_input_data.push_back(Node2->inputs[2]);
@@ -1142,15 +1199,15 @@ void TESTFN_AddRandomBody(engine &engine) {
           }
           break;
          case 2:
-          *pin_value = -ballposition.x/10.0 ;
+          *pin_value = -ballposition.x/ Node1->ifann.input_scale;
           break;
          case 3:
           if(ballposition.x< 0){
-           *pin_value = -(left- ballposition.x)/10.0;
+           *pin_value = -(left- ballposition.x);
           }else{
-           *pin_value = (right - ballposition.x)/10.0;
+           *pin_value = (right - ballposition.x);
           }
-          *pin_value/=10.0;
+          *pin_value/= Node1->ifann.input_scale;
           break;
          case 4:
           *pin_value = -game_body[4]->body->GetPosition().x;
