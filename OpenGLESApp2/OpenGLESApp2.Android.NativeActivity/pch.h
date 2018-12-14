@@ -14,6 +14,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <numeric>
+#include <limits>
 #include <sys/resource.h>
 
 #include <EGL/egl.h>
