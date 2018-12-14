@@ -544,6 +544,11 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
    ////////////////////////////  Load Nodes START
+   FANNPong.input_neurons = 4;
+   FANNPong.max_neurons = 30;
+   FANNPong.desired_error = 0.00000;
+   FANNPong.input_scale = 10.0;
+   FANNPong.output_scale = 10.0;
    AIPong_Load_Node(&Node1, "pongpaddle", &FANNPong);
    Pong_Learning_Phase = false;
    if (IFFANN::Train_Cascade_FANN(&Node1->ifann, NULL, 0, 1, false)) {
