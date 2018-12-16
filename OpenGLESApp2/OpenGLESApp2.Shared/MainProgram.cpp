@@ -102,8 +102,9 @@ bool trained[3] = { 0 };
 fann_type Node1_train_error = 1;
 fann_type Node2_train_error = 1;
 fann_type Node2_1_train_error = 1;
-unsigned int BounceBrainTrainSizeLimit = 200, PaddleBrainsTrainSizeLimit = 2000;
-unsigned int Node2_1_train_size_limit = 200;
+fann_type Node2_1_desired_position_x = 0.0;
+unsigned int BounceBrainTrainSizeLimit = 500, PaddleBrainsTrainSizeLimit = 2000;
+unsigned int Node2_1_train_size_limit = 5hysisca00;
 
 
 
@@ -727,6 +728,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
    }  else {
 
+    game_body[3]->body->SetLinearVelocity(b2Vec2(0.0,0.0));
     if (IFGameEditor::GetTouchEvent()) {
      while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
 
@@ -742,7 +744,8 @@ void TESTFN_AddRandomBody(engine &engine) {
        float screenx = touchx;
        float screeny = touchy;
        Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height);
-       game_body[3]->body->SetTransform(b2Vec2(screenx / IFA_box2D_factor, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
+       //game_body[3]->body->SetTransform(b2Vec2(screenx / IFA_box2D_factor, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
+       game_body[3]->body->SetLinearVelocity(b2Vec2((screenx / IFA_box2D_factor- game_body[3]->body->GetPosition().x) * sqrt(game_body[2]->body->GetLinearVelocity().y*game_body[2]->body->GetLinearVelocity().y + game_body[2]->body->GetLinearVelocity().x*game_body[2]->body->GetLinearVelocity().x) , 0.0));
        
        //Player may press train button but not more often than once per second
        if (temp_int64 > 1000) {
@@ -788,7 +791,7 @@ void TESTFN_AddRandomBody(engine &engine) {
      if(AutoPlayer){
       if(b2Distance(game_body[3]->body->GetPosition(), game_body[2]->body->GetPosition())>(radius*3.0)){
        game_body[3]->body->SetLinearVelocity(b2Vec2((game_body[2]->body->GetPosition().x - game_body[3]->body->GetPosition().x
-        )*100.0, 0.0));
+        )*10.0, 0.0));
        //game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x + (drand48()-0.5)*2.0, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
        //game_body[3]->body->ApplyLinearImpulse(b2Vec2((game_body[2]->body->GetPosition().x - game_body[3]->body->GetPosition().x + (drand48() - 0.5)*2.0)*100.0, 0.0), game_body[3]->body->GetWorldCenter(), true);      
       }
@@ -1260,8 +1263,15 @@ void TESTFN_AddRandomBody(engine &engine) {
 }
 
       ////////////////////////////////////////////////////////////////////////////// NETWORK EXECUTION START
-      if (true) {
-       ConnectNetwork01();
+      if (true) { 
+
+       b2Vec2 position = game_body[4]->body->GetPosition();
+       game_body[4]->body->SetLinearVelocity(b2Vec2((Node2_1_desired_position_x - game_body[4]->body->GetPosition().x)*sqrt(game_body[2]->body->GetPosition().x*game_body[2]->body->GetPosition().x + game_body[2]->body->GetPosition().y*game_body[2]->body->GetPosition().y), 0.0));
+       if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
+       if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
+
+
+       ConnectNetwork01();       
        paddleposition = game_body[4]->body->GetPosition();
        unsigned int ID;
        fann_type *pin_value;
@@ -1332,10 +1342,12 @@ void TESTFN_AddRandomBody(engine &engine) {
         if(Node1->IsRunning && Node1 == Network.GetNodeByPinID(ID)){
          if (pin_value) {
           fann_type val = *pin_value * Node1->ifann.output_scale;
-          b2Vec2 position = game_body[4]->body->GetPosition();        
-          game_body[4]->body->SetTransform(b2Vec2(-val, position.y), game_body[4]->body->GetAngle());
-          if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
-          if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
+          Node2_1_desired_position_x = -val;
+          //position = game_body[4]->body->GetPosition();        
+          ////game_body[4]->body->SetTransform(b2Vec2(-val, position.y), game_body[4]->body->GetAngle());
+          //game_body[4]->body->SetLinearVelocity(b2Vec2((-val- game_body[4]->body->GetPosition().x)*sqrt(game_body[2]->body->GetPosition().x*game_body[2]->body->GetPosition().x+ game_body[2]->body->GetPosition().y*game_body[2]->body->GetPosition().y), 0.0));
+          //if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
+          //if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
          }
         }else if(Node2->IsRunning && Node2 == Network.GetNodeByPinID(ID)){
 
@@ -1354,9 +1366,8 @@ void TESTFN_AddRandomBody(engine &engine) {
          //get executed data and train with current
          Node2_1_Node->IsRunning = false;
          b2Vec2 position = game_body[4]->body->GetPosition();
-         game_body[4]->body->SetTransform(b2Vec2(Node2_1_Node->outputs[0] / Node2_1_Node->ifann.output_scale, position.y), game_body[4]->body->GetAngle());
-         if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
-         if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
+         //game_body[4]->body->SetTransform(b2Vec2(Node2_1_Node->outputs[0] / Node2_1_Node->ifann.output_scale, position.y), game_body[4]->body->GetAngle());
+         Node2_1_desired_position_x = Node2_1_Node->outputs[0];
         }                
        }
        DisonnectNetwork01();
