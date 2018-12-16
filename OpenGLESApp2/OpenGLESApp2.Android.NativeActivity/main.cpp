@@ -144,10 +144,10 @@ static int engine_init_display(struct engine* engine) {
 */
 
 static void engine_draw_frame(struct engine* engine) {
- if (engine->display == NULL) {
-  // No display.
-  return;
- }
+ //if (engine->display == NULL) {
+ // // No display.
+ // return;
+ //}
 
 
  //cleanup far bodies
@@ -155,8 +155,11 @@ static void engine_draw_frame(struct engine* engine) {
 
  TESTFN_AddRandomBody(*engine);
 
+ if (engine->display != NULL) {
+  PrepareDraw();
+ }
 
- PrepareDraw();
+ 
 
 
  IFAdapter.UpdateSim();
@@ -165,9 +168,10 @@ static void engine_draw_frame(struct engine* engine) {
  TESTFN_PostOperations(*engine);
 
  //CubeTest_draw();
- DrawBodies();
-
- eglSwapBuffers(engine->display, engine->surface);
+ if (engine->display != NULL) {
+  DrawBodies();
+  eglSwapBuffers(engine->display, engine->surface);
+ }
 }
 
 

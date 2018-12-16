@@ -43,23 +43,23 @@ namespace IFFANN {
 
   //Setup network
   fann_set_training_algorithm(ifann->ann, FANN_TRAIN_RPROP);//Option is FANN_TRAIN_QUICKPROP FANN_TRAIN_RPROP
-  fann_set_activation_function_hidden(ifann->ann, FANN_LINEAR);//FANN_LINEAR FANN_SIGMOID_SYMMETRIC
+  fann_set_activation_function_hidden(ifann->ann, FANN_SIGMOID_SYMMETRIC);//FANN_LINEAR FANN_SIGMOID_SYMMETRIC
   fann_set_activation_function_output(ifann->ann, FANN_LINEAR);
   fann_set_train_error_function(ifann->ann, FANN_ERRORFUNC_TANH);
   fann_type steepness[10];
-  steepness[0]=0.1;
-  steepness[1] = 0.2;
-  steepness[2] = 0.3;
-  steepness[3] = 0.4;
-  steepness[4] = 0.5;
-  steepness[5] = 0.6;
-  steepness[6] = 0.7;
-  steepness[7] = 0.8;
-  steepness[8] = 0.9;
-  steepness[9] = 1.0;
+  steepness[0]=0.15;
+  steepness[1] = 0.3;
+  steepness[2] = 0.45;
+  steepness[3] = 0.6;
+  steepness[4] = 0.75;
+  steepness[5] = 0.9;
+  steepness[6] = 1.0;
+  //steepness[7] = 0.8;
+  //steepness[8] = 0.9;
+  //steepness[9] = 1.0;
   
   //steepness = 1;
-  fann_set_cascade_activation_steepnesses(ifann->ann, steepness, 10);
+  fann_set_cascade_activation_steepnesses(ifann->ann, steepness, 7);
   enum fann_activationfunc_enum activation[]= {FANN_SIGMOID, FANN_SIGMOID_SYMMETRIC, FANN_GAUSSIAN, FANN_GAUSSIAN_SYMMETRIC, FANN_ELLIOT, FANN_ELLIOT_SYMMETRIC};
   //activation = FANN_SIN_SYMMETRIC;
   //activation = FANN_SIGMOID_SYMMETRIC;
@@ -205,10 +205,13 @@ namespace IFFANN {
 
   //fann_scale_train_data(ifann->ann_train->train_data, -1, 1);
   //ifann->ann->scale_factor_in
-  fann_set_scaling_params(ifann->ann, ifann->ann_train->train_data, -1, 1, -1, 1);
+  
 
-  if(_train)
+  if(_train){
+   fann_set_scaling_params(ifann->ann, ifann->ann_train->train_data, -1, 1, -1, 1);
    fann_cascadetrain_on_data(ifann->ann, ifann->ann_train->train_data, ifann->ann_train->max_neurons, ifann->ann_train->neurons_between_reports, ifann->ann_train->desired_error);
+   Save_Cascade_FANN(ifann, CnTrainedFannPostscript);
+  }
    
 
 
@@ -216,7 +219,7 @@ namespace IFFANN {
   //int bit_fail_train = fann_get_bit_fail(ifann->ann);
 
 
-  Save_Cascade_FANN(ifann, CnTrainedFannPostscript);
+  
 
   return true;
  }
