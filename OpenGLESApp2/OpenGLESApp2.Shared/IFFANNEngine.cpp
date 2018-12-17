@@ -46,9 +46,16 @@ namespace IFFANNEngine {
    NodeRegister->InputPinRegister.input_pins.Remove(temp_pin->ID);
 
    unsigned int pin_out_ID;
-   for (temp_pin->connected_pins.Iter_Set = temp_pin->connected_pins.Set.begin(); temp_pin->connected_pins.Iter_Set != temp_pin->connected_pins.Set.end(); temp_pin->connected_pins.Iter_Set++) {
+   temp_pin->connected_pins.Iter_Set = temp_pin->connected_pins.Set.begin();
+   while (temp_pin->connected_pins.Iter_Set != temp_pin->connected_pins.Set.end()){
     pin_out_ID = *temp_pin->connected_pins.Iter_Set;
     NodeRegister->Network->DisconnectPins(pin_out_ID, temp_pin->ID);
+    
+    temp_pin->connected_pins.Iter_Set = temp_pin->connected_pins.Set.begin();
+    if(temp_pin->connected_pins.Set.begin() != temp_pin->connected_pins.Set.end()){     
+     temp_pin->connected_pins.Iter_Set++;
+    }
+
    }
    temp_pin->connected_pins.Set.clear();
 
@@ -64,6 +71,12 @@ namespace IFFANNEngine {
    for (temp_pin->connected_pins.Iter_Set = temp_pin->connected_pins.Set.begin(); temp_pin->connected_pins.Iter_Set != temp_pin->connected_pins.Set.end(); temp_pin->connected_pins.Iter_Set++) {
     pin_in_ID = *temp_pin->connected_pins.Iter_Set;
     NodeRegister->Network->DisconnectPins(temp_pin->ID, pin_in_ID);
+    
+    temp_pin->connected_pins.Iter_Set = temp_pin->connected_pins.Set.begin();
+    if (temp_pin->connected_pins.Set.begin() != temp_pin->connected_pins.Set.end()) {
+     temp_pin->connected_pins.Iter_Set++;
+    }
+
    }
    temp_pin->connected_pins.Set.clear();
 
