@@ -98,7 +98,7 @@ float ball_to_pad_prev_distance = FLT_MAX;
 
 //unsigned int BounceBrainTrainSizeLimit = 30, PaddleBrainsTrainSizeLimit = 2000;
 //unsigned int Node2_1_train_size_limit = 60;
-bool trained[3] = { 0 }; 
+bool trained[4] = { 0 }; 
 fann_type Node1_train_error = 1;
 fann_type Node2_train_error = 1;
 fann_type Node2_1_train_error = 1;
@@ -759,7 +759,9 @@ void TESTFN_AddRandomBody(engine &engine) {
            //Pong_Learning_Phase = true;
            AutoPlayer = !AutoPlayer;
            if(AutoPlayer){
-            trained[0] = trained[1] = trained[2] = false;            
+            trained[0] = trained[1] = trained[2] = true; 
+            //
+            trained[3] = false;
            }else{
             game_body[3]->body->SetLinearVelocity(b2Vec2(0,0));
             IFFANN::Train_Cascade_FANN(&Node1->ifann, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets, 2, false);
