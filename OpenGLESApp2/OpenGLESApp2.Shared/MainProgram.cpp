@@ -103,8 +103,8 @@ fann_type Node1_train_error = 1;
 fann_type Node2_train_error = 1;
 fann_type Node2_1_train_error = 1;
 fann_type Node2_1_desired_position_x = 0.0;
-unsigned int BounceBrainTrainSizeLimit = 500, PaddleBrainsTrainSizeLimit = 2000;
-unsigned int Node2_1_train_size_limit = 5hysisca00;
+unsigned int BounceBrainTrainSizeLimit = 1000, PaddleBrainsTrainSizeLimit = 2000;
+unsigned int Node2_1_train_size_limit = 1000;
 
 
 
@@ -595,7 +595,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
    FANNPongBounce.input_neurons = 6;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
-   FANNPongBounce.max_neurons = 28;
+   FANNPongBounce.max_neurons = 25;
    FANNPongBounce.desired_error = 0.000;
    FANNPongBounce.input_scale = 0.1;
    FANNPongBounce.output_scale = 0.1;
@@ -617,7 +617,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    
    strcpy(Select1_unique_name,"pongpaddleselect");
    Select1_FANNPong.input_neurons = 5;//
-   Select1_FANNPong.max_neurons = 35;
+   Select1_FANNPong.max_neurons = 10;
    Select1_FANNPong.desired_error = 0.00000;
    Select1_FANNPong.input_scale = 0.1;
    Select1_FANNPong.output_scale = 0.1;
@@ -646,7 +646,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
    strcpy(Node2_1_unique_name, "pongpaddlebouncetune");
    Node2_1_FANNPong.input_neurons = 7;//
-   Node2_1_FANNPong.max_neurons = 28;
+   Node2_1_FANNPong.max_neurons = 25;
    Node2_1_FANNPong.desired_error = 0.000;
    Node2_1_FANNPong.input_scale = FANNPongBounce.input_scale;
    Node2_1_FANNPong.output_scale = FANNPongBounce.output_scale;
@@ -745,7 +745,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        float screeny = touchy;
        Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height);
        //game_body[3]->body->SetTransform(b2Vec2(screenx / IFA_box2D_factor, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
-       game_body[3]->body->SetLinearVelocity(b2Vec2((screenx / IFA_box2D_factor- game_body[3]->body->GetPosition().x) * sqrt(game_body[2]->body->GetLinearVelocity().y*game_body[2]->body->GetLinearVelocity().y + game_body[2]->body->GetLinearVelocity().x*game_body[2]->body->GetLinearVelocity().x) , 0.0));
+       game_body[3]->body->SetLinearVelocity(b2Vec2(((screenx)/ IFA_box2D_factor- game_body[3]->body->GetPosition().x) * sqrt(game_body[2]->body->GetLinearVelocity().y*game_body[2]->body->GetLinearVelocity().y + game_body[2]->body->GetLinearVelocity().x*game_body[2]->body->GetLinearVelocity().x) , 0.0));
        
        //Player may press train button but not more often than once per second
        if (temp_int64 > 1000) {
@@ -790,8 +790,8 @@ void TESTFN_AddRandomBody(engine &engine) {
     }else{
      if(AutoPlayer){
       if(b2Distance(game_body[3]->body->GetPosition(), game_body[2]->body->GetPosition())>(radius*3.0)){
-       game_body[3]->body->SetLinearVelocity(b2Vec2((game_body[2]->body->GetPosition().x - game_body[3]->body->GetPosition().x
-        )*10.0, 0.0));
+       game_body[3]->body->SetLinearVelocity(b2Vec2(((game_body[2]->body->GetPosition().x - game_body[3]->body->GetPosition().x
+        ) + (drand48()*2.0 - 1.0))*10.0, 0.0));
        //game_body[3]->body->SetTransform(b2Vec2(game_body[2]->body->GetPosition().x + (drand48()-0.5)*2.0, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
        //game_body[3]->body->ApplyLinearImpulse(b2Vec2((game_body[2]->body->GetPosition().x - game_body[3]->body->GetPosition().x + (drand48() - 0.5)*2.0)*100.0, 0.0), game_body[3]->body->GetWorldCenter(), true);      
       }
@@ -1046,7 +1046,7 @@ void TESTFN_AddRandomBody(engine &engine) {
            Node2_1_input_data.push_back(Node2->inputs[4]);
            Node2_1_input_data.push_back(Node2->inputs[5]);
            Node2->outputs = IFFANNEngine::Run_Cascade_FANN(&Node2->ifann, Node2->inputs);
-           Node2_1_input_data.push_back(Node2->outputs[0]);
+           Node2_1_input_data.push_back(Node2->outputs[0] / Node2->ifann.output_scale);
            Node2_1_output_data.push_back(((ballposition.x))*Node2->ifann.output_scale);//Node2->ifann.output_scale is correct
            {//Limit train size
             if (Node2_1_output_data.size() > Node2_1_train_size_limit) {
@@ -1235,7 +1235,7 @@ void TESTFN_AddRandomBody(engine &engine) {
         Node2_1_input_data.push_back(Node2->inputs[4]);
         Node2_1_input_data.push_back(Node2->inputs[5]);
         Node2->outputs = IFFANNEngine::Run_Cascade_FANN(&Node2->ifann, Node2->inputs);
-        Node2_1_input_data.push_back(Node2->outputs[0]);
+        Node2_1_input_data.push_back(Node2->outputs[0] / Node2->ifann.output_scale);
         Node2_1_output_data.push_back(((ballposition.x))*Node2->ifann.output_scale);//Node2->ifann.output_scale is correct
         {//Limit train size
          if (Node2_1_output_data.size() > Node2_1_train_size_limit) {
@@ -1367,7 +1367,7 @@ void TESTFN_AddRandomBody(engine &engine) {
          Node2_1_Node->IsRunning = false;
          b2Vec2 position = game_body[4]->body->GetPosition();
          //game_body[4]->body->SetTransform(b2Vec2(Node2_1_Node->outputs[0] / Node2_1_Node->ifann.output_scale, position.y), game_body[4]->body->GetAngle());
-         Node2_1_desired_position_x = Node2_1_Node->outputs[0];
+         Node2_1_desired_position_x = Node2_1_Node->outputs[0] / Node2_1_Node->ifann.output_scale;
         }                
        }
        DisonnectNetwork01();
