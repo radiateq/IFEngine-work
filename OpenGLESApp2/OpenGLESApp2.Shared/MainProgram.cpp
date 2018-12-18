@@ -36,7 +36,8 @@ ifCB2Body *last_touched_object = NULL;
 GLuint TEST_GUI_Tex_Ary[10] = { 0 };
 ifCB2Body *buttons_body[10];
 //DEMO 4 - Simple Game
-struct timespec Last_GUI_Click_Time;
+//struct timespec Last_GUI_Click_Time;
+unsigned long int Last_GUI_Click_Time;
 bool AutoPlayer = false;
 char char_buffer[BUFSIZ];
 ifCB2Body *game_body[10];
@@ -101,8 +102,8 @@ fann_type Node1_train_error = 1;
 fann_type Node2_train_error = 1;
 fann_type Node2_1_train_error = 1;
 fann_type AI_paddle_desired_position_x = 0.0;
-unsigned int BounceBrainTrainSizeLimit = 100, PaddleBrainsTrainSizeLimit = 200;
-unsigned int Node2_1_train_size_limit = 100, select1_data_counter_limit = 100, select2_data_counter_limit = 100;
+unsigned int BounceBrainTrainSizeLimit = 100, PaddleBrainsTrainSizeLimit = 900;
+unsigned int Node2_1_train_size_limit = 100, select1_data_counter_limit = 1000, select2_data_counter_limit = 100;
 
 
 
@@ -765,13 +766,17 @@ void TESTFN_AddRandomBody(engine &engine) {
 
     game_body[3]->body->SetLinearVelocity(b2Vec2(0.0,0.0));
     if (IFGameEditor::GetTouchEvent()) {
-     while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
-
+     
+     //while ((IFGameEditor::GetTouchEvent(&touchx, &touchy)));
+     
      struct timespec temp_timespec;
      clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
      //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
-     unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&Last_GUI_Click_Time);
-     if (temp_int64 > 0) {
+     //unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&Last_GUI_Click_Time);
+     unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec);     
+     //if (temp_int64 > 0) 
+     {
+      temp_int64 = IFGameEditor::GetTouchEvent(&touchx, &touchy);
       {
        //IFGameEditor::GetTouchEvent(&touchx, &touchy);
 
@@ -783,18 +788,19 @@ void TESTFN_AddRandomBody(engine &engine) {
        game_body[3]->body->SetLinearVelocity(b2Vec2(((screenx)/ IFA_box2D_factor- game_body[3]->body->GetPosition().x) * sqrt(game_body[2]->body->GetLinearVelocity().y*game_body[2]->body->GetLinearVelocity().y + game_body[2]->body->GetLinearVelocity().x*game_body[2]->body->GetLinearVelocity().x) , 0.0));
        
        //Player may press train button but not more often than once per second       
-       if (temp_int64 > 1000) {                        
+       if (temp_int64 > (Last_GUI_Click_Time + 1000000000)) {
+        Last_GUI_Click_Time = temp_int64;
+        //while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
         typename std::list<ifCB2Body*>::iterator iter;
         for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
          if (game_body[5] == *iter) {
-          if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {           
-           //while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
+          if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {                      
 
            //if (input_data_sets > 20) {
            //Pong_Learning_Phase = true;
            AutoPlayer = !AutoPlayer;
            if(AutoPlayer){
-            //trained[3] = false;
+            trained[0] = trained[1] = trained[2] = trained[3] = false;
             //if((trained[0]==true)&&(trained[1] == true)&&(trained[2] == true)){
             // trained[3] = false;
             //}else{
@@ -816,7 +822,7 @@ void TESTFN_AddRandomBody(engine &engine) {
             game_body[3]->body->SetLinearVelocity(b2Vec2(0,0));
             IFFANN::Train_Cascade_FANN(&Node1->ifann, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets, 2, false);
             IFFANN::Train_Cascade_FANN(&Node2->ifann, Train_Cascade_FANN_PaddleBrainsBounce_Callback, bounce_data_counter, 2, false);
-            Setup_Train_Cascade_FANN_Train_Callback(Node2_1_Node->ifann.ann, &Node2_1_input_data, &Node2_1_output_data);           
+            Setup_Train_Cascade_FANN_Train_Callback(Node2_1_Node->ifann.ann, &Node2_1_input_data, &Node2_1_output_data);    
             IFFANN::Train_Cascade_FANN(&Node2_1_Node->ifann, Train_Cascade_FANN_Train_Callback, Node2_1_output_data.size(), 2, false);
             Setup_Train_Cascade_FANN_Train_Callback(Select1_Node->ifann.ann, &select1_input_data, &select1_output_data);
             IFFANN::Train_Cascade_FANN(&Select1_Node->ifann, Train_Cascade_FANN_Train_Callback, select1_output_data.size(), 2, false);
@@ -835,9 +841,7 @@ void TESTFN_AddRandomBody(engine &engine) {
            }
            //}
 
-           clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
-           Last_GUI_Click_Time = temp_timespec;
-
+           //clock_gettime(CLOCK_MONOTONIC, &Last_GUI_Click_Time);
            break;
           }
          }
@@ -1038,7 +1042,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           ball_state = 2;
           ball_enter_leave = 1;
          }else if (ball_state < 0 && hit_body_fix->GetBody() == game_body[3]->body) {//leaving the paddle         
-          ball_state = 1;
+          ball_state = 1;          
          // ball_enter_leave = 1;
          }else if (ball_state == 4&&hit_body_fix->GetBody() == game_body[4]->body){
           //AI paddle (end - desired output)
@@ -1062,6 +1066,7 @@ void TESTFN_AddRandomBody(engine &engine) {
            Node2->IsRunning = true;           
            Node2_1_Node->IsRunning = true;
            Node1->IsRunning = false;
+           Select1_Node->IsRunning = true;
            ball_state = 4;
           }
          }
@@ -1163,7 +1168,7 @@ void TESTFN_AddRandomBody(engine &engine) {
          Select1_Node->inputs[0] = ballposition.x * Select1_Node->ifann.output_scale;
          Select1_Node->inputs[1] = atan2(balllinvel.y, balllinvel.x) * Node2->ifann.input_scale;
          Select1_Node->inputs[2] = sqrt(balllinvel.x*balllinvel.x+ balllinvel.y*balllinvel.y)*0.1;
-         //Select1_Node->IsRunning = true;
+         Select1_Node->IsRunning = true;
 
          //Select2_Node->inputs[0] = (ballposition.x) * Select2_Node->ifann.input_scale;
          //Select2_Node->inputs[1] = (ballposition.y) * Select2_Node->ifann.input_scale;
@@ -1518,7 +1523,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           b2Vec2 position = game_body[4]->body->GetPosition();
           AI_paddle_desired_position_x = Node2_1_Node->outputs[0] / Node2_1_Node->ifann.output_scale;
          }else if (Select1_Node->IsRunning && Select1_Node == Network.GetNodeByPinID(ID)) {
-          Select1_Node->IsRunning = true;
+          Select1_Node->IsRunning = false;
 
           //Inputs x start, arctan2(speed vec y, ), magnitude(speedvec), end posx, input 1, input 2, input 3
           if(select1_train_trigger){
@@ -1527,10 +1532,16 @@ void TESTFN_AddRandomBody(engine &engine) {
            select1_input_data.push_back(Select1_Node->inputs[1]);
            select1_input_data.push_back(Select1_Node->inputs[2]);
            select1_input_data.push_back(Select1_Node->inputs[3]);
-           select1_input_data.push_back(Select1_Node->inputs[4]);
-           select1_input_data.push_back(Select1_Node->inputs[5]);
-           select1_input_data.push_back(Select1_Node->inputs[6]);
+           //select1_input_data.push_back(Select1_Node->inputs[4]);
+           //select1_input_data.push_back(Select1_Node->inputs[5]);
+           //select1_input_data.push_back(Select1_Node->inputs[6]);
+           select1_input_data.push_back(0.0);
+           select1_input_data.push_back(0.0);
+           select1_input_data.push_back(0.0);
+
+
            select1_output_data.push_back(Select1_Node->inputs[3]);
+
            select1_can_train = true;
 
 

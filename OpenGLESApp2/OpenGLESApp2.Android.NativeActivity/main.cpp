@@ -221,6 +221,7 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event) 
  case AINPUT_EVENT_TYPE_MOTION:
   engine->state.x = AMotionEvent_getX(event, 0);
   engine->state.y = AMotionEvent_getY(event, 0);
+  User_Data.Touch_Time = AMotionEvent_getEventTime(event);
   User_Data.Touch_Input_X = engine->state.x;
   User_Data.Touch_Input_Y = engine->state.y;
   User_Data.Event_Indicator_Touch_Input++;
@@ -414,7 +415,7 @@ void android_main(struct android_app* state) {
       //	event.acceleration.z);
       last_x_acceleration = event.acceleration.x;
       last_y_acceleration = event.acceleration.y;
-     }
+     }     
     }
    }
    else if (ident == (LOOPER_ID_USER + 1)) {

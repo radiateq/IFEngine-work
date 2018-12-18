@@ -13,6 +13,7 @@ typedef struct {
  double Touch_Input_X;
  double Touch_Input_Y;
  unsigned int Event_Indicator_Touch_Input;
+ unsigned long int Touch_Time;
  double screenWidth;
  double screenHeight;
  GLuint CubeTexture;
