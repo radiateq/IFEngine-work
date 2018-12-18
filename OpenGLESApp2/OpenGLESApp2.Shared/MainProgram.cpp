@@ -65,15 +65,6 @@ int ball_enter_leave = -1;
 bool train_bounce_network = false, train_input_bounce_set = false;
 //NODE 3 -------   TEMPLATE FOR CLASS START
 //Selects what node to use for paddle x output based on 
-//Input pins
-// 1 Node2 output
-// 2 Node4 output
-// 3 ball x position after leaving player paddle 
-// 4 ball y position after leaving player paddle
-// 5 ball linear vel atan2
-// 6 length of the linear speed vector ( b2Distance (b2Vec2(0,0),b2Vec2(balllinvel)) )
-//Output pins
-// 1 0 or 1 for selecting node 2 or 4
 typedef std::vector<fann_type> TFannVector;
 SFANNPong Select1_FANNPong;
 IFFANNEngine::CNode *Select1_Node;
@@ -83,6 +74,12 @@ unsigned int select1_data_counter = 0;
 char Select1_unique_name[1024];
 //NODE 3 -------   TEMPLATE FOR CLASS STOP
 //NODE 4 -------   Predict paddle intersection from linear velocity and position of the ball after leaving paddle if ball does not hit the wall (replace node 1 but leave node 1 for reference)
+//SFANNPong Select2_FANNPong;
+//IFFANNEngine::CNode *Select2_Node;
+//TFannVector select2_input_data, select2_output_data;
+//bool select2_train_trigger = false, select2_can_train = false;
+//unsigned int select2_data_counter = 0;
+//char Select2_unique_name[1024];
 //NODE 5 -------   
 // Inputs:
 //Same as Node2 and Node2 output
@@ -99,13 +96,13 @@ float ball_to_pad_prev_distance = FLT_MAX;
 
 //unsigned int BounceBrainTrainSizeLimit = 30, PaddleBrainsTrainSizeLimit = 2000;
 //unsigned int Node2_1_train_size_limit = 60;
-bool trained[4] = { 0 }; 
+bool trained[5] = { 0 }; 
 fann_type Node1_train_error = 1;
 fann_type Node2_train_error = 1;
 fann_type Node2_1_train_error = 1;
 fann_type AI_paddle_desired_position_x = 0.0;
-unsigned int BounceBrainTrainSizeLimit = 1000, PaddleBrainsTrainSizeLimit = 2000;
-unsigned int Node2_1_train_size_limit = 1000, select1_data_counter_limit = 1000;
+unsigned int BounceBrainTrainSizeLimit = 100, PaddleBrainsTrainSizeLimit = 200;
+unsigned int Node2_1_train_size_limit = 100, select1_data_counter_limit = 100, select2_data_counter_limit = 100;
 
 
 
@@ -230,6 +227,7 @@ void AIPong_Load_Node(IFFANNEngine::CNode **LoadedNode, char const * const uniqu
 
 }
 void Limit_Node1_data_size(bool trim_to_head = false){
+
  if(trim_to_head){
   ball_to_pad_prev_distance = FLT_MAX;
  }
@@ -271,18 +269,16 @@ void AIPong_Load_Train(IFFANN::IFS_Cascade_FANN * const ifann, TFannVector *_inp
   //bounce_data_counter = Node2_1_Node->ifann.ann_train->train_data->num_data;
  }
 }
-void Select1_Train_Node(){
- IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Select1_Node->ifann), Select1_FANNPong.input_neurons, Select1_FANNPong.output_neurons, Select1_unique_name), Select1_FANNPong.max_neurons, Select1_FANNPong.neurons_between_reports, Select1_FANNPong.desired_error, Select1_FANNPong.input_scale, Select1_FANNPong.output_scale);
- Setup_Train_Cascade_FANN_Train_Callback(Select1_Node->ifann.ann, &select1_input_data, &select1_output_data);
- IFFANN::Train_Cascade_FANN(&Select1_Node->ifann, Train_Cascade_FANN_Train_Callback, select1_output_data.size(), 2);
- IFFANN::Load_Cascade_FANN(&Select1_Node->ifann, Select1_unique_name, IFFANN::CnTrainedFannPostscript);
- IFFANN::Save_Cascade_FANN(&Select1_Node->ifann, IFFANN::CnFinalFannPostscript);
- Select1_Node->LoadCore(Select1_unique_name);
+void Train_Node(IFFANNEngine::CNode * const Node, SFANNPong const * const FANNPong, char const * const unique_name, TFannVector *_input_vector, TFannVector *_output_vector){
+ IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&(Node->ifann)), FANNPong->input_neurons, FANNPong->output_neurons, unique_name), FANNPong->max_neurons, FANNPong->neurons_between_reports, FANNPong->desired_error, FANNPong->input_scale, FANNPong->output_scale);
+ Setup_Train_Cascade_FANN_Train_Callback(Node->ifann.ann, _input_vector, _output_vector);
+ IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Train_Callback, _output_vector->size(), 2);
+ IFFANN::Load_Cascade_FANN(&(Node->ifann), unique_name, IFFANN::CnTrainedFannPostscript);
+ IFFANN::Save_Cascade_FANN(&(Node->ifann), IFFANN::CnFinalFannPostscript);
+ Node->LoadCore(unique_name);
 }
 void ConnectNetwork01(){
  Network.ConnectPins(Node2->GetOutPinByIndex(0), Node2_1_Node->GetInPinByIndex(6)); 
- 
- //Inputs x start, arctan2(speed vec y, x ), magnitude(speedvec), end ball x, input 1, input 2, input 3
  Network.ConnectPins(Node1->GetOutPinByIndex(0), Select1_Node->GetInPinByIndex(4));
  Network.ConnectPins(Node2->GetOutPinByIndex(0), Select1_Node->GetInPinByIndex(5));
  Network.ConnectPins(Node2_1_Node->GetOutPinByIndex(0), Select1_Node->GetInPinByIndex(6));
@@ -290,6 +286,9 @@ void ConnectNetwork01(){
 }
 void DisonnectNetwork01() {
  Network.DisconnectPins(Node2->GetOutPinByIndex(0), Node2_1_Node->GetInPinByIndex(6));
+ Network.DisconnectPins(Node1->GetOutPinByIndex(0), Select1_Node->GetInPinByIndex(4));
+ Network.DisconnectPins(Node2->GetOutPinByIndex(0), Select1_Node->GetInPinByIndex(5));
+ Network.DisconnectPins(Node2_1_Node->GetOutPinByIndex(0), Select1_Node->GetInPinByIndex(6));
 }
 void TESTFN_PostOperations(engine &engine) {
  if (engine.EGL_initialized) {
@@ -655,6 +654,20 @@ void TESTFN_AddRandomBody(engine &engine) {
    AIPong_Load_Node(&Select1_Node, Select1_unique_name, &Select1_FANNPong, true);
    AIPong_Load_Train( &Select1_Node->ifann, &select1_input_data, &select1_output_data );
 
+   //strcpy(Select2_unique_name, "pongpaddleselect2");
+   ////Inputs 
+   ////0 - 1 for wall hit, 0 for ball traveling
+   ////ball x
+   ////ball y
+   ////ball arcatan2(linvel)
+   ////ball lin vel magnitude
+   //Select2_FANNPong.input_neurons = 6;//
+   //Select2_FANNPong.max_neurons = 40;
+   //Select2_FANNPong.desired_error = 0.00000;
+   //Select2_FANNPong.input_scale = 0.1;
+   //Select2_FANNPong.output_scale = 0.1;
+   //AIPong_Load_Node(&Select2_Node, Select2_unique_name, &Select2_FANNPong, true);
+   //AIPong_Load_Train(&Select2_Node->ifann, &select2_input_data, &select2_output_data);
 
 
    strcpy(Node2_1_unique_name, "pongpaddlebouncetune");
@@ -687,7 +700,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*1000.0-500.0, launch_y), game_body[2]->body->GetPosition(), true);
 
 
-   trained[0] = trained[1] = trained[2] = trained[3] =true;
+//   trained[0] = trained[1] = trained[2] = trained[3] =true;
    
    if ((trained[0] == true) && (trained[1] == true) && (trained[2] == true)) {
     Node1->IsRunning = true;
@@ -760,7 +773,7 @@ void TESTFN_AddRandomBody(engine &engine) {
      unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&Last_GUI_Click_Time);
      if (temp_int64 > 0) {
       {
-       IFGameEditor::GetTouchEvent(&touchx, &touchy);
+       //IFGameEditor::GetTouchEvent(&touchx, &touchy);
 
        //Move players paddle
        float screenx = touchx;
@@ -769,27 +782,36 @@ void TESTFN_AddRandomBody(engine &engine) {
        //game_body[3]->body->SetTransform(b2Vec2(screenx / IFA_box2D_factor, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
        game_body[3]->body->SetLinearVelocity(b2Vec2(((screenx)/ IFA_box2D_factor- game_body[3]->body->GetPosition().x) * sqrt(game_body[2]->body->GetLinearVelocity().y*game_body[2]->body->GetLinearVelocity().y + game_body[2]->body->GetLinearVelocity().x*game_body[2]->body->GetLinearVelocity().x) , 0.0));
        
-       //Player may press train button but not more often than once per second
-       if (temp_int64 > 1000) {
+       //Player may press train button but not more often than once per second       
+       if (temp_int64 > 1000) {                        
         typename std::list<ifCB2Body*>::iterator iter;
         for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
          if (game_body[5] == *iter) {
-          if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {
+          if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {           
            //while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
 
            //if (input_data_sets > 20) {
            //Pong_Learning_Phase = true;
            AutoPlayer = !AutoPlayer;
            if(AutoPlayer){
-            trained[3] = false;
+            //trained[3] = false;
             //if((trained[0]==true)&&(trained[1] == true)&&(trained[2] == true)){
             // trained[3] = false;
             //}else{
             // trained[3] = true;
             //}
            }else{
+            if (!trained[0]){
+             Train_Node(Node1, &FANNPong, Node1->ifann.unique_name, &input_data, &output_data);
+            }
+            if (!trained[1]) {
+             Train_Node(Node2, &FANNPongBounce, Node2->ifann.unique_name, &bounce_input_data, &bounce_output_data);
+            }
+            if (!trained[2]) {
+             Train_Node(Node2_1_Node, &Node2_1_FANNPong, Node2_1_Node->ifann.unique_name, &Node2_1_input_data, &Node2_1_output_data);
+            }
             if(!trained[3]){
-             Select1_Train_Node();
+             Train_Node(Select1_Node,&Select1_FANNPong, Select1_Node->ifann.unique_name,&select1_input_data, &select1_output_data);
             }
             game_body[3]->body->SetLinearVelocity(b2Vec2(0,0));
             IFFANN::Train_Cascade_FANN(&Node1->ifann, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets, 2, false);
@@ -812,12 +834,15 @@ void TESTFN_AddRandomBody(engine &engine) {
             }
            }
            //}
+
+           clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
            Last_GUI_Click_Time = temp_timespec;
+
            break;
           }
          }
         }        
-        
+
        }
 
       }      
@@ -896,9 +921,16 @@ void TESTFN_AddRandomBody(engine &engine) {
        select1_can_train = false;
        {//Train network
         trained[3] = true;        
-        Select1_Train_Node();
+        Train_Node(Select1_Node, &Select1_FANNPong, Select1_Node->ifann.unique_name, &select1_input_data, &select1_output_data);
        }
       }
+      //if (!trained[4] && select2_output_data.size() >= select2_data_counter_limit && select2_can_train) {
+      // select2_can_train = false;
+      // {//Train network
+      //  trained[4] = true;
+      //  Train_Node(Select2_Node, &Select2_FANNPong, Select2_Node->ifann.unique_name, &select2_input_data, &select2_output_data);
+      // }
+      //}
       //Gradual train
       ////////////////////////////////////////////////////
       if (((Node1_train_error > 0.02)&&((Node1_train_error != std::numeric_limits<fann_type>::max()))&& trained[0] == false)  || (Node1->ifann.ann_train->train_data->num_data < PaddleBrainsTrainSizeLimit)){
@@ -984,8 +1016,6 @@ void TESTFN_AddRandomBody(engine &engine) {
       //Store data to train
       if(abs(paddleposition.y) > abs(ballposition.y)) {
 
-
-
        ///////////////////////////////   BOUNCE TRAIN START
        //for (b2Contact* c = IFA_World->GetContactList(); c; c = c->GetNext())
        //{
@@ -1051,6 +1081,15 @@ void TESTFN_AddRandomBody(engine &engine) {
           Node2_1_Node->inputs[2] = Node2->inputs[2] = atan2(balllinvel.y, balllinvel.x) * Node2->ifann.input_scale;
           select1_train_trigger = false;          
 
+
+          //Select2_Node->inputs[0] = (ballposition.x) * Select2_Node->ifann.input_scale;
+          //Select2_Node->inputs[1] = (ballposition.y) * Select2_Node->ifann.input_scale;
+          //Select2_Node->inputs[2] = atan2(balllinvel.y, balllinvel.x) * Select2_Node->ifann.input_scale;
+          //Select2_Node->inputs[3] = sqrt(balllinvel.x*balllinvel.x + balllinvel.y*balllinvel.y)*Select2_Node->ifann.input_scale;
+          //Select2_Node->inputs[4] = (paddleposition.x) * Select2_Node->ifann.input_scale;
+          //Select2_Node->inputs[5] = 1.0;
+
+
           ////fann_scale_input(Node2->ifann.ann, Node2->inputs);
           //Network.Run();
           ////fann_descale_output(Node2->ifann.ann, Node2->outputs);
@@ -1076,12 +1115,18 @@ void TESTFN_AddRandomBody(engine &engine) {
            //IFFANN::Train_Cascade_FANN(&Node2->ifann, Train_Cascade_FANN_PaddleBrainsBounce_Callback, bounce_data_counter, 2, false);
            //           LIMIT DATA TO NEW ONES
            //bounce_data_counter = bounce_input_data.size() / FANNPongBounce.input_neurons;
+
+
+           
            if (bounce_data_counter > BounceBrainTrainSizeLimit) {
             bounce_input_data.erase(bounce_input_data.begin(), bounce_input_data.begin() + (bounce_input_data.size() - (BounceBrainTrainSizeLimit * FANNPongBounce.input_neurons)));
             //input_data_sets = input_data.size();
             bounce_data_counter = bounce_input_data.size() / FANNPongBounce.input_neurons;
-            bounce_output_data.erase(bounce_output_data.begin(), bounce_output_data.begin() + bounce_output_data.size() - bounce_data_counter);
+            bounce_output_data.erase(bounce_output_data.begin(), bounce_output_data.begin() + bounce_output_data.size() - BounceBrainTrainSizeLimit);
            }
+
+
+
            //}
 
            Node2_1_input_data.push_back(Node2->inputs[0]);
@@ -1093,6 +1138,8 @@ void TESTFN_AddRandomBody(engine &engine) {
            Node2->outputs = IFFANNEngine::Run_Cascade_FANN(&Node2->ifann, Node2->inputs);
            Node2_1_input_data.push_back(Node2->outputs[0] / Node2->ifann.output_scale);
            Node2_1_output_data.push_back(((ballposition.x))*Node2->ifann.output_scale);//Node2->ifann.output_scale is correct
+
+           
            {//Limit train size
             if (Node2_1_output_data.size() > Node2_1_train_size_limit) {
              Node2_1_input_data.erase(Node2_1_input_data.begin(), Node2_1_input_data.begin() + Node2_1_input_data.size() - Node2_1_train_size_limit * Node2_1_FANNPong.input_neurons);
@@ -1111,12 +1158,20 @@ void TESTFN_AddRandomBody(engine &engine) {
          }
 
         }
-        if(ball_state == 1){
+        if(ball_state == 1){//Leaving user pad
          //Inputs x start, arctan2(speed vec y, ), magnitude(speedvec), end posx, input 1, input 2, input 3
          Select1_Node->inputs[0] = ballposition.x * Select1_Node->ifann.output_scale;
          Select1_Node->inputs[1] = atan2(balllinvel.y, balllinvel.x) * Node2->ifann.input_scale;
          Select1_Node->inputs[2] = sqrt(balllinvel.x*balllinvel.x+ balllinvel.y*balllinvel.y)*0.1;
-         Select1_Node->IsRunning = true;
+         //Select1_Node->IsRunning = true;
+
+         //Select2_Node->inputs[0] = (ballposition.x) * Select2_Node->ifann.input_scale;
+         //Select2_Node->inputs[1] = (ballposition.y) * Select2_Node->ifann.input_scale;
+         //Select2_Node->inputs[2] = atan2(balllinvel.y, balllinvel.x) * Select2_Node->ifann.input_scale;
+         //Select2_Node->inputs[3] = sqrt(balllinvel.x*balllinvel.x + balllinvel.y*balllinvel.y)*0.1;
+         //Select2_Node->inputs[4] = (paddleposition.x) * Select2_Node->ifann.input_scale; 
+         //Select2_Node->inputs[5] = 0.0;
+
         }
        }
        /////////////////////////////////////////////////////////////////////////////////////////////////////BOUNCE TRAIN STOP
@@ -1273,12 +1328,20 @@ void TESTFN_AddRandomBody(engine &engine) {
         bounce_input_data.push_back(Node2->inputs[5]);
         bounce_output_data.push_back(((ballposition.x))*Node2->ifann.output_scale);
         bounce_data_counter = bounce_output_data.size();
+
+
+
         if (bounce_data_counter > BounceBrainTrainSizeLimit) {
          bounce_input_data.erase(bounce_input_data.begin(), bounce_input_data.begin() + (bounce_input_data.size() - (BounceBrainTrainSizeLimit * FANNPongBounce.input_neurons)));
          //input_data_sets = input_data.size();
          bounce_data_counter = bounce_input_data.size() / FANNPongBounce.input_neurons;
-         bounce_output_data.erase(bounce_output_data.begin(), bounce_output_data.begin() + bounce_output_data.size() - bounce_data_counter);
+         bounce_output_data.erase(bounce_output_data.begin(), bounce_output_data.begin() + bounce_output_data.size() - BounceBrainTrainSizeLimit);
         }
+
+
+
+
+
         //IFFANN::Train_Cascade_FANN(&Node2->ifann, Train_Cascade_FANN_PaddleBrainsBounce_Callback, bounce_data_counter, 2, false);
        //}
 
@@ -1292,12 +1355,20 @@ void TESTFN_AddRandomBody(engine &engine) {
         Node2->outputs = IFFANNEngine::Run_Cascade_FANN(&Node2->ifann, Node2->inputs);
         Node2_1_input_data.push_back(Node2->outputs[0] / Node2->ifann.output_scale);
         Node2_1_output_data.push_back(((ballposition.x))*Node2->ifann.output_scale);//Node2->ifann.output_scale is correct
+
+
         {//Limit train size
          if (Node2_1_output_data.size() > Node2_1_train_size_limit) {
           Node2_1_input_data.erase(Node2_1_input_data.begin(), Node2_1_input_data.begin() + Node2_1_input_data.size() - Node2_1_train_size_limit * Node2_1_FANNPong.input_neurons);
           Node2_1_output_data.erase(Node2_1_output_data.begin(), Node2_1_output_data.begin() + Node2_1_output_data.size() - Node2_1_train_size_limit * Node2_1_FANNPong.output_neurons);
          }
         }
+
+
+
+
+
+
         //Inputs x start, arctan2(speed vec y, ), magnitude(speedvec), end posx, input 1, input 2, input 3
         select1_train_trigger = true;
         Select1_Node->inputs[3] = (ballposition.x)*Node2->ifann.output_scale;
@@ -1322,6 +1393,8 @@ void TESTFN_AddRandomBody(engine &engine) {
       ////////////////////////////////////////////////////////////////////////////// NETWORK EXECUTION START
       if (true) { 
 
+       if(AI_paddle_desired_position_x != AI_paddle_desired_position_x)
+        AI_paddle_desired_position_x = right * 2.0;
        b2Vec2 position = game_body[4]->body->GetPosition();
        game_body[4]->body->SetLinearVelocity(b2Vec2((AI_paddle_desired_position_x - game_body[4]->body->GetPosition().x)*sqrt(game_body[2]->body->GetPosition().x*game_body[2]->body->GetPosition().x + game_body[2]->body->GetPosition().y*game_body[2]->body->GetPosition().y+0.0)*1.0, 0.0));//+2.0 is to make sure result is larger than 1
        if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
@@ -1396,6 +1469,29 @@ void TESTFN_AddRandomBody(engine &engine) {
           if(pin_value == &Select1_Node->inputs[3]){
            *pin_value = (ballposition.x)*Node2->ifann.output_scale;
           }
+         //}else if(Select2_Node == Network.GetNodeByPinID(ID)){
+
+          //select2_input_data.push_back(Select2_Node->inputs[0]);
+          //select2_input_data.push_back(Select2_Node->inputs[1]);
+          //select2_input_data.push_back(Select2_Node->inputs[2]);
+          //select2_input_data.push_back(Select2_Node->inputs[3]);
+          //select2_input_data.push_back(Select2_Node->inputs[4]);
+          //select2_input_data.push_back(Select2_Node->inputs[5]);
+
+          //if(Select2_Node->inputs[5]==1.0){
+          // select2_output_data.push_back(1.0);
+          //}
+          //else{
+          //select2_output_data.push_back(1.0);
+          //}
+
+          //select2_can_train = true;
+          //{//Limit train size
+          // if (select2_output_data.size() > select2_data_counter_limit) {
+          //  select2_input_data.erase(select2_input_data.begin(), select2_input_data.begin() + select2_input_data.size() - select2_data_counter_limit * Select2_FANNPong.input_neurons);
+          //  select2_output_data.erase(select2_output_data.begin(), select2_output_data.begin() + select2_output_data.size() - select2_data_counter_limit * Select2_FANNPong.output_neurons);
+          // }
+
          }
         }
        }
@@ -1422,7 +1518,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           b2Vec2 position = game_body[4]->body->GetPosition();
           AI_paddle_desired_position_x = Node2_1_Node->outputs[0] / Node2_1_Node->ifann.output_scale;
          }else if (Select1_Node->IsRunning && Select1_Node == Network.GetNodeByPinID(ID)) {
-          Select1_Node->IsRunning = false;
+          Select1_Node->IsRunning = true;
 
           //Inputs x start, arctan2(speed vec y, ), magnitude(speedvec), end posx, input 1, input 2, input 3
           if(select1_train_trigger){
@@ -1435,12 +1531,11 @@ void TESTFN_AddRandomBody(engine &engine) {
            select1_input_data.push_back(Select1_Node->inputs[5]);
            select1_input_data.push_back(Select1_Node->inputs[6]);
            select1_output_data.push_back(Select1_Node->inputs[3]);
-           
-
-int sieze = select1_output_data.size();
-sieze =sieze;
-
            select1_can_train = true;
+
+
+
+
            {//Limit train size
             if (select1_output_data.size() > select1_data_counter_limit) {
              select1_input_data.erase(select1_input_data.begin(), select1_input_data.begin() + select1_input_data.size() - select1_data_counter_limit * Select1_FANNPong.input_neurons);
@@ -1744,6 +1839,9 @@ sieze =sieze;
     //output_data[input_data_sets * 2 + 0] = (last_pos_x - anns_body->body->GetPosition().x) / LittleBrains.output_scale;
     output_data.push_back((last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale);
     //output_data[input_data_sets * 2 + 1] = (last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale;
+
+    Limit_Node1_data_size();
+
     input_data_sets++;
     if (input_data.size() > ((60 * 60 * 60 * 3) + 120)) {
      input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (60 * 60 * 60 * 3)));

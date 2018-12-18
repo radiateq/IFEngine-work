@@ -68,7 +68,8 @@ namespace IFFANNEngine {
    NodeRegister->OutputPinRegister.output_pins.Remove(temp_pin->ID);
 
    unsigned int pin_in_ID;
-   for (temp_pin->connected_pins.Iter_Set = temp_pin->connected_pins.Set.begin(); temp_pin->connected_pins.Iter_Set != temp_pin->connected_pins.Set.end(); temp_pin->connected_pins.Iter_Set++) {
+   temp_pin->connected_pins.Iter_Set = temp_pin->connected_pins.Set.begin();
+   while( temp_pin->connected_pins.Iter_Set != temp_pin->connected_pins.Set.end()){
     pin_in_ID = *temp_pin->connected_pins.Iter_Set;
     NodeRegister->Network->DisconnectPins(temp_pin->ID, pin_in_ID);
     
@@ -80,8 +81,7 @@ namespace IFFANNEngine {
    }
    temp_pin->connected_pins.Set.clear();
 
-   output_pins.Remove(cnt);
-   temp_pin->connected_pins.Set.clear();
+   output_pins.Remove(cnt);   
    NodeRegister->PinToNode.Unregister(temp_pin);
    delete temp_pin;
   }

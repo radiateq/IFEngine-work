@@ -326,10 +326,13 @@ public:
  void UpdateGraphics() {
   //list all bodies and draw them 
   //unsigned int vertices_count;
+
+
   for( typename std::list<ifCB2Body*>::iterator iter = Bodies.begin(); iter != Bodies.end(); iter++ ){
    
    //get body position and rotation
    b2Vec2 position = (*iter)->body->GetPosition();
+
    float32 angle = (*iter)->body->GetAngle() * (180.0 / 3.141593);
    angle = angle - ceil(angle/360.0)*360;
   // b2Transform b2trans2x2 = (*iter)->body->GetTransform();
