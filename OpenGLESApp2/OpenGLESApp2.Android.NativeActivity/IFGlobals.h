@@ -17,6 +17,7 @@ typedef struct {
  double screenWidth;
  double screenHeight;
  GLuint CubeTexture;
+ bool TrainInProgress;
 }TS_User_Data;
 
 

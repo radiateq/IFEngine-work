@@ -153,19 +153,54 @@ static void engine_draw_frame(struct engine* engine) {
  //cleanup far bodies
  //B2BodyUtils.RemoveFarBodies();
 
- TESTFN_AddRandomBody(*engine);
+
+
 
  if (engine->display != NULL) {
   PrepareDraw();
  }
 
- 
+ if(User_Data.TrainInProgress){
+  /////////////////////////////////////NC01START
+  IFAdapter.StartSimFF();
+  struct timespec temp_timespec;
+  clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+  unsigned long int start_time = RQNDKUtils::timespec2ms64(&temp_timespec), end_time = start_time + 14666667;
+  while(end_time > start_time) {
+   TESTFN_AddRandomBody(*engine);
+   IFAdapter.UpdateSimFF();
+   IFAdapter.UpdateGraphics();
+   TESTFN_PostOperations(*engine);
+   clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+   start_time = RQNDKUtils::timespec2ms64(&temp_timespec);
+  }
+  /////////////////////////////////////NC01STOP
+ }else{
+  TESTFN_AddRandomBody(*engine);
+  IFAdapter.UpdateSim();
+  IFAdapter.UpdateGraphics();
+  TESTFN_PostOperations(*engine);
+ }
+//#define SPEEDUP
+////#undef SPEEDUP
+//#ifdef SPEEDUP
+// //multiple box steps per frame
+// IFAdapter.StartSimFF(30);
+// for(unsigned int cnt = 0; cnt < 30; cnt++){
+//  TESTFN_AddRandomBody(*engine);
+//  IFAdapter.UpdateSimFF();
+//  IFAdapter.UpdateGraphics();
+//  TESTFN_PostOperations(*engine);
+// }
+// #else
+// // One box step per frame
+// TESTFN_AddRandomBody(*engine);
+// IFAdapter.UpdateSim();
+// IFAdapter.UpdateGraphics();
+// TESTFN_PostOperations(*engine);
+//#endif
+//#undef SPEEDUP
 
-
- IFAdapter.UpdateSim();
- IFAdapter.UpdateGraphics();
-
- TESTFN_PostOperations(*engine);
 
  //CubeTest_draw();
  if (engine->display != NULL) {

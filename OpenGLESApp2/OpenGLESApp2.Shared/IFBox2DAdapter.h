@@ -323,6 +323,20 @@ public:
   //timeThen = timeNow;
   IFA_World->Step( timeStep * speedFactor, velocityIterations, positionIterations );
  }
+ void StartSimFF(){
+  clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+  temp_int64 = RQNDKUtils::timespec2us64(&temp_timespec) - RQNDKUtils::timespec2us64(&game_time_0);
+  game_time_0 = temp_timespec;
+ }
+ bool UpdateSimFF() {  
+  
+  timeStep = 500.0f / (float)temp_int64;
+
+  //timeThen = timeNow;
+  IFA_World->Step(timeStep * speedFactor, velocityIterations, positionIterations);
+
+  return true;  
+ }
  void UpdateGraphics() {
   //list all bodies and draw them 
   //unsigned int vertices_count;
