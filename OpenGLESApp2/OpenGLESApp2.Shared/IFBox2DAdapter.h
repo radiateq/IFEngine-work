@@ -323,10 +323,11 @@ public:
   //timeThen = timeNow;
   IFA_World->Step( timeStep * speedFactor, velocityIterations, positionIterations );
  }
- void StartSimFF(){
+ void StartSimFF( unsigned int frame_time_us = 16667){
   clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
-  temp_int64 = RQNDKUtils::timespec2us64(&temp_timespec) - RQNDKUtils::timespec2us64(&game_time_0);
+  //temp_int64 = RQNDKUtils::timespec2us64(&temp_timespec) - RQNDKUtils::timespec2us64(&game_time_0);
   game_time_0 = temp_timespec;
+  temp_int64 = 16667;
  }
  bool UpdateSimFF() {  
   

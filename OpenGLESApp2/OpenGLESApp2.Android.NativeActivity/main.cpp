@@ -165,14 +165,14 @@ static void engine_draw_frame(struct engine* engine) {
   IFAdapter.StartSimFF();
   struct timespec temp_timespec;
   clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
-  unsigned long int start_time = RQNDKUtils::timespec2ms64(&temp_timespec), end_time = start_time + 14666667;
+  unsigned long int start_time = RQNDKUtils::timespec2us64(&temp_timespec), end_time = start_time + 14667;
   while(end_time > start_time) {
    TESTFN_AddRandomBody(*engine);
    IFAdapter.UpdateSimFF();
    IFAdapter.UpdateGraphics();
    TESTFN_PostOperations(*engine);
    clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
-   start_time = RQNDKUtils::timespec2ms64(&temp_timespec);
+   start_time = RQNDKUtils::timespec2us64(&temp_timespec);
   }
   /////////////////////////////////////NC01STOP
  }else{

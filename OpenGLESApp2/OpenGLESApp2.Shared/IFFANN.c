@@ -192,7 +192,7 @@ namespace IFFANN {
   }
   if (load_save_train != 1) {
    ifann->ann_train->train_data = fann_create_train_from_callback(num_data, ifann->ann->num_input, ifann->ann->num_output, train_callback);
-  }
+  }else
   if (load_save_train == 1) {
    ifann->ann_train->train_data = fann_read_train_from_file(buffer);
    if (ifann->ann_train->train_data == NULL) {
