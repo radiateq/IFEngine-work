@@ -2,7 +2,7 @@
 
 
 
-class CPongBallState;
+class CPongBallStateMachine;
 
 
 
@@ -2332,29 +2332,42 @@ void TEST_Cleanup(){
 
 
 
-class CPongBallState{
+class CPongBallStateMachine{
 public:
- enum BallStates{
-  E_Start = 0, E_TravelDown = 1, E_BouncedOfPlayer = 2, E_PlayerMiss = 2<<1, E_BouncedOfWall = 2 << 2, E_HitAI = 2 << 3, E_AIMiss = 2 << 4, E_Stop = 2 << 5
+ enum EBallStates{
+  E_Start = 0, 
+  E_TravelUp = 1,
+  E_TravelDown,
+  E_NoContact = 1,
+  E_InContact,
+  E_BrokeContact,
+  E_ContactPlayer = 1,
+  E_ContactAI,
+  E_ContactWall,
+  E_PlayerMiss = 1,
+  E_AIMiss
  };
- unsigned int BallState = E_Start;
+ struct SBallStates{
+  EBallStates TravelDirection = E_Start;
+  EBallStates ContactState = E_Start;
+  EBallStates ContactObjects = E_Start;
+  EBallStates PlayfieldLocation = E_Start;
+ };
+ SBallStates BallState;
 
- void Event_BallTravelUp(){
-  BallState &= ~E_TravelDown;
- };
- void Event_BallTravelDown() {
-  BallState |= E_TravelDown;
- };
- void Event_BallWallContact() {
- };
- void Event_BallPlayerContact() {
- };
- void Event_BallAIContact() {
- };
- //Auto means event is called by Event function to trigger next state
- void AutoEvent_BallLostContact(){
+ void ProcessBallState(b2Body *ball ){  
+  SBallStates CurrentBallState;
+  CurrentBallState.TravelDirection = ((balllinvel.y>0)?E_TravelUp:E_TravelDown);
+  bool DirectionChanged;
+  if(BallState.TravelDirection!=CurrentBallState.TravelDirection){
+   DirectionChanged = true;
+  }else{
+   DirectionChanged = false;
+  }
+
+
+  BallState = CurrentBallState;
  }
-
 
   ///////////////////////////////   BOUNCE TRAIN START
  //for (b2Contact* c = IFA_World->GetContactList(); c; c = c->GetNext())
