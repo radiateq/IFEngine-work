@@ -327,7 +327,7 @@ public:
   clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
   //temp_int64 = RQNDKUtils::timespec2us64(&temp_timespec) - RQNDKUtils::timespec2us64(&game_time_0);
   game_time_0 = temp_timespec;
-  temp_int64 = 16667;
+  temp_int64 = frame_time_us;
  }
  bool UpdateSimFF() {  
   
