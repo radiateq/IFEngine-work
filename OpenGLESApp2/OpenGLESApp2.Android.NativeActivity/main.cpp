@@ -241,7 +241,7 @@ static void engine_term_display(struct engine* engine) {
 
 
  IFAudioSLES::TearDownAudioEngine();
-
+ 
  TEST_Cleanup();
 }
 

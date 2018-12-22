@@ -98,6 +98,22 @@ namespace IFFANNEngine{
  // -node ID
  class CNode{
  public:
+  enum ENodeStates {
+   E_Start,
+   //train vectors are empty
+   E_NoData = 1,
+   //data is being collected
+   //E_CollectingData,
+   //train vectors are full
+   E_FullData = 2 << 1,
+   //data is being collected even if train vectors are full
+   E_OverwriteData = 2 << 2,
+   E_FreshTrain = 2 << 3,
+   E_Training = 2 << 4,
+   E_ContTraining = 2 << 5,
+   E_Trained = 2 << 6
+  };
+  ENodeStates NodeStates;
  //When this value is set to false, node is not added to run queue in CNetwork::Run command
   bool IsRunning = true;
   CNodeRegister *NodeRegister;

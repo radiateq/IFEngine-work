@@ -1,6 +1,8 @@
 #pragma once
 
 
+#include <cstdarg>
+
 #include <../OpenGLESApp2.Android.NativeActivity/IFGlobals.h>
 #include "IFBox2DAdapter.h"
 #include <../OpenGLESApp2.Android.NativeActivity/IFAudioAdapter.h>
@@ -8,6 +10,7 @@
 #include "IFGameEditor.h"
 #include "IFFANN.h"
 #include "IFFANNEngine.h"
+
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry> 

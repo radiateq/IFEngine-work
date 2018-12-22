@@ -2,8 +2,12 @@
 
 
 
-class CPongBallStateMachine;
 
+
+
+
+class CPongBallStateMachine;
+class CNetworkNode;
 
 
 ifCB2Adapter IFAdapter;
@@ -105,10 +109,228 @@ fann_type Node2_train_error = 1;
 fann_type Node2_1_train_error = 1;
 fann_type Select1_train_error = 1;
 fann_type AI_paddle_desired_position_x = 0.0;
-unsigned int BounceBrainTrainSizeLimit = 100, PaddleBrainsTrainSizeLimit = 300;
-unsigned int Node2_1_train_size_limit = 100, select2_data_counter_limit = 100;
-unsigned int select1_data_counter_limit = 500;
+unsigned int BounceBrainTrainSizeLimit = 500, PaddleBrainsTrainSizeLimit = 300;
+unsigned int Node2_1_train_size_limit = 500, select2_data_counter_limit = 500;
+unsigned int select1_data_counter_limit = 1000;
 //unsigned int select1_data_counter_limit = 1500;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+typedef std::vector<fann_type> TFannVector;
+TFannVector *train_input_vector, *train_output_vector;
+struct fann *train_ann;
+void Setup_Train_Cascade_FANN_Callback(fann *_train_ann, TFannVector *_train_input_vector, TFannVector *_train_output_vector) {
+ train_input_vector = _train_input_vector;
+ train_output_vector = _train_output_vector;
+ train_ann = _train_ann;
+}
+void Train_Cascade_FANN_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
+ for (unsigned int cnt = 0; cnt < train_ann->num_input; cnt++) {
+  input[cnt] = (*train_input_vector)[num_data * train_ann->num_input + cnt];
+ }
+ for (unsigned int cnt = 0; cnt < train_ann->num_output; cnt++) {
+  output[cnt] = (*train_output_vector)[num_data * train_ann->num_output + cnt];
+ }
+}
+
+
+class CNetworkNode {
+public:
+
+
+ SFANNPong FANNOptions;
+ IFFANNEngine::CNode *Node;
+ TFannVector node_input_data, node_output_data;
+ bool node_train_trigger = false, node_can_train = false;
+ unsigned int node_data_counter = 0;
+ char node_unique_name[1024];
+ unsigned int node_train_samples = 50, node_train_pos = 0, node_last_save_index = 0, node_new_samples = 0;
+ fann_type node_train_error = 1;
+ unsigned int node_data_counter_limit = 1000;
+
+ void CheckNodeTrainDataState(){
+  if (node_output_data.size() == 0) {
+   Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates | IFFANNEngine::CNode::ENodeStates::E_NoData);
+   Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates & (~IFFANNEngine::CNode::ENodeStates::E_FullData));
+  }
+  else {
+   Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates & (~IFFANNEngine::CNode::ENodeStates::E_NoData));
+   {//Limit train size    
+    if (node_output_data.size() > node_data_counter_limit) {
+     Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates | IFFANNEngine::CNode::ENodeStates::E_FullData);
+     node_input_data.erase(node_input_data.begin(), node_input_data.begin() + node_input_data.size() - node_data_counter_limit * FANNOptions.input_neurons);
+     node_output_data.erase(select1_output_data.begin(), node_output_data.begin() + node_output_data.size() - node_data_counter_limit * FANNOptions.output_neurons);
+    }
+    else {
+     Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates & (~IFFANNEngine::CNode::ENodeStates::E_FullData));
+    }
+   }
+  }
+ }
+
+ void Load_Node(char const * const unique_name, bool is_running = true) { 
+  Node = new IFFANNEngine::CNode;
+  Node->IsRunning = is_running;
+  Network.NodeRegister.Register(Node);
+
+  if (IFFANN::Check_Save_Cascade_FANN(unique_name, IFFANN::CnFinalFannPostscript)) {
+   IFFANN::Load_Cascade_FANN(&Node->ifann, unique_name, IFFANN::CnFinalFannPostscript);
+   Node->NodeStates = IFFANNEngine::CNode::ENodeStates::E_Trained;
+  }
+  if (!Node->ifann.ann) {
+   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node->ifann), FANNOptions.input_neurons, FANNOptions.output_neurons, unique_name), FANNOptions.max_neurons, FANNOptions.neurons_between_reports, FANNOptions.desired_error, FANNOptions.input_scale, FANNOptions.output_scale);
+   IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
+   Node->NodeStates = IFFANNEngine::CNode::ENodeStates::E_FreshTrain;
+  }
+  CheckNodeTrainDataState();
+
+  Node->LoadCore(unique_name);
+ }
+
+ bool Add_Data(fann_type input1...) {
+  if ((Node->NodeStates&IFFANNEngine::CNode::ENodeStates::E_FullData) && !(Node->NodeStates&IFFANNEngine::CNode::ENodeStates::E_OverwriteData))
+   return false;
+
+  va_list args;
+  va_start(args, input1);
+
+  for (unsigned int paramno = 0; paramno < FANNOptions.input_neurons; paramno++) {
+   node_input_data.push_back(va_arg(args, fann_type));
+  }
+  for (unsigned int paramno = 0; paramno < FANNOptions.output_neurons; paramno++) {
+   node_output_data.push_back(va_arg(args, fann_type));
+  }
+
+  CheckNodeTrainDataState();
+
+  return true;
+ }
+
+ bool Epoch_Train(bool SaveNewData = true, unsigned int _node_train_samples = 200, unsigned long int timeToRunus = 3000) {
+  if(!(Node->NodeStates&IFFANNEngine::CNode::ENodeStates::E_ContTraining))
+   return false;
+  //if (false)
+  {/////////////////////////////////   TRAIN node
+   /////////////////////////////////////NC02START
+   if ((node_train_error > 1e-6) && ((node_train_error != std::numeric_limits<fann_type>::max())) && trained[3] == false)
+   {
+    //Save new chunk of data
+    if (SaveNewData && (node_new_samples%node_train_samples) > node_last_save_index) {
+     node_last_save_index = (node_new_samples%node_train_samples);
+     node_new_samples = 0;
+     Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
+     IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, node_output_data.size() / FANNOptions.output_neurons, 2, false);
+    }
+
+    if (!SaveNewData) {
+     node_train_samples = _node_train_samples;
+    }
+
+    if (Node->ifann.ann_train->train_data) {
+     struct fann_train_data *train_subset;
+
+     //Get time
+     struct timespec temp_timespec;
+     clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+     unsigned long int start_time = RQNDKUtils::timespec2us64(&temp_timespec), end_time = start_time + timeToRunus;
+     while ((end_time > start_time) && (node_train_samples <= Node->ifann.ann_train->train_data->num_data)) {
+
+      //Create subset to train on
+      train_subset = fann_subset_train_data(Node->ifann.ann_train->train_data, Node->ifann.ann_train->train_data->num_data - node_train_samples - node_train_pos, node_train_samples);
+
+      node_train_error = fann_train_epoch(Node->ifann.ann, train_subset);
+
+      fann_destroy_train(train_subset);
+
+      //node_train_pos += node_train_samples;
+      //if (node_train_pos > (node_Node->ifann.ann_train->train_data->num_data + node_train_samples)) {
+      // node_train_pos = 0;
+      //}
+
+      clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
+      start_time = RQNDKUtils::timespec2us64(&temp_timespec);
+     }
+     IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
+    }
+    else {
+     Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
+     IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, node_output_data.size(), 1, false);
+    }
+   }
+   else {
+    if (node_train_error != std::numeric_limits<fann_type>::max()) {
+     if ((node_train_error <= 1e-6) && Node->ifann.ann_train->train_data->num_data >= node_data_counter_limit) {
+      Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
+      IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, node_output_data.size(), 2, false);
+      IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
+      node_train_error = std::numeric_limits<fann_type>::max();
+      trained[3] == true;
+     }
+    }
+    return true;
+   }
+  }
+  return false;
+  /////////////////////////////////////NC02STOP
+ }
+
+ void Load_Train_Data() {
+  if (IFFANN::Train_Cascade_FANN(&(Node->ifann), NULL, 0, 1, false)) {
+   node_input_data.clear();
+   node_output_data.clear();
+   for(unsigned int cnt = 0; cnt < Node->ifann.ann_train->train_data->num_data; cnt++) {
+    for (unsigned int inputcnt = 0; inputcnt < Node->ifann.ann_train->train_data->num_input; inputcnt++) {
+     node_input_data.push_back(Node->ifann.ann_train->train_data->input[cnt][inputcnt]);
+    }
+    for (unsigned int outputcnt = 0; outputcnt < Node->ifann.ann_train->train_data->num_output; outputcnt++) {
+     node_output_data.push_back(Node->ifann.ann_train->train_data->output[cnt][outputcnt]);
+    }
+   }
+   //bounce_data_counter = Node2_1_Node->ifann.ann_train->train_data->num_data;
+  }
+  CheckNodeTrainDataState();
+ }
+ void Save_Train_Data() {
+  IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&(Node->ifann)), FANNOptions.input_neurons, FANNOptions.output_neurons, Node->ifann.unique_name), FANNOptions.max_neurons, FANNOptions.neurons_between_reports, FANNOptions.desired_error, FANNOptions.input_scale, FANNOptions.output_scale);
+  Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
+  IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Callback, node_output_data.size() / FANNOptions.output_neurons, 2, false);
+ }
+
+ void Train_Node() {
+  IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&(Node->ifann)), FANNOptions.input_neurons, FANNOptions.output_neurons, Node->ifann.unique_name), FANNOptions.max_neurons, FANNOptions.neurons_between_reports, FANNOptions.desired_error, FANNOptions.input_scale, FANNOptions.output_scale);
+  Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
+  IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Callback, node_output_data.size() / FANNOptions.output_neurons, 2);
+  IFFANN::Load_Cascade_FANN(&(Node->ifann), Node->ifann.unique_name, IFFANN::CnTrainedFannPostscript);
+  IFFANN::Save_Cascade_FANN(&(Node->ifann), IFFANN::CnFinalFannPostscript);
+  Node->LoadCore(Node->ifann.unique_name);
+ }
+
+};
+
+const unsigned int Max_Network_Nodes=10;
+CNetworkNode NetworkNodes[Max_Network_Nodes];
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -439,8 +661,6 @@ void Limit_Node1_data_size(bool trim_to_head = false){
   output_data.erase(output_data.begin(), output_data.begin() + output_data.size() - Node1_data_head);
  }
 }
-TFannVector *train_input_vector, *train_output_vector;
-struct fann *train_ann;
 void Setup_Train_Cascade_FANN_Train_Callback(fann *_train_ann, TFannVector *_train_input_vector, TFannVector *_train_output_vector){
  train_input_vector = _train_input_vector;
  train_output_vector = _train_output_vector;
@@ -476,6 +696,17 @@ void Train_Node(IFFANNEngine::CNode * const Node, SFANNPong const * const FANNPo
  IFFANN::Load_Cascade_FANN(&(Node->ifann), unique_name, IFFANN::CnTrainedFannPostscript);
  IFFANN::Save_Cascade_FANN(&(Node->ifann), IFFANN::CnFinalFannPostscript);
  Node->LoadCore(unique_name);
+}
+void Save_TrainData(IFFANNEngine::CNode * const Node, SFANNPong const * const FANNPong, char const * const unique_name, TFannVector *_input_vector, TFannVector *_output_vector) {
+ IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&(Node->ifann)), FANNPong->input_neurons, FANNPong->output_neurons, unique_name), FANNPong->max_neurons, FANNPong->neurons_between_reports, FANNPong->desired_error, FANNPong->input_scale, FANNPong->output_scale);
+ Setup_Train_Cascade_FANN_Train_Callback(Node->ifann.ann, _input_vector, _output_vector);
+ IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Train_Callback, _output_vector->size(), 2, false);
+}
+void TESTFN_SaveAllTrainData(){
+ Save_TrainData(Node1, &FANNPong, Node1->ifann.unique_name, &input_data, &output_data);
+ Save_TrainData(Node2, &FANNPongBounce, Node2->ifann.unique_name, &bounce_input_data, &bounce_output_data);
+ Save_TrainData(Node2_1_Node, &Node2_1_FANNPong, Node2_1_Node->ifann.unique_name, &Node2_1_input_data, &Node2_1_output_data);
+ Save_TrainData(Select1_Node, &Select1_FANNPong, Select1_Node->ifann.unique_name, &select1_input_data, &select1_output_data);
 }
 //When SaveNewData is true do not change train samples 
 bool EpochTrainSelect1( bool SaveNewData = true, unsigned int _select1_train_samples = 200, unsigned long int timeToRunus = 3000 ){
@@ -528,7 +759,7 @@ bool EpochTrainSelect1( bool SaveNewData = true, unsigned int _select1_train_sam
    }
   } else {
    if (Select1_train_error != std::numeric_limits<fann_type>::max()) {
-    if ((Select1_train_error <= 0.02) && Select1_Node->ifann.ann_train->train_data->num_data >= select1_data_counter_limit) {
+    if ((Select1_train_error <= 1e-6) && Select1_Node->ifann.ann_train->train_data->num_data >= select1_data_counter_limit) {
      Setup_Train_Cascade_FANN_Train_Callback(Select1_Node->ifann.ann, &select1_input_data, &select1_output_data);
      IFFANN::Train_Cascade_FANN(&Select1_Node->ifann, Train_Cascade_FANN_Train_Callback, select1_output_data.size(), 2, false);
      IFFANN::Save_Cascade_FANN(&Select1_Node->ifann, IFFANN::CnFinalFannPostscript);
@@ -865,7 +1096,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
    ////////////////////////////  Load Nodes START
    FANNPong.input_neurons = 3;
-   FANNPong.max_neurons = 10;
+   FANNPong.max_neurons = 20;
    FANNPong.desired_error = 0.000;
    FANNPong.input_scale = 10.0;
    FANNPong.output_scale = 10.0;
@@ -893,7 +1124,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
    FANNPongBounce.input_neurons = 6;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
-   FANNPongBounce.max_neurons = 25;
+   FANNPongBounce.max_neurons = 35;
    FANNPongBounce.desired_error = 0.000;
    FANNPongBounce.input_scale = 0.1;
    FANNPongBounce.output_scale = 0.1;
@@ -916,7 +1147,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    strcpy(Select1_unique_name,"pongpaddleselect");
    //Inputs x start, arctan2(speed vec y, ), magnitude(speedvec), ball end x, input 1, input 2, input 3
    Select1_FANNPong.input_neurons = 2+1+1+3;//
-   Select1_FANNPong.max_neurons = 150;
+   Select1_FANNPong.max_neurons = 50;
    Select1_FANNPong.desired_error = 0.00000;
    Select1_FANNPong.input_scale = 0.1;
    Select1_FANNPong.output_scale = 0.1;
@@ -941,7 +1172,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
    strcpy(Node2_1_unique_name, "pongpaddlebouncetune");
    Node2_1_FANNPong.input_neurons = 7;//
-   Node2_1_FANNPong.max_neurons = 25;
+   Node2_1_FANNPong.max_neurons = 35;
    Node2_1_FANNPong.desired_error = 0.000;
    Node2_1_FANNPong.input_scale = FANNPongBounce.input_scale;
    Node2_1_FANNPong.output_scale = FANNPongBounce.output_scale;
@@ -1199,17 +1430,23 @@ void TESTFN_AddRandomBody(engine &engine) {
         Node2_1_Node->LoadCore(Node2_1_unique_name);
        }
       }
-      if (!trained[3] ){// && select1_can_train) {
+      //if (!trained[3]){// && select1_can_train) {
+      // //select1_can_train = false;
+      // {//Train network
+      //  //trained[3] = true;        
+      //  if(select1_output_data.size() >= select1_data_counter_limit){
+      //   EpochTrainSelect1(false, select1_output_data.size(),5000000);
+      //  }else{
+      //   EpochTrainSelect1(false, select1_output_data.size(),3000);
+      //  }
+      //  //Train_Node(Select1_Node, &Select1_FANNPong, Select1_Node->ifann.unique_name, &select1_input_data, &select1_output_data);
+
+      // }
+      if (!trained[3] && select1_output_data.size() >= select1_data_counter_limit  && select1_can_train) {
        //select1_can_train = false;
        {//Train network
-        //trained[3] = true;        
-        if(select1_output_data.size() >= select1_data_counter_limit){
-         EpochTrainSelect1(false, select1_output_data.size(),5000000);
-        }else{
-         EpochTrainSelect1(false, select1_output_data.size(),3000);
-        }
-        //Train_Node(Select1_Node, &Select1_FANNPong, Select1_Node->ifann.unique_name, &select1_input_data, &select1_output_data);
-
+        trained[3] = true;        
+        Train_Node(Select1_Node, &Select1_FANNPong, Select1_Node->ifann.unique_name, &select1_input_data, &select1_output_data);
        }
       }
       //if (!trained[4] && select2_output_data.size() >= select2_data_counter_limit && select2_can_train) {
@@ -2474,6 +2711,7 @@ void TEST_Cleanup(){
  //IFFANN::Save_Cascade_FANN(&Node1->ifann, IFFANN::CnTrainedFannPostscript);
 
  //Network.NodeRegister.Unregister(Node1);
+ TESTFN_SaveAllTrainData();
 
  last_touched_object = NULL;
  DEMO4_initialized = false;
