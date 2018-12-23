@@ -53,6 +53,7 @@ bool InitFreeType(struct android_app* _state){
 
  return true;
 }
+
 void DoneFreeType(){  
  if(buffer){
   FT_Done_Face(face);
@@ -94,15 +95,7 @@ bool SetFaceSize(FT_F26Dot6 _char_width, FT_F26Dot6 _char_height ) {
  return true;
 }
 
-// This Function Gets The First Power Of 2 >= The
-// Int That We Pass It.
-inline int next_p2(int a)
-{
- int rval = 1;
- // rval<<=1 Is A Prettier Way Of Writing rval*=2;
- while (rval < a) rval <<= 1;
- return rval;
-}
+
 
 void computeStringBBox(char *facestring, FT_BBox  *abbox, float angle, FT_Vector _pos )
 {
@@ -391,97 +384,12 @@ GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double
       expanded_data[4 * (i + j * expanded_width) + 3] = (unsigned char)((float)(foreground.rgba.a + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
      }
     }    
-  //unsigned int lodeerror;
-  //std::vector<unsigned char> bmp((slot->bitmap.buffer), (slot->bitmap.buffer) + bmp_height * (slot->bitmap.pitch));
-//lodepng::load_file(bmp, argv[1]);
-  //std::vector<unsigned char> image;
-  //unsigned char *PNG_image; 
-  //size_t PNG_image_size;
-  //lodeerror = decodeBMP(image, bmp_width, bmp_height, bmp);
-  //if (lodeerror)
-  //{
-  // return texture;
-  //}
-  //lodeerror = lodepng_encode_memory(&PNG_image, &PNG_image_size, (slot->bitmap.buffer), bmp_width, bmp_height, LCT_GREY, 8);
-  //lodeerror = lodepng::decode(image, bmp_width, bmp_height, bmp, LCT_GREY, 8);
-
-// Use Our Helper Function To Get The Widths Of
-// The Bitmap Data That We Will Need In Order To Create
-// Our Texture.
  
-  // Here We Fill In The Data For The Expanded Bitmap.
-  // Notice That We Are Using A Two Channel Bitmap (One For
-  // Channel Luminosity And One For Alpha), But We Assign
-  // Both Luminosity And Alpha To The Value That We
-  // Find In The FreeType Bitmap.
-  // We Use The ?: Operator To Say That Value Which We Use
-  // Will Be 0 If We Are In The Padding Zone, And Whatever
-  // Is The FreeType Bitmap Otherwise.
-  //for (int j = 0; j < expanded_height; j++) {
-  // for (int i = 0; i < expanded_width; i++) {
-  //  expanded_data[2 * (i + j * expanded_width)] = expanded_data[2 * (i + j * expanded_width) + 1] =
-  //   (i >= bmp_width || j >= bmp_height) ?
-  //   0 : (slot->bitmap.buffer)[i + bmp_width *j];
-  // }
-  //}
-
-
-
-  //for (int j = 0; j < expanded_height; j++) {
-  // for (int i = 0; i < expanded_width; i++) {
-  //  if(i >= bmp_width || j >= bmp_height){
-  //   *((unsigned int*)&(expanded_data[4 * (i + j * expanded_width)])) = 0;
-  //  }else{
-  //   if ((slot->bitmap.buffer)[i + bmp_width * j] > 0){
-  //    expanded_data[4 * (i + j * expanded_width) + 0] = (float)(foreground.rgba.r + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
-  //    expanded_data[4 * (i + j * expanded_width) + 1] = (float)(foreground.rgba.g + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
-  //    expanded_data[4 * (i + j * expanded_width) + 2] = (float)(foreground.rgba.b + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
-  //    expanded_data[4 * (i + j * expanded_width) + 3] = (float)(foreground.rgba.a + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
-  //   }else{
-  //    expanded_data[4 * (i + j * expanded_width) + 0] = background.rgba.r;
-  //    expanded_data[4 * (i + j * expanded_width) + 1] = background.rgba.g;
-  //    expanded_data[4 * (i + j * expanded_width) + 2] = background.rgba.b;
-  //    expanded_data[4 * (i + j * expanded_width) + 3] = (float)(background.rgba.a + (slot->bitmap.buffer)[i + bmp_width * j])*0.5;
-  //   }
-  //  }
-    //}else if((slot->bitmap.buffer)[i + bmp_width * j] > 126){
-    // *((unsigned int*)&(expanded_data[4 * (i + j * expanded_width)])) = foreground.field;
-    //}else{
-    // *((unsigned int*)&(expanded_data[4 * (i + j * expanded_width)])) = background.field;
-    //}
-//    expanded_data[4 * (i + j * expanded_width) + 1] =
-//    expanded_data[4 * (i + j * expanded_width) + 2] =
-//    expanded_data[4 * (i + j * expanded_width) + 3] =
-//     (i >= bmp_width || j >= bmp_height) ?
-//     0 : (slot->bitmap.buffer)[i + bmp_width * j];
    }
   }
 
   pen.x += (slot->advance.x >> 6);
   pen.y += (slot->advance.y >> 6);
-
-
-
-
-
-//if (error)
-//{ 
-// return texture;
-//}
-
-//std::vector<unsigned char> png;
-//error = lodepng::encode(png, bmp, bmp_width, bmp_height);
-
-  //if (lodeerror)
-  //{ 
-  // return texture;
-  //}  
-  //                                    USE BITMAP CLASS TO DRAW STRING AND THEN USE CODE ABOVE TO MAP
-//                                 STORE UV COORDS WHERE BORDER IS (POT)
-      
-
-
-  //increment pen position 
  }
 
 

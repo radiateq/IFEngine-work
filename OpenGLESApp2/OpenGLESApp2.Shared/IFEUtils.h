@@ -301,7 +301,15 @@ int orientation(const Vector2d &p1, const Vector2d &p2, const Vector2d &p3);
 //}
 
 
-
+// This Function Gets The First Power Of 2 >= The
+// Int That We Pass It.
+inline int next_p2(int a)
+{
+ int rval = 1;
+ // rval<<=1 Is A Prettier Way Of Writing rval*=2;
+ while (rval < a) rval <<= 1;
+ return rval;
+}
 
 
 
