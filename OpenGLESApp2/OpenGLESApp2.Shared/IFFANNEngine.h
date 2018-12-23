@@ -99,7 +99,8 @@ namespace IFFANNEngine{
  class CNode{
  public:
  ~CNode(){
-  fann_destroy_train(ifann.ann_train->train_data);
+  if(ifann.ann_train)
+   fann_destroy_train(ifann.ann_train->train_data);
  }
   enum ENodeStates {
    E_Start,
