@@ -53,8 +53,8 @@ struct SFANNPong {
 
 
 void Init_IFAdapter(engine &engine);
-void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output);
-void Train_Cascade_FANN_PaddleBrains_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output);
+//void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output);
+//void Train_Cascade_FANN_PaddleBrains_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output);
 void TESTFN_PostOperations(engine &engine);
 void TESTFN_AddRandomBody(engine &engine);
 void TEST_Cleanup();

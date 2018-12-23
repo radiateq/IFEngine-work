@@ -29,7 +29,7 @@ bool FANN_TEST_initialized = false;
 IFFANN::IFS_Cascade_FANN LittleBrains;
 ifCB2Body *anns_body, *anns_learned_body;
 bool FANN_Learning_Phase = false;
-std::vector<fann_type> input_data, output_data;
+//std::vector<fann_type> input_data, output_data;
 unsigned int input_data_sets = 0;
 static float last_pos_x = FLT_MAX, last_pos_y = FLT_MAX;
 int max_neurons = 20, neurons_between_reports = 0, input_neurons = 3, output_neurons = 2;
@@ -53,9 +53,9 @@ float left, bottom, right, top;
 float radius, paddle_width, dummy;
 //IFFANN::IFS_Cascade_FANN Node1->ifann;
 bool Pong_Learning_Phase = false;
-SFANNPong FANNPong, FANNPongBounce;
+SFANNPong FANNPongBounce;
 IFFANNEngine::CNetwork Network;
-IFFANNEngine::CNode *Node1;
+//IFFANNEngine::CNode *Node1;
 IFFANNEngine::CNode *Node2;
 //unsigned int check_input_data_sets = 0, check_input_data_sets_AI = 0;;
 //#define TEST_DELTAS 4
@@ -127,7 +127,7 @@ unsigned int select1_data_counter_limit = 1000;
 
 
 
-
+typedef IFFANNEngine::CNode::ENodeStates TNodeStates;
 typedef std::vector<fann_type> TFannVector;
 TFannVector *train_input_vector, *train_output_vector;
 struct fann *train_ann;
@@ -148,10 +148,12 @@ void Train_Cascade_FANN_Callback(unsigned int num_data, unsigned int num_input, 
 
 class CNetworkNode {
 public:
-
+ ~CNetworkNode(){
+   delete Node;
+ }
 
  SFANNPong FANNOptions;
- IFFANNEngine::CNode *Node;
+ IFFANNEngine::CNode *Node = NULL;
  TFannVector node_input_data, node_output_data;
  bool node_train_trigger = false, node_can_train = false;
  unsigned int node_data_counter = 0;
@@ -160,18 +162,22 @@ public:
  fann_type node_train_error = 1;
  unsigned int node_data_counter_limit = 1000;
 
+ size_t NumTrainData(){
+  return node_output_data.size()/FANNOptions.output_neurons;
+ }
+
  void CheckNodeTrainDataState(){
   if (node_output_data.size() == 0) {
-   Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates | IFFANNEngine::CNode::ENodeStates::E_NoData);
-   Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates & (~IFFANNEngine::CNode::ENodeStates::E_FullData));
+   Node->AddFlag(TNodeStates::E_NoData);
+   Node->ClearFlag(TNodeStates::E_FullData);
   }
   else {
-   Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates & (~IFFANNEngine::CNode::ENodeStates::E_NoData));
+   Node->ClearFlag(TNodeStates::E_NoData);
    {//Limit train size    
     if (node_output_data.size() > node_data_counter_limit) {
-     Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates | IFFANNEngine::CNode::ENodeStates::E_FullData);
+     Node->SetFlag(TNodeStates::E_FullData);
      node_input_data.erase(node_input_data.begin(), node_input_data.begin() + node_input_data.size() - node_data_counter_limit * FANNOptions.input_neurons);
-     node_output_data.erase(select1_output_data.begin(), node_output_data.begin() + node_output_data.size() - node_data_counter_limit * FANNOptions.output_neurons);
+     node_output_data.erase(node_output_data.begin(), node_output_data.begin() + node_output_data.size() - node_data_counter_limit * FANNOptions.output_neurons);
     }
     else {
      Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates & (~IFFANNEngine::CNode::ENodeStates::E_FullData));
@@ -181,6 +187,7 @@ public:
  }
 
  void Load_Node(char const * const unique_name, bool is_running = true) { 
+  delete Node;
   Node = new IFFANNEngine::CNode;
   Node->IsRunning = is_running;
   Network.NodeRegister.Register(Node);
@@ -231,7 +238,7 @@ public:
      node_last_save_index = (node_new_samples%node_train_samples);
      node_new_samples = 0;
      Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
-     IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, node_output_data.size() / FANNOptions.output_neurons, 2, false);
+     IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, NumTrainData(), 2, false);
     }
 
     if (!SaveNewData) {
@@ -266,14 +273,14 @@ public:
     }
     else {
      Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
-     IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, node_output_data.size(), 1, false);
+     IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, NumTrainData(), 1, false);
     }
    }
    else {
     if (node_train_error != std::numeric_limits<fann_type>::max()) {
      if ((node_train_error <= 1e-6) && Node->ifann.ann_train->train_data->num_data >= node_data_counter_limit) {
       Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
-      IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, node_output_data.size(), 2, false);
+      IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, NumTrainData(), 2, false);
       IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
       node_train_error = std::numeric_limits<fann_type>::max();
       trained[3] == true;
@@ -305,18 +312,26 @@ public:
  void Save_Train_Data() {
   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&(Node->ifann)), FANNOptions.input_neurons, FANNOptions.output_neurons, Node->ifann.unique_name), FANNOptions.max_neurons, FANNOptions.neurons_between_reports, FANNOptions.desired_error, FANNOptions.input_scale, FANNOptions.output_scale);
   Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
-  IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Callback, node_output_data.size() / FANNOptions.output_neurons, 2, false);
+  IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Callback, NumTrainData(), 2, false);
  }
 
- void Train_Node() {
-  IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&(Node->ifann)), FANNOptions.input_neurons, FANNOptions.output_neurons, Node->ifann.unique_name), FANNOptions.max_neurons, FANNOptions.neurons_between_reports, FANNOptions.desired_error, FANNOptions.input_scale, FANNOptions.output_scale);
+ bool Train_Node() {
+  if( !Node->GetFlag(TNodeStates::E_Training))
+   return false;
+  char unique_name[BUFSIZ+1];
+  strcpy(unique_name, Node->ifann.unique_name);
+  IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&(Node->ifann)), FANNOptions.input_neurons, FANNOptions.output_neurons, unique_name), FANNOptions.max_neurons, FANNOptions.neurons_between_reports, FANNOptions.desired_error, FANNOptions.input_scale, FANNOptions.output_scale);
   Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
-  IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Callback, node_output_data.size() / FANNOptions.output_neurons, 2);
+  IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Callback, NumTrainData(), 2);
   IFFANN::Load_Cascade_FANN(&(Node->ifann), Node->ifann.unique_name, IFFANN::CnTrainedFannPostscript);
   IFFANN::Save_Cascade_FANN(&(Node->ifann), IFFANN::CnFinalFannPostscript);
   Node->LoadCore(Node->ifann.unique_name);
+  return true;
  }
-
+ //Retrived by Load_Node or any function using Load_Cascade_FANN
+ bool Save_Fann(){
+  return IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
+ }
 };
 
 const unsigned int Max_Network_Nodes=10;
@@ -485,7 +500,7 @@ public:
     train_input_bounce_set = false;
     Node2->IsRunning = true;
     Node2_1_Node->IsRunning = true;
-    Node1->IsRunning = false;
+    NetworkNodes[0].Node->IsRunning = false;
     //Select1_Node->IsRunning = true;
     ball_state = 4;
    //}
@@ -530,109 +545,6 @@ public:
 };
 CPongBallStateMachine PongBallStateMachine;
 
-
-
-
-
-
-
-
-void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
- //Inputs are:
- // 1 - gravity y
- // 2 - acceleration x
- // 3 - acceleration y
- //Outpus are:
- // 1 - delta position x
- // 2 - delta position y
- //input[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
- //input[1] = last_x_acceleration / LittleBrains.input_scale;
- //input[2] = last_y_acceleration / LittleBrains.input_scale; 
-
- //float x = anns_body->body->GetPosition().x, y = anns_body->body->GetPosition().y;
-
- //if(last_pos_x == FLT_MAX ){
- // output[0] = 0;
- //}else{
- // output[0] = anns_body->body->GetPosition().x - last_pos_x;
- //}
- //last_pos_x = anns_body->body->GetPosition().x;
- //if (last_pos_y == FLT_MAX) {
- // output[1] = 0;
- //}
- //else {
- // output[1] = anns_body->body->GetPosition().y - last_pos_y;
- //}
- //last_pos_y = anns_body->body->GetPosition().y;
-
- //output[0] /= LittleBrains.output_scale;
- //output[1] /= LittleBrains.output_scale;
-
- input[0] = input_data[num_data * 3 + 0];
- input[1] = input_data[num_data * 3 + 1];
- input[2] = input_data[num_data * 3 + 2];
-
-
-
- output[0] = output_data[(num_data) * 2 + 0];
- output[1] = output_data[(num_data) * 2 + 1];
-
-
-}
-void Train_Cascade_FANN_PaddleBrains_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
- for(unsigned int cnt = 0; cnt < FANNPong.input_neurons; cnt++ ){
-  input[cnt] = input_data[num_data * FANNPong.input_neurons + cnt];
- }
- //input[1] = input_data[num_data * 4 + 1];
- //input[2] = input_data[num_data * 4 + 2];
- //input[3] = input_data[num_data * 4 + 3];
- //input[4] = input_data[num_data * 5 + 4];
- output[0] = output_data[(num_data) * 1 + 0];
- 
-//IFGeneralUtils::CFileSystem FileSystem;
-//FileSystem.OpenFile(RQNDKUtils::Make_storageDataPath(char_buffer,BUFSIZ,"traindata"), "a");
-////sprintf(char_buffer,"%f %f %f %f %f\r\n", input[0], input[1], input[2], input[3], input[4]);
-//sprintf(char_buffer, "%f %f %f %f\r\n", input[0], input[1], input[2], input[3]);
-//FileSystem.Write(char_buffer,strlen(char_buffer));
-//sprintf(char_buffer, "%f\r\n", output[0]);
-//FileSystem.Write(char_buffer, strlen(char_buffer));
-//FileSystem.Free();
-//
-}
-void Train_Cascade_FANN_PaddleBrainsBounce_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
- for (unsigned int cnt = 0; cnt < FANNPongBounce.input_neurons; cnt++) {
-  input[cnt] = bounce_input_data[num_data * FANNPongBounce.input_neurons + cnt];
- }
- output[0] = bounce_output_data[(num_data) * 1 + 0];
-
- //IFGeneralUtils::CFileSystem FileSystem;
- //FileSystem.OpenFile(RQNDKUtils::Make_storageDataPath(char_buffer,BUFSIZ,"traindatabounce"), "a");
- ////sprintf(char_buffer,"%f %f %f %f %f\r\n", input[0], input[1], input[2], input[3], input[4]);
- //sprintf(char_buffer, "%f %f %f %f %f %f\r\n", input[0], input[1], input[2], input[3], input[4], input[5]);
- //FileSystem.Write(char_buffer,strlen(char_buffer));
- //sprintf(char_buffer, "%f\r\n", output[0]);
- //FileSystem.Write(char_buffer, strlen(char_buffer));
- //FileSystem.Free();
- //
-}
-void Train_Cascade_FANN_PaddleBrainsSelect1_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
- for (unsigned int cnt = 0; cnt < Select1_FANNPong.input_neurons; cnt++) {
-  input[cnt] = select1_input_data[num_data * Select1_FANNPong.input_neurons + cnt];
- }
- output[0] = select1_output_data[(num_data) * 1 + 0];
-
- //IFGeneralUtils::CFileSystem FileSystem;
- //FileSystem.OpenFile(RQNDKUtils::Make_storageDataPath(char_buffer,BUFSIZ,"traindatabounce"), "a");
- ////sprintf(char_buffer,"%f %f %f %f %f\r\n", input[0], input[1], input[2], input[3], input[4]);
- //sprintf(char_buffer, "%f %f %f %f %f %f\r\n", input[0], input[1], input[2], input[3], input[4], input[5]);
- //FileSystem.Write(char_buffer,strlen(char_buffer));
- //sprintf(char_buffer, "%f\r\n", output[0]);
- //FileSystem.Write(char_buffer, strlen(char_buffer));
- //FileSystem.Free();
- //
-}
-
-
 void AIPong_Load_Node(IFFANNEngine::CNode **LoadedNode, char const * const unique_name, SFANNPong const * const _FANNPong, bool is_running = true) {
  *LoadedNode = new IFFANNEngine::CNode;
  (*LoadedNode)->IsRunning = is_running;
@@ -647,19 +559,6 @@ void AIPong_Load_Node(IFFANNEngine::CNode **LoadedNode, char const * const uniqu
  }
  (*LoadedNode)->LoadCore(unique_name);
 
-}
-void Limit_Node1_data_size(bool trim_to_head = false){
-
- if(trim_to_head){
-  ball_to_pad_prev_distance = FLT_MAX;
- }
-
- input_data_sets = input_data.size() / Node1->ifann.ann->num_input;
- if ((trim_to_head&&(input_data_sets!= Node1_data_head))||(Node1_data_head >= PaddleBrainsTrainSizeLimit)) {
-  input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (Node1_data_head * Node1->ifann.ann->num_input)));
-  input_data_sets = input_data.size() / Node1->ifann.ann->num_input;
-  output_data.erase(output_data.begin(), output_data.begin() + output_data.size() - Node1_data_head);
- }
 }
 void Setup_Train_Cascade_FANN_Train_Callback(fann *_train_ann, TFannVector *_train_input_vector, TFannVector *_train_output_vector){
  train_input_vector = _train_input_vector;
@@ -703,7 +602,7 @@ void Save_TrainData(IFFANNEngine::CNode * const Node, SFANNPong const * const FA
  IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Train_Callback, _output_vector->size(), 2, false);
 }
 void TESTFN_SaveAllTrainData(){
- Save_TrainData(Node1, &FANNPong, Node1->ifann.unique_name, &input_data, &output_data);
+ Save_TrainData(NetworkNodes[0].Node, &NetworkNodes[0].FANNOptions, NetworkNodes[0].Node->ifann.unique_name, &NetworkNodes[0].node_input_data, &NetworkNodes[0].node_output_data);
  Save_TrainData(Node2, &FANNPongBounce, Node2->ifann.unique_name, &bounce_input_data, &bounce_output_data);
  Save_TrainData(Node2_1_Node, &Node2_1_FANNPong, Node2_1_Node->ifann.unique_name, &Node2_1_input_data, &Node2_1_output_data);
  Save_TrainData(Select1_Node, &Select1_FANNPong, Select1_Node->ifann.unique_name, &select1_input_data, &select1_output_data);
@@ -1092,32 +991,33 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
 
-
-
-   ////////////////////////////  Load Nodes START
-   FANNPong.input_neurons = 3;
-   FANNPong.max_neurons = 20;
-   FANNPong.desired_error = 0.000;
-   FANNPong.input_scale = 10.0;
-   FANNPong.output_scale = 10.0;
-   AIPong_Load_Node(&Node1, "pongpaddle", &FANNPong);
-   Pong_Learning_Phase = false;
-   input_data_sets = 0;
-   Node1_data_head = 0;
-   input_data.clear();
-   output_data.clear();
-   if (IFFANN::Train_Cascade_FANN(&Node1->ifann, NULL, 0, 1, false)) {
-    for (unsigned int cnt = 0; cnt < Node1->ifann.ann_train->train_data->num_data; cnt++) {
-     for (unsigned int inputcnt = 0; inputcnt < Node1->ifann.ann_train->train_data->num_input; inputcnt++) {
-      input_data.push_back(Node1->ifann.ann_train->train_data->input[cnt][inputcnt]);
-     }
-     for (unsigned int outputcnt = 0; outputcnt < Node1->ifann.ann_train->train_data->num_output; outputcnt++) {
-      output_data.push_back(Node1->ifann.ann_train->train_data->output[cnt][outputcnt]);
-     }
-    }
-    input_data_sets = Node1->ifann.ann_train->train_data->num_data;
-    Node1_data_head = input_data_sets;
-   }
+      ////////////////////////////  Load Nodes START
+   NetworkNodes[0].FANNOptions.input_neurons = 3;
+   NetworkNodes[0].FANNOptions.max_neurons = 20;
+   NetworkNodes[0].FANNOptions.desired_error = 0.000;
+   NetworkNodes[0].FANNOptions.input_scale = 10.0;
+   NetworkNodes[0].FANNOptions.output_scale = 10.0;
+   NetworkNodes[0].Load_Node( "pongpaddle");
+   NetworkNodes[0].Load_Train_Data();      
+   NetworkNodes[0].Node->AddFlag(TNodeStates::E_Training);
+   //Pong_Learning_Phase = false;
+   
+   //input_data_sets = 0;
+   //Node1_data_head = 0;
+   //input_data.clear();
+   //output_data.clear();
+   //if (IFFANN::Train_Cascade_FANN(&Node1->ifann, NULL, 0, 1, false)) {
+   // for (unsigned int cnt = 0; cnt < Node1->ifann.ann_train->train_data->num_data; cnt++) {
+   //  for (unsigned int inputcnt = 0; inputcnt < Node1->ifann.ann_train->train_data->num_input; inputcnt++) {
+   //   input_data.push_back(Node1->ifann.ann_train->train_data->input[cnt][inputcnt]);
+   //  }
+   //  for (unsigned int outputcnt = 0; outputcnt < Node1->ifann.ann_train->train_data->num_output; outputcnt++) {
+   //   output_data.push_back(Node1->ifann.ann_train->train_data->output[cnt][outputcnt]);
+   //  }
+   // }
+   // input_data_sets = Node1->ifann.ann_train->train_data->num_data;
+   // Node1_data_head = input_data_sets;
+   //}
    
    
 
@@ -1204,13 +1104,13 @@ void TESTFN_AddRandomBody(engine &engine) {
 //   trained[0] = trained[1] = trained[2] = trained[3] =true;
    
    //if ((trained[0] == true) && (trained[1] == true) && (trained[2] == true)) {
-   // Node1->IsRunning = true;
+   // NetworkNodes[0].Node->IsRunning = true;
    // Node2->IsRunning = true;
    // Node2_1_Node->IsRunning = true;
    // Select1_Node->IsRunning = true;
    //}
    //else {
-   // Node1->IsRunning = true;
+   // NetworkNodes[0].Node->IsRunning = true;
    // Node2->IsRunning = true;
    // Node2_1_Node->IsRunning = true;
    // Select1_Node->IsRunning = true;
@@ -1240,7 +1140,9 @@ void TESTFN_AddRandomBody(engine &engine) {
    if (balldistancecenter > cut_off_distance) {    
 
     //Delete last paddle node1 data
-    Limit_Node1_data_size(true);
+    //Limit_Node1_data_size(true);
+    NetworkNodes[0].CheckNodeTrainDataState();
+    ball_to_pad_prev_distance = FLT_MAX;
     //
     ball_state = -2;
 
@@ -1253,7 +1155,7 @@ void TESTFN_AddRandomBody(engine &engine) {
     //float launch_y = drand48()*1000.0 - 500.0;
     float launch_y = -(drand48()) * 250.0;
     game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*1000.0-500.0, launch_y), game_body[2]->body->GetPosition(), true);
-    Node1->IsRunning = false;
+    NetworkNodes[0].Node->IsRunning = false;
     Node2->IsRunning = false;
     Node2_1_Node->IsRunning = false;
     //direction_x+=0.1;
@@ -1319,7 +1221,7 @@ void TESTFN_AddRandomBody(engine &engine) {
             //}
            }else{
             if (!trained[0]){
-             Train_Node(Node1, &FANNPong, Node1->ifann.unique_name, &input_data, &output_data);
+             NetworkNodes[0].Train_Node();
             }
             if (!trained[1]) {
              Train_Node(Node2, &FANNPongBounce, Node2->ifann.unique_name, &bounce_input_data, &bounce_output_data);
@@ -1335,7 +1237,8 @@ void TESTFN_AddRandomBody(engine &engine) {
 
             game_body[3]->body->SetLinearVelocity(b2Vec2(0,0));
             if(trained[0]){
-             IFFANN::Save_Cascade_FANN(&Node1->ifann, IFFANN::CnFinalFannPostscript);
+             NetworkNodes[0].Save_Fann();
+             //IFFANN::Save_Cascade_FANN(&NetworkNodes[0].Node->ifann, IFFANN::CnFinalFannPostscript);              
             }
             if (trained[1]) {
              IFFANN::Save_Cascade_FANN(&Node2->ifann, IFFANN::CnFinalFannPostscript);
@@ -1379,28 +1282,39 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
      if(AutoPlayer){
-      if (!trained[0] && input_data_sets >= PaddleBrainsTrainSizeLimit && Pong_Learning_Phase) {
+      if (!trained[0] && Pong_Learning_Phase) {
        trained[0] = true;
-       IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node1->ifann), FANNPong.input_neurons, FANNPong.output_neurons, "pongpaddle"), FANNPong.max_neurons, FANNPong.neurons_between_reports, FANNPong.desired_error, FANNPong.input_scale, FANNPong.output_scale);
-       IFFANN::Train_Cascade_FANN(&Node1->ifann, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets,2);
-       //Node1_train_error = fann_train_epoch(Node1->ifann.ann, Node1->ifann.ann_train->train_data);
-       Node1_train_error = std::numeric_limits<fann_type>::max();
-       //Node1_train_error = fann_test_data(Node1->ifann.ann, Node1->ifann.ann_train->train_data);
+       ///////////////////////////////////train node
+       NetworkNodes[0].Train_Node();
+       //IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&NetworkNodes[0].Node->ifann), NetworkNodes[0].FANNOptions.input_neurons, NetworkNodes[0].FANNOptions.output_neurons, "pongpaddle"), NetworkNodes[0].FANNOptions.max_neurons, NetworkNodes[0].FANNOptions.neurons_between_reports, NetworkNodes[0].FANNOptions.desired_error, NetworkNodes[0].FANNOptions.input_scale, NetworkNodes[0].FANNOptions.output_scale);
+       //IFFANN::Train_Cascade_FANN(&NetworkNodes[0].Node->ifann, Train_Cascade_FANN_Callback, input_data_sets,2);
+       //////////////////////////////////////////////////
 
-       IFFANN::IFS_Cascade_FANN temp_ifann;
-       IFFANN::Load_Cascade_FANN(&temp_ifann, "pongpaddle", IFFANN::CnTrainedFannPostscript);
-       IFFANN::Save_Cascade_FANN(&temp_ifann, IFFANN::CnFinalFannPostscript);
-       //Node1->UnloadCore();
-       //Network.NodeRegister.Unregister(Node1);      
-       //bool noderun = Node1->IsRunning;
-       //delete Node1;
-       //Node1 = new IFFANNEngine::CNode;
-       //Node1->IsRunning = noderun;
-       //Network.NodeRegister.Register(Node1);
-       //Node1->LoadCore("pongpaddle");
+
+       ////////////////if continutous train
+       //Node1_train_error = fann_train_epoch(NetworkNodes[0].Node->ifann.ann, NetworkNodes[0].Node->ifann.ann_train->train_data);
+       //Node1_train_error = std::numeric_limits<fann_type>::max();
+       //Node1_train_error = fann_test_data(NetworkNodes[0].Node->ifann.ann, NetworkNodes[0].Node->ifann.ann_train->train_data);
+       ///////////////////////////////////////////////////////////////////////////////////
+
+
+
+       ///////////////////////////////////save node?(included in train node)
+       //IFFANN::IFS_Cascade_FANN temp_ifann;
+       //IFFANN::Load_Cascade_FANN(&temp_ifann, "pongpaddle", IFFANN::CnTrainedFannPostscript);
+       //IFFANN::Save_Cascade_FANN(&temp_ifann, IFFANN::CnFinalFannPostscript);
+       
+       //NetworkNodes[0].Node->UnloadCore();
+       //Network.NodeRegister.Unregister(NetworkNodes[0].Node);      
+       //bool noderun = NetworkNodes[0].Node->IsRunning;
+       //delete NetworkNodes[0].Node;
+       //NetworkNodes[0].Node = new IFFANNEngine::CNode;
+       //NetworkNodes[0].Node->IsRunning = noderun;
+       //Network.NodeRegister.Register(NetworkNodes[0].Node);
+       //NetworkNodes[0].Node->LoadCore("pongpaddle");
       
       
-       Pong_Learning_Phase = false;
+       NetworkNodes[0].Node->ClearFlag(TNodeStates::E_Training);
        //struct timespec temp_timespec;
        //clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
        //TEST_Last_Added_Body_Time = temp_timespec;
@@ -1412,7 +1326,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        ball_state = -1;
        //IFFANNEngine::IFS_Cascade_FANN PaddleBounceBrains;
        IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node2->ifann), FANNPongBounce.input_neurons, FANNPongBounce.output_neurons,  "pongpaddlebounce"), FANNPongBounce.max_neurons, FANNPongBounce.neurons_between_reports, FANNPongBounce.desired_error, FANNPongBounce.input_scale, FANNPongBounce.output_scale);
-       IFFANN::Train_Cascade_FANN(&Node2->ifann, Train_Cascade_FANN_PaddleBrainsBounce_Callback, bounce_data_counter,2);
+       IFFANN::Train_Cascade_FANN(&Node2->ifann, Train_Cascade_FANN_Callback, bounce_data_counter,2);
        Node2_train_error = std::numeric_limits<fann_type>::max();
        IFFANN::IFS_Cascade_FANN temp_ifann;
        IFFANN::Load_Cascade_FANN(&temp_ifann, "pongpaddlebounce", IFFANN::CnTrainedFannPostscript);
@@ -1458,18 +1372,19 @@ void TESTFN_AddRandomBody(engine &engine) {
       //}
       //Gradual train
       ////////////////////////////////////////////////////
-      if (((Node1_train_error > 0.02)&&((Node1_train_error != std::numeric_limits<fann_type>::max()))&& trained[0] == false)  || ((Node1->ifann.ann_train->train_data)&&(Node1->ifann.ann_train->train_data->num_data < PaddleBrainsTrainSizeLimit))){
-       if(Node1->ifann.ann_train->train_data){
-        for( int cnt = 0; cnt < 1; cnt++){
-         //Node1_train_error = fann_train_epoch(Node1->ifann.ann, Node1->ifann.ann_train->train_data);
-        }
-       }
-      }else{
-       if(Node1_train_error != std::numeric_limits<fann_type>::max() ){
-        Node1_train_error = std::numeric_limits<fann_type>::max();
-        IFFANN::Train_Cascade_FANN(&Node1->ifann, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets, 2, false);
-       }
-      }
+      NetworkNodes[0].Epoch_Train();
+      //if (((Node1_train_error > 0.02)&&((Node1_train_error != std::numeric_limits<fann_type>::max()))&& trained[0] == false)  || ((NetworkNodes[0].Node->ifann.ann_train->train_data)&&(NetworkNodes[0].Node->ifann.ann_train->train_data->num_data < PaddleBrainsTrainSizeLimit))){
+      // if(NetworkNodes[0].Node->ifann.ann_train->train_data){
+      //  for( int cnt = 0; cnt < 1; cnt++){
+      //   //Node1_train_error = fann_train_epoch(NetworkNodes[0].Node->ifann.ann, NetworkNodes[0].Node->ifann.ann_train->train_data);
+      //  }
+      // }
+      //}else{
+      // if(Node1_train_error != std::numeric_limits<fann_type>::max() ){
+      //  Node1_train_error = std::numeric_limits<fann_type>::max();
+      //  IFFANN::Train_Cascade_FANN(&NetworkNodes[0].Node->ifann, Train_Cascade_FANN_Callback, input_data_sets, 2, false);
+      // }
+      //}
       /////////////////////////////////////////////////////
       if (((Node2_train_error > 0.02) && ((Node2_train_error != std::numeric_limits<fann_type>::max())) && trained[1] == false) || ((Node2->ifann.ann_train->train_data)&&(Node2->ifann.ann_train->train_data->num_data < BounceBrainTrainSizeLimit))) {
        if (Node2->ifann.ann_train->train_data) {
@@ -1481,7 +1396,7 @@ void TESTFN_AddRandomBody(engine &engine) {
       else {
        if (Node2_train_error != std::numeric_limits<fann_type>::max()) {
         Node2_train_error = std::numeric_limits<fann_type>::max();
-        IFFANN::Train_Cascade_FANN(&Node2->ifann, Train_Cascade_FANN_PaddleBrainsBounce_Callback, bounce_data_counter, 2, false);
+        IFFANN::Train_Cascade_FANN(&Node2->ifann, Train_Cascade_FANN_Callback, bounce_data_counter, 2, false);
        }
       }
 
@@ -1521,7 +1436,7 @@ void TESTFN_AddRandomBody(engine &engine) {
       LastAIPaddle = AIPaddle;
       Node1_data_head = input_data_sets;
       if(!AIPaddle){
-       Node1->IsRunning = false;
+       NetworkNodes[0].Node->IsRunning = false;
        Node2->IsRunning = false;
        Node2_1_Node->IsRunning = false;
       }else{
@@ -1550,9 +1465,9 @@ void TESTFN_AddRandomBody(engine &engine) {
       if( balllinvel.y > 0 ){ //PongBallStateMachine.BallState.PlayfieldLocation == CPongBallStateMachine::E_TravelUp ){
        if( ballposition.y > ( bottom * 0.6 * 0.9 )){
         Select1_Node->IsRunning = false;
-        Node1->IsRunning = true;
+        NetworkNodes[0].Node->IsRunning = true;
        }else{
-        Node1->IsRunning = false;
+        NetworkNodes[0].Node->IsRunning = false;
        }
       }
      
@@ -1596,30 +1511,30 @@ void TESTFN_AddRandomBody(engine &engine) {
           if (abs(b2Distance(paddleposition, ballposition)) < ball_to_pad_prev_distance){
            ball_to_pad_prev_distance = abs(b2Distance(paddleposition, ballposition));
            if ((prev_val01 - b2Distance(ballposition, paddleposition))) {
-            input_data.push_back((prev_val01 - b2Distance(ballposition, paddleposition)) / Node1->ifann.input_scale);
+            NetworkNodes[0].node_input_data.push_back((prev_val01 - b2Distance(ballposition, paddleposition)) / NetworkNodes[0].Node->ifann.input_scale);
            }
            else {
-            input_data.push_back(0);
+            NetworkNodes[0].node_input_data.push_back(0);
            }
            prev_val01 = b2Distance(ballposition, paddleposition);
 
            if (balllinvel.y && balllinvel.x) {
-            input_data.push_back((atan2(-balllinvel.y, -balllinvel.x) - b2_pi));
+            NetworkNodes[0].node_input_data.push_back((atan2(-balllinvel.y, -balllinvel.x) - b2_pi));
            }
            else {
-            input_data.push_back(0);
+            NetworkNodes[0].node_input_data.push_back(0);
            }
 
-           input_data.push_back(-ballposition.x/ Node1->ifann.input_scale);
+           NetworkNodes[0].node_input_data.push_back(-ballposition.x/ NetworkNodes[0].Node->ifann.input_scale);
 
 
            //if (ballposition.x < 0) {
-           // input_data.push_back(-(left - ballposition.x)/ Node1->ifann.input_scale);
+           // input_data.push_back(-(left - ballposition.x)/ NetworkNodes[0].Node->ifann.input_scale);
            //}
            //else {
-           // input_data.push_back((right - ballposition.x) / Node1->ifann.input_scale);
+           // input_data.push_back((right - ballposition.x) / NetworkNodes[0].Node->ifann.input_scale);
            //}
-           //input_data.push_back(b2Distance(ballposition, paddleposition) / Node1->ifann.input_scale);
+           //input_data.push_back(b2Distance(ballposition, paddleposition) / NetworkNodes[0].Node->ifann.input_scale);
            
 
            //train_ndelta_x[0] = -ballposition.x;
@@ -1631,10 +1546,10 @@ void TESTFN_AddRandomBody(engine &engine) {
            // input_data.push_back((train_ndelta_y[cnt] = train_ndelta_y[cnt + 1] - train_ndelta_y[cnt]));
            //}
            if (paddleposition.x) {
-            output_data.push_back((-paddleposition.x) / Node1->ifann.output_scale);
+            NetworkNodes[0].node_output_data.push_back((-paddleposition.x) / NetworkNodes[0].Node->ifann.output_scale);
            }
            else {
-            output_data.push_back(0);
+            NetworkNodes[0].node_output_data.push_back(0);
            }
 
            
@@ -1655,46 +1570,47 @@ void TESTFN_AddRandomBody(engine &engine) {
           //}
            
           if((prev_val01 - b2Distance(paddleposition, ballposition))){
-           input_data.push_back((prev_val01 - b2Distance(paddleposition, ballposition)) / Node1->ifann.input_scale);
+           NetworkNodes[0].node_input_data.push_back((prev_val01 - b2Distance(paddleposition, ballposition)) / NetworkNodes[0].Node->ifann.input_scale);
           }else{
-           input_data.push_back(0);
+           NetworkNodes[0].node_input_data.push_back(0);
           }
           prev_val01 = b2Distance(paddleposition, ballposition);
           if (balllinvel.y && balllinvel.x) {
-           input_data.push_back(atan2(balllinvel.y, balllinvel.x ));
+           NetworkNodes[0].node_input_data.push_back(atan2(balllinvel.y, balllinvel.x ));
           }else{
-           input_data.push_back(0);
+           NetworkNodes[0].node_input_data.push_back(0);
           }
           //prev_dist = b2Distance(paddleposition, ballposition);
-          input_data.push_back(ballposition.x/ Node1->ifann.input_scale);
+          NetworkNodes[0].node_input_data.push_back(ballposition.x/ NetworkNodes[0].Node->ifann.input_scale);
 
           //if (ballposition.x < 0) {
-          // input_data.push_back((left - ballposition.x)/ Node1->ifann.input_scale);
+          // input_data.push_back((left - ballposition.x)/ NetworkNodes[0].Node->ifann.input_scale);
           //}
           //else {
-          // input_data.push_back(-(right - ballposition.x)/ Node1->ifann.input_scale);
+          // input_data.push_back(-(right - ballposition.x)/ NetworkNodes[0].Node->ifann.input_scale);
           //}
-          //input_data.push_back(b2Distance(paddleposition, ballposition) / Node1->ifann.input_scale);
+          //input_data.push_back(b2Distance(paddleposition, ballposition) / NetworkNodes[0].Node->ifann.input_scale);
 
          // input_data.push_back(game_body[3]->body->GetPosition().x);
           //input_data.push_back((paddleposition.y - ballposition.y) );
-          //input_data.push_back((paddleposition.x) / Node1->ifann.input_scale);
-          //input_data.push_back((paddleposition.y) / Node1->ifann.input_scale);
-          //output_data.push_back(paddleposition.x / Node1->ifann.output_scale);
-          //input_data.push_back((paddleposition.x) / Node1->ifann.input_scale);
-          //input_data.push_back((ballposition.x) / Node1->ifann.input_scale);
+          //input_data.push_back((paddleposition.x) / NetworkNodes[0].Node->ifann.input_scale);
+          //input_data.push_back((paddleposition.y) / NetworkNodes[0].Node->ifann.input_scale);
+          //output_data.push_back(paddleposition.x / NetworkNodes[0].Node->ifann.output_scale);
+          //input_data.push_back((paddleposition.x) / NetworkNodes[0].Node->ifann.input_scale);
+          //input_data.push_back((ballposition.x) / NetworkNodes[0].Node->ifann.input_scale);
           if(paddleposition.x){
-           output_data.push_back((paddleposition.x) / Node1->ifann.output_scale);
+           NetworkNodes[0].node_output_data.push_back((paddleposition.x) / NetworkNodes[0].Node->ifann.output_scale);
           }else{
-           output_data.push_back(0);
+           NetworkNodes[0].node_output_data.push_back(0);
           }
           prev_padx = paddleposition.x;
          }
          
          //Limit size of training set
-         Limit_Node1_data_size();
-         Pong_Learning_Phase = true;
-         //IFFANN::Train_Cascade_FANN(&Node1->ifann, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets, 2, false);
+         //Limit_Node1_data_size();
+         NetworkNodes[0].CheckNodeTrainDataState();
+         NetworkNodes[0].Node->AddFlag(TNodeStates::E_Training);
+         //IFFANN::Train_Cascade_FANN(&NetworkNodes[0].Node->ifann, Train_Cascade_FANN_PaddleBrains_Callback, input_data_sets, 2, false);
         }else if(abs(ballposition.y) < abs(paddleposition.y)){//Ball is behind pad
         }
        }
@@ -1722,7 +1638,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        //ndelta_x[0] = -ballposition.x;
        //ndelta_y[0] = -ballposition.y;
        //if((trained[0]==true)&&(trained[1]==true)&&(trained[2]==true)){
-       // Node1->IsRunning = true;
+       // NetworkNodes[0].Node->IsRunning = true;
        // Node2->IsRunning = true;
        // Node2_1_Node->IsRunning = true;
        // //Select1_Node->IsRunning = true;
@@ -1732,14 +1648,14 @@ void TESTFN_AddRandomBody(engine &engine) {
        
        if(AutoPlayer){
         if(Select1_Node->IsRunning){
-         Node1->IsRunning = true;
+         NetworkNodes[0].Node->IsRunning = true;
          Node2->IsRunning = true;
          Node2_1_Node->IsRunning = true;
         }else{
          if(trained[0])
-          Node1->IsRunning = false;
+          NetworkNodes[0].Node->IsRunning = false;
          else
-          Node1->IsRunning = true;
+          NetworkNodes[0].Node->IsRunning = true;
          Node2->IsRunning = false;
          Node2_1_Node->IsRunning = false;
         }
@@ -1750,7 +1666,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        while (0 <= Network.NodeRegister.InputPinRegister.input_pins.GetNextIterator(ID, pin_value)) {
         //if() 
         {         
-         if(Node1 == Network.GetNodeByPinID(ID)){         
+         if(NetworkNodes[0].Node == Network.GetNodeByPinID(ID)){         
           unsigned int pinindex = Network.GetNodeByPinID(ID)->GetInPinByID(ID)->fann_index;
           //if(pinindex <20){
           // *pin_value = ndelta_x[pinindex] = ndelta_x[pinindex +1]- ndelta_x[pinindex];
@@ -1761,14 +1677,14 @@ void TESTFN_AddRandomBody(engine &engine) {
           case 0:
            static float prev_val01 = 0.0f;
            if((prev_val01 - b2Distance(ballposition, paddleposition))){
-            *pin_value = (prev_val01 - b2Distance(ballposition, paddleposition)) / Node1->ifann.input_scale;
+            *pin_value = (prev_val01 - b2Distance(ballposition, paddleposition)) / NetworkNodes[0].Node->ifann.input_scale;
            }else{
             *pin_value = 0;
            }
            prev_val01 = b2Distance(ballposition, paddleposition);
            break;
           case 1:
-           //         *pin_value = -ballposition.x / Node1->ifann.input_scale;
+           //         *pin_value = -ballposition.x / NetworkNodes[0].Node->ifann.input_scale;
            if(balllinvel.y && balllinvel.x){
             *pin_value = (atan2(-balllinvel.y, -balllinvel.x ) - b2_pi);
            }else{
@@ -1776,7 +1692,7 @@ void TESTFN_AddRandomBody(engine &engine) {
            }
            break;
           case 2:
-           *pin_value = -ballposition.x/ Node1->ifann.input_scale;
+           *pin_value = -ballposition.x/ NetworkNodes[0].Node->ifann.input_scale;
            break;
           case 3:
            if(ballposition.x< 0){
@@ -1784,10 +1700,10 @@ void TESTFN_AddRandomBody(engine &engine) {
            }else{
             *pin_value = (right - ballposition.x);
            }
-           *pin_value/= Node1->ifann.input_scale;
+           *pin_value/= NetworkNodes[0].Node->ifann.input_scale;
            break;
           case 4:
-           *pin_value = b2Distance(ballposition, paddleposition) / Node1->ifann.input_scale;
+           *pin_value = b2Distance(ballposition, paddleposition) / NetworkNodes[0].Node->ifann.input_scale;
            break;
           };
          }else if (Node2 == Network.GetNodeByPinID(ID)) {
@@ -1833,19 +1749,19 @@ void TESTFN_AddRandomBody(engine &engine) {
          }
         }
        }
-       if(Node1->IsRunning)
-        fann_scale_input(Node1->ifann.ann, Node1->inputs);
+       if(NetworkNodes[0].Node->IsRunning)
+        fann_scale_input(NetworkNodes[0].Node->ifann.ann, NetworkNodes[0].Node->inputs);
        Network.Run(); 
-       if(Node1->IsRunning)
-        fann_descale_output(Node1->ifann.ann, Node1->outputs);
+       if(NetworkNodes[0].Node->IsRunning)
+        fann_descale_output(NetworkNodes[0].Node->ifann.ann, NetworkNodes[0].Node->outputs);
        //get output values
        Network.NodeRegister.OutputPinRegister.output_pins.ResetIterator();
        while (0 <= Network.NodeRegister.OutputPinRegister.output_pins.GetNextIterator(ID, pin_value)) {
         if (true)
         {
-         if(Node1->IsRunning && Node1 == Network.GetNodeByPinID(ID)){
+         if(NetworkNodes[0].Node->IsRunning && NetworkNodes[0].Node == Network.GetNodeByPinID(ID)){
           if (pin_value) {
-           fann_type val = *pin_value * Node1->ifann.output_scale;
+           fann_type val = *pin_value * NetworkNodes[0].Node->ifann.output_scale;
            AI_paddle_desired_position_x = -val;
           }
          }else if(Node2->IsRunning && Node2 == Network.GetNodeByPinID(ID)){
@@ -2077,606 +1993,6 @@ void TESTFN_AddRandomBody(engine &engine) {
     }
     while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
    }
-
-
-
-
-
-  }
-
-  // return;
-  //DEMO 3 - USER INTERFACE - STOP
-  //DEMO 2 - FANN - START
-
-  if (!FANN_TEST_initialized) {
-   FANN_TEST_initialized = true;
-
-   if (IFFANN::Check_Save_Cascade_FANN("forces01", IFFANN::CnTrainedFannPostscript)) {
-    IFFANN::Load_Cascade_FANN(&LittleBrains, "forces01", IFFANN::CnTrainedFannPostscript);
-   }
-   if (!LittleBrains.ann) IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_neurons, output_neurons, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
-   FANN_Learning_Phase = false;
-   input_data_sets = 0;
-
-   IFAdapter.OrderBody();
-   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody : 
-   ifCB2Body *first_body = IFAdapter.OrderedBody();
-   b2CircleShape *polyShape = new b2CircleShape;
-   polyShape->m_p.SetZero();
-   polyShape->m_radius = 2.5;
-   b2FixtureDef *fixture = new b2FixtureDef;
-   fixture->shape = polyShape;
-   fixture->density = 1.1;
-   fixture->friction = 0.3;
-   fixture->restitution = 0.001;
-   fixture->filter.categoryBits = 0x0008;
-   fixture->filter.maskBits = 0x0010;
-   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-   anns_body = IFAdapter.OrderedBody();
-   if (!IFAdapter.MakeBody())
-    return;
-   anns_body->OGL_body->texture_ID = User_Data.CubeTexture;
-
-
-
-   IFAdapter.OrderBody();
-   IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//((drand48() > 0.5) ? b2_staticBody : 
-   first_body = IFAdapter.OrderedBody();
-   polyShape = new b2CircleShape;
-   polyShape->m_p.SetZero();
-   polyShape->m_radius = 2.5;
-   fixture = new b2FixtureDef;
-   fixture->shape = polyShape;
-   fixture->density = 1.1;
-   fixture->friction = 0.3;
-   fixture->restitution = 0.001;
-   fixture->filter.categoryBits = 0x0002;
-   fixture->filter.maskBits = 0x0004;
-   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-   anns_learned_body = IFAdapter.OrderedBody();
-   if (!IFAdapter.MakeBody())
-    return;
-   anns_learned_body->OGL_body->texture_ID = User_Data.CubeTexture;
-
-  }
-
-  if (IFGameEditor::GetTouchEvent()) {
-   while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
-
-   struct timespec temp_timespec;
-   clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
-   //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
-   unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
-   if (temp_int64 > 2000) {
-    if (touchy > (engine.height * 0.5)) {
-     if (input_data_sets > 1) FANN_Learning_Phase = true;
-    }
-    else {
-     FANN_Learning_Phase = false;
-     IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_neurons, output_neurons, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);     //input_data_sets = 0;
-                                                                                                                                                                                                                                           //input_data.clear();
-                                                                                                                                                                                                                                           //output_data.clear();
-    }
-    TEST_Last_Added_Body_Time = temp_timespec;
-   }
-   while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
-  }
-
-  float maxx = engine.width;
-  float maxy = engine.height;
-  Window2ObjectCoordinates(maxx, maxy, zDefaultLayer, maxx, maxy);
-  float cut_off_distance = b2Distance(b2Vec2(0, 0), b2Vec2(maxx / IFA_box2D_factor, maxy / IFA_box2D_factor)) * 1;
-
-  last_x_acceleration *= 0.1;
-  last_y_acceleration *= 0.1;
-  if (b2Distance(b2Vec2(anns_body->body->GetPosition().x, anns_body->body->GetPosition().y), b2Vec2(0, 0)) > cut_off_distance) {
-   anns_body->body->SetTransform(b2Vec2(0, 0), anns_learned_body->body->GetAngle());
-   anns_body->body->SetLinearVelocity(b2Vec2(0, 0));
-   anns_body->body->SetAngularVelocity(0);
-   last_pos_x = 0, last_pos_y = 0;
-  }
-  else if (!FANN_Learning_Phase) {
-   last_pos_x = anns_body->body->GetPosition().x;
-   last_pos_y = anns_body->body->GetPosition().y;
-
-   anns_body->body->SetTransform(b2Vec2(last_x_acceleration + anns_body->body->GetPosition().x, last_y_acceleration + anns_body->body->GetPosition().y), anns_body->body->GetAngle());//Has immediate effect, set last_pos_x before
-
-                                                                                                                                                                                      //float coordx = touchx;
-                                                                                                                                                                                      //float coordy = touchy;
-                                                                                                                                                                                      //Window2ObjectCoordinates(coordx , coordy , zDefaultLayer, engine.width, engine.height);
-                                                                                                                                                                                      //anns_body->body->SetTransform(b2Vec2(coordx / IFA_box2D_factor, coordy / IFA_box2D_factor), anns_body->body->GetAngle());
-
-                                                                                                                                                                                      //anns_body->body->ApplyLinearImpulse(b2Vec2(last_x_acceleration, last_y_acceleration), anns_body->body->GetPosition(), true);//Has effect after world step, set last_pos_x after
-
-   if ((last_pos_x != FLT_MAX) && (last_pos_y != FLT_MAX)) {
-    input_data.push_back(IFA_World->GetGravity().y / LittleBrains.input_scale);
-    //input_data[(input_data_sets+0) * 3 + 0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
-    input_data.push_back(last_x_acceleration / LittleBrains.input_scale);
-    //input_data[(input_data_sets+0) * 3 + 1] = last_x_acceleration / LittleBrains.input_scale;
-    input_data.push_back(last_y_acceleration / LittleBrains.input_scale);
-    //input_data[(input_data_sets+0) * 3 + 2] = last_y_acceleration / LittleBrains.input_scale;
-    output_data.push_back((last_pos_x - anns_body->body->GetPosition().x) / LittleBrains.output_scale);
-    //output_data[input_data_sets * 2 + 0] = (last_pos_x - anns_body->body->GetPosition().x) / LittleBrains.output_scale;
-    output_data.push_back((last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale);
-    //output_data[input_data_sets * 2 + 1] = (last_pos_y - anns_body->body->GetPosition().y) / LittleBrains.output_scale;
-
-    Limit_Node1_data_size();
-
-    input_data_sets++;
-    if (input_data.size() > ((60 * 60 * 60 * 3) + 120)) {
-     input_data.erase(input_data.begin(), input_data.begin() + (input_data.size() - (60 * 60 * 60 * 3)));
-     input_data_sets = input_data.size() / 3;
-     output_data.erase(output_data.begin(), output_data.begin() + input_data_sets * 2);
-    }
-   }
-  }
-  if (FANN_Learning_Phase&&input_data_sets) {
-   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&LittleBrains), input_neurons, output_neurons, "forces01"), max_neurons, neurons_between_reports, desired_error, input_scale, output_scale);
-   IFFANN::Train_Cascade_FANN(&LittleBrains, Train_Cascade_FANN_Forces_Callback, input_data_sets);
-   //fann_set_scaling_params(LittleBrains.ann, LittleBrains.ann_train->train_data, -1, 1, min_output, max_output);
-   //input_data_sets = 0;
-   FANN_Learning_Phase = false;
-
-   input_data_sets = 0;
-   input_data.clear();
-   output_data.clear();
-
-
-  }
-  else {
-   //   IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnFinalFannPostscript);
-   //   IFFANNEngine::TestNetwork();
-
-   fann_type inputs[3];
-   inputs[0] = IFA_World->GetGravity().y / LittleBrains.input_scale;
-   inputs[1] = last_x_acceleration / LittleBrains.input_scale;
-   inputs[2] = last_y_acceleration / LittleBrains.input_scale;
-   fann_scale_input(LittleBrains.ann, inputs);
-   fann_type *outputs = IFFANN::Run_Cascade_FANN(&LittleBrains, inputs);
-   fann_descale_output(LittleBrains.ann, outputs);
-   outputs[0] = anns_learned_body->body->GetPosition().x - outputs[0] * LittleBrains.output_scale;
-   outputs[1] = anns_learned_body->body->GetPosition().y - outputs[1] * LittleBrains.output_scale;
-   if (b2Distance(b2Vec2(outputs[0], outputs[1]), b2Vec2(0, 0)) <= cut_off_distance) {
-    anns_learned_body->body->SetTransform(b2Vec2(outputs[0], outputs[1]), anns_learned_body->body->GetAngle());
-   }
-   else {
-    anns_learned_body->body->SetTransform(b2Vec2(0, 0), anns_learned_body->body->GetAngle());
-   }
-  }
-
-
-
-
-  //DEMO 2 - FANN - STOP
-  //return;
-
-  //OLD DEMO 1 START 
-
-  if (IFGameEditor::GetTouchEvent()) {
-   int touchx, touchy;
-
-   struct timespec temp_timespec;
-   clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
-   //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
-   unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&TEST_Last_Added_Body_Time);
-   if (temp_int64 < 200) {
-    while (IFGameEditor::GetTouchEvent(&touchx, &touchy));
-    return;
-   }
-   TEST_Last_Added_Body_Time = temp_timespec;
-
-   IFGameEditor::GetTouchEvent(&touchx, &touchy);
-
-   typename std::list<ifCB2Body*>::iterator iter;
-   for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
-    if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {
-     IFAdapter.Bodies.removeElement(*iter);
-     return;
-    }
-   }
-
-   IFAdapter.OrderBody();
-   IFAdapter.OrderedBody()->body_def->type = ((drand48() > 0.5) ? b2_staticBody : b2_dynamicBody);
-   if (drand48() > 0.3) {
-
-
-    b2EdgeShape *polyShape = new b2EdgeShape;
-    b2Vec2 shapeCoords[8];
-    b2FixtureDef *fixture = new b2FixtureDef;
-
-
-
-
-    float screenx = touchx;
-    float screeny = touchy;
-    Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height);
-    IFAdapter.OrderedBody()->body_def->position.Set(screenx / IFA_box2D_factor, screeny / IFA_box2D_factor);
-    shapeCoords[0] = { -4,  0 };
-    shapeCoords[1] = { -3,  0 };
-    shapeCoords[2] = { 3,   0 };
-    shapeCoords[3] = { 4,   0 };
-
-    polyShape->Set(shapeCoords[1], shapeCoords[2]);
-    polyShape->m_hasVertex0 = true;
-    polyShape->m_hasVertex3 = true;
-    polyShape->m_vertex0 = shapeCoords[0];
-    polyShape->m_vertex3 = shapeCoords[3];
-
-    //polyShape->Set(shapeCoords, 4);
-    fixture->shape = polyShape;
-    fixture->density = 1.1;
-    fixture->friction = 0.3;
-    fixture->restitution = 0.001;
-
-    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-
-
-   }
-   else {
-
-
-    b2CircleShape *polyShape = new b2CircleShape;
-    polyShape->m_p.SetZero();
-    polyShape->m_radius = 3.0;
-
-
-
-
-
-    //b2PolygonShape *polyShape = new b2PolygonShape;
-    //b2Vec2 shapeCoords[8];
-    b2FixtureDef *fixture = new b2FixtureDef;
-
-
-
-
-    //IFAdapter.OrderedBody()->body_def->position.Set(touchx*IFA_box2D_factor, touchy*IFA_box2D_factor);
-
-    //   //Go backwards from viewport to frustrum to transformation coordinates
-    //   // First calculate z because we need it to calculate x and y
-    //   //Since z is known and does not exist in screen coordinates we calculate it as OpenGL ES would
-    //   //RQNDKUtils::SRangeScale2 zRange(IFEUtils::zvnear, IFEUtils::zvfar);
-    //   float zCoord = -zDefaultLayer;
-    //   //zCoord = zRange.ScaleAndClip(zCoord, IFEUtils::znear, IFEUtils::zfar);
-    //   //      then frustum matrix   
-    //   zCoord = (zCoord*(IFEUtils::zfar + IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear) + (zCoord*(IFEUtils::zfar* IFEUtils::znear)) / (IFEUtils::zfar - IFEUtils::znear);
-    //   //      perspective division
-    //   //zCoord /= -zCoord;
-    ////   zCoord = ((IFEUtils::zvfar - IFEUtils::zvnear) / 2.0)*zCoord + (IFEUtils::zvnear + IFEUtils::zvfar) / 2.0;
-    //
-    // 
-    //   //               this is result of viewport matrix for x, backwards
-    //   float screenx;
-    //   //                find center of viewport
-    //   float ox = (float)engine.width * 0.5;
-    //   //                viewport size in pixels
-    //   float px = engine.width;
-    //   //                send back through window
-    //   screenx = 2.0*(ox- touchx)/px;
-    //   //                this is result of frustum matrix for x, backwards
-    //   screenx = (IFEUtils::left*screenx+ IFEUtils::left*(zCoord)-IFEUtils::right*screenx+ IFEUtils::right*(zCoord))/(2* IFEUtils::znear);
-    //   //                this is reverse transformation matrix
-    //   screenx  = (screenx * -zDefaultLayer) / IFA_box2D_factor;
-    //   //Same for y
-    //   float screeny;// = ((float)engine.height - 2.0f* (float)touchy) / (-(float)engine.height);
-    //   float oy = (float)engine.height * 0.5;
-    //   float py = engine.height;
-    //   screeny = 2.0*(oy - touchy) / py;
-    //   //                this is reversed frustum matrix
-    //   screeny = (IFEUtils::bottom*screeny + IFEUtils::bottom * (zCoord)-IFEUtils::top * screeny + IFEUtils::top * (zCoord)) / (2 * IFEUtils::znear);
-    //   //                this is reverse transformation matrix
-    //   screeny = (screeny*zDefaultLayer)/IFA_box2D_factor;
-    float screenx = touchx;
-    float screeny = touchy;
-    Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height);
-    IFAdapter.OrderedBody()->body_def->position.Set(screenx / IFA_box2D_factor, screeny / IFA_box2D_factor);
-    //shapeCoords[0] = { -1,  -1 };
-    //shapeCoords[1] = { 16,  -1 };
-    //shapeCoords[2] = { 16,   6 };
-    //shapeCoords[3] = { -1,   6 };
-    //polyShape->Set(shapeCoords, 4);
-    fixture->shape = polyShape;
-    fixture->density = 1.1;
-    fixture->friction = 0.3;
-    fixture->restitution = 0.001;
-    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-   }
-
-   ifCB2Body *first_body = IFAdapter.OrderedBody();
-   if (!IFAdapter.MakeBody())
-    return;
-   //Additional work on body  
-   if (drand48() > 0.5) {
-    first_body->OGL_body->texture_ID = TEST_textid;
-    size_t UVsize = first_body->OGL_body->UVmapping_cnt;
-    for (int cntuv = 0; cntuv < UVsize; cntuv++) {
-     first_body->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
-     cntuv++;
-     first_body->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
-    }
-
-   }
-   else {
-    first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
-   }
-   return;
-  }
-
-
-
-  double xxxx = drand48();
-  if ((xxxx * 200) < 80)
-   return;
-
-
-  IFAudioSLES::EngineServiceBufferMutex.EnterAndLock();
-  if (IFAudioSLES::audio_engine_created &&
-   !IFAudioSLES::EngineServiceBuffer.empty()) {
-   /////////////////////////////////////AUDIO PART
-   //IFAudioSLES::sample_buf *new_buf = nullptr;
-   unsigned int selected_buffer = -1;
-   if (IFAudioSLES::EngineServiceBuffer.size()) {
-    selected_buffer = IFAudioSLES::EngineServiceBuffer.front();
-    //while(IFAudioSLES::EngineServiceBuffer.size())
-    // IFAudioSLES::EngineServiceBuffer.pop_back();
-    while (!IFAudioSLES::EngineServiceBuffer.empty()) IFAudioSLES::EngineServiceBuffer.pop();
-   }
-   if (selected_buffer == -1) {
-    IFAudioSLES::EngineServiceBufferMutex.LeaveAndUnlock();
-    return;
-   }
-   uint32_t allocSize = (IFAudioSLES::engine.record_buffer[selected_buffer].size_ + 3) & ~3;
-
-   double average_value = 0;
-   static double prev_average_value = 0;
-   static unsigned int nMake = 0;
-   bool nMake_added = false;
-   short sample_valueL, sample_valueR;
-   bool two_channels = false, LR_switch = true;
-   std::vector<float> timevec;
-
-#define TRESHOLD_COUNT 4
-   static std::deque<float> treshold_history[TRESHOLD_COUNT];
-   float treshold[TRESHOLD_COUNT];
-
-   //when audio_db starts dropping from constant rise trigger set rising to false
-   //when audio_db starts rising set rising to true
-   float audio_db;
-   if (IFAudioSLES::engine.sampleChannels_ == 2) {
-    two_channels = true;
-   }
-   for (int cnt = 0; cnt < allocSize; cnt++) {
-    if (LR_switch) {
-     sample_valueL = IFAudioSLES::engine.record_buffer[selected_buffer].buf_[cnt];
-    }
-    else {
-     sample_valueR = IFAudioSLES::engine.record_buffer[selected_buffer].buf_[cnt];
-     timevec.push_back((((float)IFAudioSLES::engine.record_buffer[selected_buffer].buf_[cnt] + sample_valueL)) / 65535.0);
-    }
-    if (two_channels) {
-     LR_switch = !LR_switch;
-    }
-    else {
-     timevec.push_back((((float)sample_valueL)) / 32767.0);
-    }
-    //audio_db = 20 * (log10(abs(sample_valueL ) / 32767.0));
-    //average_value+= audio_db;
-   }
-   //dBFS = 20 * log([sample level] / [max level])
-   //In a 16 bit system there are 2 ^ 16 = 65536 values.So this means values from - 32768 to + 32767. Excluding 0, let's say the minimum value is 1. So plugging this into the formula gives:
-   //dBFS = 20 * log(1 / 32767) = -90.3
-
-   IFAudioSLES::EngineServiceBufferMutex.LeaveAndUnlock();
-
-   if (timevec.size()) {
-
-    Eigen::FFT<float> fft;
-
-    std::vector<std::complex<float> > freqvec;
-
-    fft.fwd(freqvec, timevec);
-    int ssize = freqvec.size();
-
-    for (int cntx = 0; cntx < freqvec.size(); cntx++) {
-     float freq = (float)cntx*48000.0 / (float)ssize;
-     //    float ampl = ((freqvec[cntx].real() >0)?20*log10(freqvec[cntx].real() / 4.0f):-1000.0);
-     //    float phase = freqvec[cntx].imag();
-     if (freqvec[cntx].real() < 0) {
-      continue;
-     }
-     if (freq > 60 && freq < 380) {
-      if (treshold[0] < freqvec[cntx].real()) {
-       treshold[0] = freqvec[cntx].real();
-      }
-     }
-     else if (freq > 400 && freq < 1200) {
-      if (treshold[1] < freqvec[cntx].real()) {
-       treshold[1] = freqvec[cntx].real();
-      }
-     }
-     else if (freq > 1550 && freq < 4000) {
-      if (treshold[2] < freqvec[cntx].real()) {
-       treshold[2] = freqvec[cntx].real();
-      }
-     }
-     else if (freq > 1550 && freq < 4000) {
-      if (treshold[3] < freqvec[cntx].real()) {
-       treshold[3] = freqvec[cntx].real();
-      }
-     }
-    }
-
-    typedef std::deque<float>::iterator TDFiter;
-    for (int cntt = 0; cntt < TRESHOLD_COUNT; cntt++) {
-     treshold_history[cntt].push_back(treshold[cntt]);
-     treshold[cntt] = 0;
-     for (TDFiter iter = treshold_history[cntt].begin(); iter != treshold_history[cntt].end(); iter++) {
-      treshold[cntt] += *iter;
-     }
-     treshold[cntt] /= treshold_history[cntt].size();
-     while (treshold_history[cntt].size()*(IFAudioSLES::engine.frames_per_buffer / IFAudioSLES::engine.sample_rate) > 3.0) {
-      treshold_history[cntt].pop_front();
-     }
-     treshold[cntt] = 20 * log10(treshold[cntt] / 4.0f);
-    }
-
-
-    for (int cntx = 0; cntx < freqvec.size(); cntx++) {
-     float freq = (float)cntx*48000.0 / (float)ssize;
-     float ampl = ((freqvec[cntx].real() > 0) ? 20 * log10(freqvec[cntx].real() / 4.0f) : -1000.0);
-     float phase = freqvec[cntx].imag();
-     if (freq > 60 && freq < 380) {
-      if (ampl > treshold[0]) {
-       for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
-        if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
-         IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(0.0, abs(ampl) * 0.4), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
-        }
-       }
-      }
-     }
-     else if (freq > 400 && freq < 800) {
-      if (!nMake_added && ampl > treshold[1]) {
-       nMake += 1;
-       nMake_added = true;
-      }
-     }
-     else if (freq > 800 && freq < 1500) {
-      if (ampl > treshold[2]) {
-       for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
-        if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
-         IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(abs(ampl) * 3.0, 0.0), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
-        }
-       }
-      }
-     }
-     else if (freq > 1550 && freq < 3000) {
-      if (ampl > treshold[3]) {
-       for (unsigned int cntbdy = 0; cntbdy < IFAdapter.Bodies.size(); cntbdy++) {
-        if (IFAdapter.Bodies[cntbdy]->body->GetType() == b2_dynamicBody) {
-         IFAdapter.Bodies[cntbdy]->body->ApplyLinearImpulse(b2Vec2(abs(ampl) * -3.0, 0.0), IFAdapter.Bodies[cntbdy]->body->GetPosition(), true);
-        }
-       }
-      }
-     }
-     else if (freq > 4000) {
-      //nMake=0;
-      break;
-     }
-     //nthbin[Hz]=n*sampleFreq/num(DFTPoints)
-    }
-
-    // manipulate freqvec
-    //fft.inv(timevec, freqvec);   
-    // stored "plans" get destroyed with fft destructor
-   }
-
-   //allocSize = 2;//count of buffers to release
-   //IFAudioSLES::releaseSampleBufs(new_buf, allocSize );
-   /////////////////////////////////////AUDIO PART
-
-   average_value /= allocSize;
-
-   prev_average_value = average_value;
-
-
-
-   nMake = 20;
-   nMake_added = true;
-
-
-
-   if (nMake == 0)
-    return;
-   nMake--;
-   if (!nMake_added)
-    nMake = 0;
-
-  }
-  else {
-   IFAudioSLES::EngineServiceBufferMutex.LeaveAndUnlock();
-   return;
-  }
-
-
-
-
-  IFAdapter.OrderBody();
-  IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;
-  b2PolygonShape *polyShape = new b2PolygonShape;
-  b2Vec2 shapeCoords[8];
-  b2FixtureDef *fixture = new b2FixtureDef;
-
-  if (drand48() > 0.3) {
-   IFAdapter.OrderedBody()->body_def->position.Set(drand48() * 10 - 5, drand48() * 50);
-   shapeCoords[0] = { 0.8,  1.25 };
-   shapeCoords[1] = { 1,   0.5 };
-   shapeCoords[2] = { 2,   0.25 };
-   shapeCoords[3] = { 3,   0.5 };
-   shapeCoords[4] = { 4,  1.2 };
-   shapeCoords[5] = { 3,  2.0 };
-   shapeCoords[6] = { 2,  2.7 };
-   shapeCoords[7] = { 1,  2 };
-   polyShape->Set(shapeCoords, 8);
-   fixture->shape = polyShape;
-   fixture->density = drand48()*5.0 + 1.0;
-   fixture->friction = drand48()*1.0;
-   fixture->restitution = ((drand48() > 0.2) ? drand48()*0.001 : drand48() * 2);
-  }
-  else if (drand48() > 0.6) {
-   IFAdapter.OrderedBody()->body_def->position.Set(drand48() * 10 - 5, drand48() * 50);
-   shapeCoords[0] = { -1,  -1 };
-   shapeCoords[1] = { 1,  -1 };
-   shapeCoords[2] = { 1,   1 };
-   shapeCoords[3] = { -1,   1 };
-   polyShape->Set(shapeCoords, 4);
-   fixture->shape = polyShape;
-   fixture->density = 1.1;
-   fixture->friction = 0.3;
-   fixture->restitution = 0.001;
-  }
-  else {
-   IFAdapter.OrderedBody()->body_def->position.Set(-drand48()*4.0, 0.0);
-   IFAdapter.OrderedBody()->body_def->angle = drand48()*360.0;
-   shapeCoords[0] = b2Vec2(0.0, 0.0);
-   shapeCoords[1] = b2Vec2(static_cast<float32>(engine.width) / 100.0, 0.0);
-   shapeCoords[2] = b2Vec2(static_cast<float32>(engine.width) / 100.0, 0.8);
-   shapeCoords[3] = b2Vec2(0.0, 0.8);
-   polyShape->Set(shapeCoords, 4);
-   fixture->shape = polyShape;
-   fixture->density = 0.1;
-   fixture->friction = 0.0001;
-
-  }
-  //shapeCoords[4] = { 4,  1 };
-  //shapeCoords[5] = { 3,  2 };
-  //shapeCoords[6] = { 2,  2 };
-  //shapeCoords[7] = { 1,  2 };
-
-  //shapeCoords[0] = {  8,  12.5 };
-  //shapeCoords[1] = { 10.0,   5.0 };
-  //shapeCoords[2] = { 20.0,   2.5 };
-  //shapeCoords[3] = { 30.0,   5.0 };
-  //shapeCoords[4] = { 40.0,  12.5 };
-  //shapeCoords[5] = { 30.0,  20.0 };
-  //shapeCoords[6] = { 20.0,  27.0 };
-  //shapeCoords[7] = { 10.0,  20.0 };
-  IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
-  ifCB2Body *first_body = IFAdapter.OrderedBody();
-  if (!IFAdapter.MakeBody())
-   return;
-  //Additional work on body  
-  if (drand48() > 0.5) {
-   first_body->OGL_body->texture_ID = TEST_textid;
-   size_t UVsize = first_body->OGL_body->UVmapping_cnt;
-   for (int cntuv = 0; cntuv < UVsize; cntuv++) {
-    first_body->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
-    cntuv++;
-    first_body->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
-   }
-
-  }
-  else {
-   first_body->OGL_body->texture_ID = User_Data.CubeTexture; //DrawText(outstring, 4, 0);
   }
  }
 }
@@ -2708,9 +2024,9 @@ void TEST_Cleanup(){
  // IFFANN::Save_Cascade_FANN(&LittleBrains, IFFANN::CnTrainedFannPostscript);
  //}
 
- //IFFANN::Save_Cascade_FANN(&Node1->ifann, IFFANN::CnTrainedFannPostscript);
+ //IFFANN::Save_Cascade_FANN(&NetworkNodes[0].Node->ifann, IFFANN::CnTrainedFannPostscript);
 
- //Network.NodeRegister.Unregister(Node1);
+ //Network.NodeRegister.Unregister(NetworkNodes[0].Node);
  TESTFN_SaveAllTrainData();
 
  last_touched_object = NULL;

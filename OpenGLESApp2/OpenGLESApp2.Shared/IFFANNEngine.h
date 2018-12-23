@@ -98,6 +98,9 @@ namespace IFFANNEngine{
  // -node ID
  class CNode{
  public:
+ ~CNode(){
+  fann_destroy_train(ifann.ann_train->train_data);
+ }
   enum ENodeStates {
    E_Start,
    //train vectors are empty
@@ -114,7 +117,20 @@ namespace IFFANNEngine{
    E_Trained = 2 << 6
   };
   ENodeStates NodeStates;
- //When this value is set to false, node is not added to run queue in CNetwork::Run command
+  ENodeStates SetFlag(ENodeStates _NodeStates){
+   return (NodeStates = _NodeStates);
+  }
+  ENodeStates AddFlag(ENodeStates _NodeStates) {   
+   return (NodeStates = (ENodeStates)(NodeStates | _NodeStates));
+  }
+  bool GetFlag(ENodeStates _NodeStates) {
+   return (NodeStates & _NodeStates);
+  }
+  ENodeStates ClearFlag(ENodeStates _NodeStates) {
+   return (NodeStates = (ENodeStates)(NodeStates & (~_NodeStates)));
+  }
+
+   //When this value is set to false, node is not added to run queue in CNetwork::Run command
   bool IsRunning = true;
   CNodeRegister *NodeRegister;
   unsigned int ID;

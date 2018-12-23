@@ -33,7 +33,7 @@ namespace IFFANN {
  IFS_Cascade_FANN *Setup_Train_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int max_neurons, unsigned int neurons_between_reports, fann_type desired_error, fann_type input_scale, fann_type output_scale) {
   if (ifann->ann_train) free(ifann->ann_train), ifann->ann_train = NULL;
   ifann->ann_train = (IFS_Cascade_FANN_Train_Struct*)malloc(sizeof(IFS_Cascade_FANN_Train_Struct));
-  //ifann->ann_train->num_data = 0;
+  ///ifann->ann_train->num_data = 0;
   ifann->ann_train->max_neurons = max_neurons;
   ifann->ann_train->neurons_between_reports = neurons_between_reports;
   ifann->ann_train->desired_error = desired_error;
@@ -117,6 +117,8 @@ namespace IFFANN {
    fread(ifann->unique_name, sizeof(ifann->unique_name[0]), name_len, IFANNDataFile);
    ifann->unique_name[name_len] = '\0';
    ifann->ann_train = (IFS_Cascade_FANN_Train_Struct*)malloc(sizeof(IFS_Cascade_FANN_Train_Struct));
+   ifann->ann_train->train_data = NULL;
+   ifann->ann_train->test_data = NULL;
    //fread(&ifann->ann_train->num_data, sizeof(ifann->ann_train->num_data), 1, IFANNDataFile);
    fread(&ifann->ann_train->max_neurons, sizeof(ifann->ann_train->max_neurons), 1, IFANNDataFile);
    fread(&ifann->ann_train->neurons_between_reports, sizeof(ifann->ann_train->neurons_between_reports), 1, IFANNDataFile);
@@ -190,6 +192,7 @@ namespace IFFANN {
    RQNDKUtils::Make_storageDataPath(buffer, BUFSIZ, ifann->unique_name);
    strcpy(&buffer[strlen(buffer)], "train");
   }
+  fann_destroy_train(ifann->ann_train->train_data);
   if (load_save_train != 1) {
    ifann->ann_train->train_data = fann_create_train_from_callback(num_data, ifann->ann->num_input, ifann->ann->num_output, train_callback);
   }else
