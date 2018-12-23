@@ -820,7 +820,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
       ////////////////////////////  Load Nodes START
    NetworkNodes[0].FANNOptions.input_neurons = 3;
-   NetworkNodes[0].FANNOptions.max_neurons = 20;
+   NetworkNodes[0].FANNOptions.max_neurons = 40;
    NetworkNodes[0].FANNOptions.desired_error = 0.000;
    NetworkNodes[0].FANNOptions.input_scale = 0.1;
    NetworkNodes[0].FANNOptions.output_scale = 0.1;
@@ -831,7 +831,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
    NetworkNodes[1].FANNOptions.input_neurons = 6;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
-   NetworkNodes[1].FANNOptions.max_neurons = 20;
+   NetworkNodes[1].FANNOptions.max_neurons = 40;
    NetworkNodes[1].FANNOptions.desired_error = 0.000;
    NetworkNodes[1].FANNOptions.input_scale = 0.1;
    NetworkNodes[1].FANNOptions.output_scale = 0.1;
@@ -841,7 +841,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    NetworkNodes[1].Node->AddFlag(TNodeStates::E_Training);
 
    NetworkNodes[2].FANNOptions.input_neurons = 7;//
-   NetworkNodes[2].FANNOptions.max_neurons = 20;
+   NetworkNodes[2].FANNOptions.max_neurons = 40;
    NetworkNodes[2].FANNOptions.desired_error = 0.000;
    NetworkNodes[2].FANNOptions.input_scale = NetworkNodes[1].FANNOptions.input_scale;
    NetworkNodes[2].FANNOptions.output_scale = NetworkNodes[1].FANNOptions.output_scale;
@@ -852,7 +852,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
    //Inputs x start, arctan2(speed vec y, ), magnitude(speedvec), ball end x, input 1, input 2, input 3
    NetworkNodes[3].FANNOptions.input_neurons = 7;//
-   NetworkNodes[3].FANNOptions.max_neurons = 40;
+   NetworkNodes[3].FANNOptions.max_neurons = 55;
    NetworkNodes[3].FANNOptions.desired_error = 0.00000;
    NetworkNodes[3].FANNOptions.input_scale = 0.1;
    NetworkNodes[3].FANNOptions.output_scale = 0.1;
@@ -860,7 +860,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    NetworkNodes[3].Load_Node("pongpaddleselect");
    NetworkNodes[3].Load_Train_Data();
    NetworkNodes[3].Node->AddFlag(TNodeStates::E_Training);
-   NetworkNodes[3].Node->AddFlag(TNodeStates::E_ContTraining);
+   //NetworkNodes[3].Node->AddFlag(TNodeStates::E_ContTraining);
    
 
    ////////////////////////////  Load Nodes STOP
