@@ -170,7 +170,7 @@ public:
 
   return InitFreeType();
  }
-
+private:
  bool InitFreeType(){
 
   if (buffer != NULL) {
@@ -205,6 +205,7 @@ public:
 
   return true;
  }
+public:
 
  void DoneFreeType(){ 
   if(buffer){
@@ -326,8 +327,10 @@ public:
 
   size_t num_chars = strlen(_text);
   size_t total_height = 0, max_width = 0;
-
+  
   GetStringBox(_text, _angle);
+  expanded_width = next_p2( predicted_width + pen.x );
+  expanded_height = next_p2(predicted_height + pen.y);
   max_width = expanded_width;
   total_height = expanded_height;
   text_new_line_pos.push_back(0);
@@ -355,7 +358,25 @@ public:
       _text_copy[scan_pos] = '\0';
       GetStringBox(&_text_copy[prev_scan_pos], _angle);     
       _text_copy[scan_pos] = _temp_text;
+      predicted_width += pen.x;
 
+      if(predicted_width > maximum_texture_dimension){
+       scan_pos--;
+       if (scan_pos > 0) {
+        _temp_text = _text_copy[scan_pos];
+        _text_copy[scan_pos] = '\0';
+        GetStringBox(&_text_copy[prev_scan_pos], _angle);
+        _text_copy[scan_pos] = _temp_text;
+        predicted_width += pen.x;
+       }else{
+
+
+        free(_text_copy);
+
+        return FT_Vector{0,0};       
+       }
+       break;
+      }
       
       if(max_width < predicted_width){
        max_width = predicted_width;
@@ -365,25 +386,27 @@ public:
        max_height = predicted_height;
       }
 
-     }while(
-      (predicted_width < maximum_texture_dimension) &&     
-      (num_chars>scan_pos)  );
-     scan_pos--;
-     if(scan_pos>0){
-      total_height += max_height;
-      max_height = 0;     
-      text_new_line_pos.push_back(scan_pos);
-      prev_scan_pos = scan_pos = text_new_line_pos[text_new_line_pos.size()-1];  
-     }
-     else{
-      max_width = total_height = 0;
-      break;
-     }
+     }while( num_chars > scan_pos );
+     total_height += max_height;
+     max_height = 0;     
+     text_new_line_pos.push_back(scan_pos);
+     prev_scan_pos = scan_pos = text_new_line_pos[text_new_line_pos.size()-1];  
     }while((total_height < maximum_texture_dimension ) &&(num_chars>scan_pos));
+
+
+
     free(_text_copy);
+
+
     max_width = next_p2(max_width);
-    total_height = next_p2(total_height);
-    if ((expanded_width > maximum_texture_dimension) || (expanded_height > maximum_texture_dimension)) {
+    if(pen.y < total_height ){
+     total_height = next_p2(pen.y);
+    }else{
+     total_height = next_p2(pen.y-total_height);
+    }
+    expanded_width = next_p2(max_width);
+    expanded_height = total_height;
+    if ((expanded_width > maximum_texture_dimension) || (expanded_height > maximum_texture_dimension) || (pen.y <= 0)) {
      return FT_Vector{0,0};
     }
    }
@@ -391,18 +414,19 @@ public:
     return FT_Vector{0,0};
    }   
   }
+  text_new_line_pos.push_back(num_chars);
   FT_Vector ret_val;
   ret_val.x = max_width;
   ret_val.y = total_height;
   return ret_val; 
  }
 
- GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double _angle, float *ub, float *vb, float *ut, float *vt) {
+ GLuint DrawText(char *_text, FT_Vector start_pos) {
   InitFreeType();
   if(char_width){
-   SetFaceSize();
+   SetCharSize_F26Dot6();
   }else{
-   SetFontPixelSize();
+   SetCharSize_px();
   }
 
   GLuint texture = GL_INVALID_VALUE;
@@ -413,13 +437,14 @@ public:
                                      //glDisable(GL_TEXTURE_2D);
   glGenTextures(1, &texture);
   glActiveTexture(GL_TEXTURE0);
+  maximum_texture_dimension = 512;// GetMaxTextureSize();
 
   FT_Matrix matrix;
   // set up matrix 
-  matrix.xx = (FT_Fixed)(cos(_angle) * 0x10000L);
-  matrix.xy = (FT_Fixed)(-sin(_angle) * 0x10000L);
-  matrix.yx = (FT_Fixed)(sin(_angle) * 0x10000L);
-  matrix.yy = (FT_Fixed)(cos(_angle) * 0x10000L);
+  matrix.xx = (FT_Fixed)(cos(0) * 0x10000L);
+  matrix.xy = (FT_Fixed)(-sin(0) * 0x10000L);
+  matrix.yx = (FT_Fixed)(sin(0) * 0x10000L);
+  matrix.yy = (FT_Fixed)(cos(0) * 0x10000L);
 
 
   ///* the pen position in 26.6 cartesian space coordinates 
@@ -437,7 +462,6 @@ public:
   // Allocate Memory For The Texture Data.
   //GLubyte* expanded_data = new GLubyte[2 * expanded_width * expanded_height];
   expanded_data = new GLubyte[4 * expanded_width * expanded_height];
-
 
   int j = 0, jb;
   int i = 0, ib;
@@ -462,67 +486,78 @@ public:
   FT_UInt previous = 0;
 
   //FOR LOOP FOR LINES
-  for (size_t n = 0; n < text_new_line_pos[1]; n++) {
-
-   //load glyph image into the slot (erase previous one) 
-   //error = FT_Load_Char(face, _text[n], FT_LOAD_RENDER);
-
-   glyph_index = FT_Get_Char_Index(face, _text[n]);
-
-   if (use_kerning && previous && glyph_index)
-   {
-    FT_Vector  delta;
-    FT_Get_Kerning(face, previous, glyph_index,
-     FT_KERNING_DEFAULT, &delta);
-    pen.x += delta.x >> 6;
-    pen.y += delta.y >> 6;
+  for( size_t line_cnt = 1; line_cnt < text_new_line_pos.size(); line_cnt++){
+   pen.x = start_pos.x >> 6;
+   pen.y = start_pos.y >> 6;
+   if(char_width){
+    pen.y -= (line_cnt-1) * (char_height << 6);
+   }else{
+    pen.y -= (line_cnt - 1) * char_height_px;
    }
-   previous = glyph_index;
+   for (size_t n = text_new_line_pos[line_cnt-1]; n < text_new_line_pos[line_cnt]; n++) {
 
-   error = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
-   if (error)
-    continue;  /* ignore errors */
+    //load glyph image into the slot (erase previous one) 
+    //error = FT_Load_Char(face, _text[n], FT_LOAD_RENDER);
 
-               ///* now, draw to our target surface (convert position) */
-               // my_draw_bitmap(&slot->bitmap,
-               //  slot->bitmap_left,
-               //  my_target_height - slot->bitmap_top);
-               // set transformation 
-   FT_Set_Transform(face, &matrix, &pen);
+    glyph_index = FT_Get_Char_Index(face, _text[n]);
 
-
-   bmp_width = slot->bitmap.width, bmp_height = slot->bitmap.rows;
-   k = pen.y;
-   l = pen.x;
-   for (j = (k - bmp_height + slot->bitmap_top), jb = bmp_height-1; j < ((k ) + slot->bitmap_top); j++, jb--) {
-    for (i = (l + slot->bitmap_left), ib=0; i < ((l + slot->bitmap_left) +bmp_width); i++, ib++) {
-     {
-      if((i>= expanded_width)||(j>=expanded_height)||(i <0)||(j<0)){
-       continue;
-      }
-      if (k1 < j) k1 = j;
-      if( l1 < i ) l1 = i;
-      if ((slot->bitmap.buffer)[ib + bmp_width * jb] > 0) {
-       expanded_data[4 * (i + j * expanded_width) + 0] = (unsigned char)((float)(foreground.rgba.r + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
-       expanded_data[4 * (i + j * expanded_width) + 1] = (unsigned char)((float)(foreground.rgba.g + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
-       expanded_data[4 * (i + j * expanded_width) + 2] = (unsigned char)((float)(foreground.rgba.b + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
-       expanded_data[4 * (i + j * expanded_width) + 3] = (unsigned char)((float)(foreground.rgba.a + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
-      }
-     }    
-
+    if (use_kerning && previous && glyph_index)
+    {
+     FT_Vector  delta;
+     FT_Get_Kerning(face, previous, glyph_index,
+      FT_KERNING_DEFAULT, &delta);
+     pen.x += delta.x >> 6;
+     pen.y += delta.y >> 6;
     }
-   }
+    previous = glyph_index;
 
-   pen.x += (slot->advance.x >> 6);
-   pen.y += (slot->advance.y >> 6);
+    error = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
+    if (error)
+     continue;  /* ignore errors */
+
+                ///* now, draw to our target surface (convert position) */
+                // my_draw_bitmap(&slot->bitmap,
+                //  slot->bitmap_left,
+                //  my_target_height - slot->bitmap_top);
+                // set transformation 
+    FT_Set_Transform(face, &matrix, &pen);
+
+
+    bmp_width = slot->bitmap.width, bmp_height = slot->bitmap.rows;
+    k = pen.y;
+    l = pen.x;
+    for (j = (k - bmp_height + slot->bitmap_top), jb = bmp_height-1; j < ((k ) + slot->bitmap_top); j++, jb--) {
+     for (i = (l + slot->bitmap_left), ib=0; i < ((l + slot->bitmap_left) +bmp_width); i++, ib++) {
+      {
+       if((i>= expanded_width)||(j>=expanded_height)||(i <0)||(j<0)){
+        continue;
+       }
+       if (k1 < j) k1 = j;
+       if( l1 < i ) l1 = i;
+       if ((slot->bitmap.buffer)[ib + bmp_width * jb] > 0) {
+        expanded_data[4 * (i + j * expanded_width) + 0] = (unsigned char)((float)(foreground.rgba.r + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
+        expanded_data[4 * (i + j * expanded_width) + 1] = (unsigned char)((float)(foreground.rgba.g + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
+        expanded_data[4 * (i + j * expanded_width) + 2] = (unsigned char)((float)(foreground.rgba.b + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
+        expanded_data[4 * (i + j * expanded_width) + 3] = (unsigned char)((float)(foreground.rgba.a + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
+        //expanded_data[4 * (i + j * expanded_width) + 0] = 255;
+        //expanded_data[4 * (i + j * expanded_width) + 1] = 255;
+        //expanded_data[4 * (i + j * expanded_width) + 2] = 255;
+        //expanded_data[4 * (i + j * expanded_width) + 3] = 255;
+       }
+      }    
+     }
+    }
+    pen.x += (slot->advance.x >> 6);
+    pen.y += (slot->advance.y >> 6);
+   }   
   }
 
 
 
-  if (ub) *ub = 0;
-  if (vb) *vb = 0;
-  if (ut) *ut = ((float)l1 + (float)(slot->advance.x >> 6)) / (float)expanded_width;
-  if (vt) *vt = ((float)k1 + (float)(slot->advance.y >> 6)) / (float)expanded_height ;
+  //if (ub) *ub = 0;
+  //if (vb) *vb = 0;
+  //if (ut) *ut = ((float)l1 + (float)(slot->advance.x >> 6)) / (float)expanded_width;
+  //if (vt) *vt = ((float)k1 + (float)(slot->advance.y >> 6)) / (float)expanded_height ;
 
   glBindTexture(GL_TEXTURE_2D, texture);
   //  glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, expanded_width, expanded_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, (GLvoid*)(expanded_data) );

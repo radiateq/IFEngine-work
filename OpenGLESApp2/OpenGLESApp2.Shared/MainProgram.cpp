@@ -579,6 +579,15 @@ void TESTFN_AddRandomBody(engine &engine) {
 
    ///////////////////////////////////////////////////////////////////////    LOAD GRAPHICS START
 
+
+
+
+
+
+
+
+
+
    thickness = RQNDKUtils::getDensityDpi(android_app_state) / 25.4;
    left = thickness; bottom = thickness; right = engine.width - thickness; top = engine.height - thickness;
    Window2ObjectCoordinates(left, bottom, zDefaultLayer, engine.width, engine.height);
@@ -586,12 +595,38 @@ void TESTFN_AddRandomBody(engine &engine) {
    Window2ObjectCoordinates(right, top, zDefaultLayer, engine.width, engine.height);
    right /= IFA_box2D_factor; top /= IFA_box2D_factor;
 
+
+
+
+
+
+
+
+
+   b2EdgeShape *edgeShape;
+   b2FixtureDef *fixture;
+   b2PolygonShape *polyShape2;
+   b2Vec2 shapeCoords[8];
+   float zoom_factor;
+
+
+
+
+
+
+
+
+
+
+
+
+
    //Left Wall
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
-   b2EdgeShape *edgeShape = new b2EdgeShape;
+   edgeShape = new b2EdgeShape;
    edgeShape->Set(b2Vec2(left, bottom), b2Vec2(left, top));
-   b2FixtureDef *fixture = new b2FixtureDef;
+   fixture = new b2FixtureDef;
    fixture->shape = edgeShape;
    fixture->density = 1.0;
    fixture->friction = 0.0;
@@ -660,14 +695,11 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
 
-
-
    //Player/lower paddle
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    b2_kinematicBody
-   b2PolygonShape *polyShape2 = new b2PolygonShape;
-   b2Vec2 shapeCoords[8];
-   float zoom_factor;
+   polyShape2 = new b2PolygonShape;   
+   
    //zoom_factor = engine.width < engine.height ? engine.width : engine.height, dummy = 0.0;
    //zoom_factor /= 12.0 * 24.0;
    //zoom_factor += engine.width*0.5;
@@ -742,14 +774,11 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
 
-
-
-
    //GUI Train button
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
    polyShape2 = new b2PolygonShape;
-#define  zoom_factor 1.8
+#define  zoom_factor 3.8
    //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
    //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
    //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
@@ -775,20 +804,36 @@ void TESTFN_AddRandomBody(engine &engine) {
    game_body[5] = IFAdapter.OrderedBody();
    if (!IFAdapter.MakeBody())
     return;
-   game_body[5]->body->SetTransform(b2Vec2(-16.0, 0.0), 0.0);
+   game_body[5]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
    game_body[5]->OGL_body->z_pos -= 0.1;
    SetFaceSize(100 * 64, 60 * 64);
    char outstring[120];
    strcpy(outstring, "train");
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
-   TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+   CIFTextRender TextRender;
+   TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
+   TextRender.SetBackgroundColor(0, 20, 0, 255);
+   TextRender.SetForegroundColor(230, 230, 230, 255);
+   TextRender.SetCharSize_px(30, 60);
+   TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("12345678911234567892-----+-----+-----+abcdefghijklmnopqrstuvwxyz12345678911234567892-----+-----+-----+abcdefghijklmnopqrstuvwxyz12345678911234567892-----+-----+-----+abcdefghijklmnopqrstuvwxyz", FT_Vector() = { 0 * 64, 85 * 64 });
+   //TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
-   size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
-   for (int cntuv = 0; cntuv < UVsize; cntuv++) {
-    game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
-    cntuv++;
-    game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
-   }
+   //size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
+   //for (int cntuv = 0; cntuv < UVsize; cntuv++) {
+   // game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
+   // cntuv++;
+   // game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
+   // game_body[5]->OGL_body->z_pos = zDefaultLayer*1.01;
+   //}
+
+
+
+
+
+
+
+
+
    ///////////////////////////////////////////////////////////////////////    LOAD GRAPHICS STOP
 
 
