@@ -481,9 +481,9 @@ public:
    outputs[0] = (((ballposition.x))*NetworkNodes[1].Node->ifann.output_scale);
    NetworkNodes[1].Add_Data( NetworkNodes[1].Node->inputs, outputs);
    
-   outputs[0] = ((ballposition.x)*NetworkNodes[1].Node->ifann.output_scale);
-   NetworkNodes[1].Node->outputs = IFFANNEngine::Run_Cascade_FANN(&NetworkNodes[1].Node->ifann, NetworkNodes[1].Node->inputs);
-   NetworkNodes[2].Add_Data( NetworkNodes[1].Node->inputs, outputs);
+   //outputs[0] = ((ballposition.x)*NetworkNodes[1].Node->ifann.output_scale);
+   //NetworkNodes[1].Node->outputs = IFFANNEngine::Run_Cascade_FANN(&NetworkNodes[1].Node->ifann, NetworkNodes[1].Node->inputs);
+   NetworkNodes[2].Add_Data( NetworkNodes[2].Node->inputs, outputs);
           
   }
 
@@ -817,46 +817,47 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
 
-
+  static int train_size_factor = 3;
+  static float neuron_count_factor = 0.5;
       ////////////////////////////  Load Nodes START
    NetworkNodes[0].FANNOptions.input_neurons = 3;
-   NetworkNodes[0].FANNOptions.max_neurons = 40;
+   NetworkNodes[0].FANNOptions.max_neurons = 40 * neuron_count_factor;
    NetworkNodes[0].FANNOptions.desired_error = 0.000;
    NetworkNodes[0].FANNOptions.input_scale = 0.1;
    NetworkNodes[0].FANNOptions.output_scale = 0.1;
-   NetworkNodes[0].node_data_counter_limit = 1500;
+   NetworkNodes[0].node_data_counter_limit = 150*train_size_factor;
    NetworkNodes[0].Load_Node( "pongpaddle");
    NetworkNodes[0].Load_Train_Data();      
    NetworkNodes[0].Node->AddFlag(TNodeStates::E_Training);
 
 
    NetworkNodes[1].FANNOptions.input_neurons = 6;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
-   NetworkNodes[1].FANNOptions.max_neurons = 40;
+   NetworkNodes[1].FANNOptions.max_neurons = 40 * neuron_count_factor;
    NetworkNodes[1].FANNOptions.desired_error = 0.000;
    NetworkNodes[1].FANNOptions.input_scale = 0.1;
    NetworkNodes[1].FANNOptions.output_scale = 0.1;
-   NetworkNodes[1].node_data_counter_limit = 1000;
+   NetworkNodes[1].node_data_counter_limit = 100*train_size_factor;
    NetworkNodes[1].Load_Node("pongpaddlebounce", false);
    NetworkNodes[1].Load_Train_Data();
    NetworkNodes[1].Node->AddFlag(TNodeStates::E_Training);
 
    NetworkNodes[2].FANNOptions.input_neurons = 7;//
-   NetworkNodes[2].FANNOptions.max_neurons = 40;
+   NetworkNodes[2].FANNOptions.max_neurons = 40 * neuron_count_factor;
    NetworkNodes[2].FANNOptions.desired_error = 0.000;
    NetworkNodes[2].FANNOptions.input_scale = NetworkNodes[1].FANNOptions.input_scale;
    NetworkNodes[2].FANNOptions.output_scale = NetworkNodes[1].FANNOptions.output_scale;
-   NetworkNodes[2].node_data_counter_limit = 1000;
+   NetworkNodes[2].node_data_counter_limit = 100*train_size_factor;
    NetworkNodes[2].Load_Node("pongpaddlebouncetune");
    NetworkNodes[2].Load_Train_Data();
    NetworkNodes[2].Node->AddFlag(TNodeStates::E_Training);
 
    //Inputs x start, arctan2(speed vec y, ), magnitude(speedvec), ball end x, input 1, input 2, input 3
    NetworkNodes[3].FANNOptions.input_neurons = 7;//
-   NetworkNodes[3].FANNOptions.max_neurons = 55;
+   NetworkNodes[3].FANNOptions.max_neurons = 55 * neuron_count_factor;
    NetworkNodes[3].FANNOptions.desired_error = 0.00000;
    NetworkNodes[3].FANNOptions.input_scale = 0.1;
    NetworkNodes[3].FANNOptions.output_scale = 0.1;
-   NetworkNodes[3].node_data_counter_limit= 5000;
+   NetworkNodes[3].node_data_counter_limit= 500*train_size_factor;
    NetworkNodes[3].Load_Node("pongpaddleselect");
    NetworkNodes[3].Load_Train_Data();
    NetworkNodes[3].Node->AddFlag(TNodeStates::E_Training);

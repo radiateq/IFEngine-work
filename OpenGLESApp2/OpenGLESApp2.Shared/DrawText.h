@@ -217,7 +217,7 @@ public:
 
 
 
- bool computeStringBBox(char *facestring, FT_BBox  *abbox, float angle, FT_Vector _pos )
+ bool computeStringBBox(char const * const facestring, FT_BBox  *abbox, float angle, FT_Vector _pos )
  {
   if (buffer == NULL) 
    return false;
@@ -307,9 +307,11 @@ public:
   unsigned int predicted_height;
   int expanded_width;
   int expanded_height;
+  //When string reaches over texture width, that position is marked as new line and added to text_new_line_pos
+  std::vector<size_t> text_new_line_pos;
   FT_BBox stringBBox;
 
-  void GetStringBox(char *_text, float _angle){
+  void GetStringBox(char const * const _text, float const _angle){
    computeStringBBox(_text, &stringBBox, _angle, pen);
    predicted_width = stringBBox.xMax - stringBBox.xMin;
    predicted_height = stringBBox.yMax - stringBBox.yMin;
@@ -317,26 +319,82 @@ public:
    expanded_height = next_p2(predicted_height);
   }
  public:
- bool computeTextureSize(char *_text, float _angle){
+ FT_Vector computeTextureSize(char const * const _text){
+  float const _angle = 0.0;
+
+  text_new_line_pos.clear();
+
   size_t num_chars = strlen(_text);
+  size_t total_height = 0, max_width = 0;
 
   GetStringBox(_text, _angle);
-  
+  max_width = expanded_width;
+  total_height = expanded_height;
+  text_new_line_pos.push_back(0);
+
   //Is our string larger than max texture dimension
   if ((expanded_width > maximum_texture_dimension) || (expanded_height > maximum_texture_dimension)) {
-   char *_temp_text = (char*)malloc(sizeof(char)*num_chars);
-   size_t _temp_text_len = strlen(_temp_text);
-   strncpy(_temp_text,_text,num_chars);
-   if (expanded_height > maximum_texture_dimension) {
-    while((expanded_height > maximum_texture_dimension)&&())
+   //text position currently being checked for length, previous position is last position in text_new_line_pos
+   if (expanded_width > maximum_texture_dimension) {
+    max_width = 0;
+    total_height = 0;
+
+    size_t scan_pos;
+    size_t prev_scan_pos;
+    //total_hgeigth is sum of all max_heigth per line
+    size_t max_height = 0;
+    char _temp_text;
+    char *_text_copy = (char*)malloc(sizeof(char)*num_chars);
+    strcpy(_text_copy, _text);
+
+    prev_scan_pos = scan_pos = text_new_line_pos[text_new_line_pos.size()-1];  
+    do{
+     do{
+      scan_pos++;    
+      _temp_text = _text_copy[scan_pos];
+      _text_copy[scan_pos] = '\0';
+      GetStringBox(&_text_copy[prev_scan_pos], _angle);     
+      _text_copy[scan_pos] = _temp_text;
+
+      
+      if(max_width < predicted_width){
+       max_width = predicted_width;
+      }
+
+      if(max_height < predicted_height){
+       max_height = predicted_height;
+      }
+
+     }while(
+      (predicted_width < maximum_texture_dimension) &&     
+      (num_chars>scan_pos)  );
+     scan_pos--;
+     if(scan_pos>0){
+      total_height += max_height;
+      max_height = 0;     
+      text_new_line_pos.push_back(scan_pos);
+      prev_scan_pos = scan_pos = text_new_line_pos[text_new_line_pos.size()-1];  
+     }
+     else{
+      max_width = total_height = 0;
+      break;
+     }
+    }while((total_height < maximum_texture_dimension ) &&(num_chars>scan_pos));
+    free(_text_copy);
+    max_width = next_p2(max_width);
+    total_height = next_p2(total_height);
+    if ((expanded_width > maximum_texture_dimension) || (expanded_height > maximum_texture_dimension)) {
+     return FT_Vector{0,0};
+    }
    }
    else {
-   }
-   free(_temp_text);
-   return GL_INVALID_VALUE;
+    return FT_Vector{0,0};
+   }   
   }
-
-
+  FT_Vector ret_val;
+  ret_val.x = max_width;
+  ret_val.y = total_height;
+  return ret_val; 
  }
 
  GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double _angle, float *ub, float *vb, float *ut, float *vt) {
@@ -371,9 +429,11 @@ public:
   //pen.x = 0 * 64;
   //pen.y = 0 * 64;
 
-  computeTextureSize(_text, _angle);
+  FT_Vector map_size = computeTextureSize(_text);
 
   GLubyte* expanded_data = NULL;
+  expanded_width = map_size.x;
+  expanded_height = map_size.y;
   // Allocate Memory For The Texture Data.
   //GLubyte* expanded_data = new GLubyte[2 * expanded_width * expanded_height];
   expanded_data = new GLubyte[4 * expanded_width * expanded_height];
@@ -400,7 +460,9 @@ public:
   FT_Error error;
   bool use_kerning = FT_HAS_KERNING(face);
   FT_UInt previous = 0;
-  for (size_t n = 0; n < num_chars; n++) {
+
+  //FOR LOOP FOR LINES
+  for (size_t n = 0; n < text_new_line_pos[1]; n++) {
 
    //load glyph image into the slot (erase previous one) 
    //error = FT_Load_Char(face, _text[n], FT_LOAD_RENDER);

@@ -325,11 +325,7 @@ unsigned decodeBMP(std::vector<unsigned char>& image, unsigned& w, unsigned& h, 
 void Window2ObjectCoordinates(float &x_inout, float &y_inout, float z, float w, float h);
 
 
-GLint GetMaxTextureSize(){
- GLint ret_val;
- glGetIntegerv(GL_MAX_TEXTURE_SIZE,&ret_val);
- return ret_val;
-}
+GLint GetMaxTextureSize();
 
 
 
