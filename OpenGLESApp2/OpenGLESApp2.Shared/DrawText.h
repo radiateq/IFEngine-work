@@ -1,6 +1,7 @@
 #pragma once
 
 #include <../OpenGLESApp2.Android.NativeActivity/RQ_NDK_Utils.h>
+#include <../OpenGLESApp2.Shared/IF_General_Utils.h>
 
 #include <lodepng.h>
 
@@ -95,19 +96,18 @@ private:
  FT_UInt       glyph_index;
  FT_Vector     pen;                 /* untransformed origin */
  FT_Byte      *buffer = NULL;
- URGBA foreground, background; 
+ URGBA foreground, background;
+ IFGeneralUtils::SMapWrap<char, FT_BBox> CharMap;
  GLuint texture_ID;
  GLuint texture_map_max_width, texture_map_max_height;//read this from OpenGLES driver
  int char_width = 0, char_height = 0;
  int char_width_px = 0, char_height_px = 0;
  struct android_app* android_app_state = NULL;
  char font_file_name[BUFSIZ+1];
-
+ 
 
 public:
- int32_t deviceDPI;
-
-
+ int32_t deviceDPI; 
 
 public:
 
@@ -301,9 +301,45 @@ public:
   return true;
  }
 
+ private:
+  int maximum_texture_dimension;
+  unsigned int predicted_width;
+  unsigned int predicted_height;
+  int expanded_width;
+  int expanded_height;
+  FT_BBox stringBBox;
+
+  void GetStringBox(char *_text, float _angle){
+   computeStringBBox(_text, &stringBBox, _angle, pen);
+   predicted_width = stringBBox.xMax - stringBBox.xMin;
+   predicted_height = stringBBox.yMax - stringBBox.yMin;
+   expanded_width = next_p2(predicted_width);
+   expanded_height = next_p2(predicted_height);
+  }
+ public:
+ bool computeTextureSize(char *_text, float _angle){
+  size_t num_chars = strlen(_text);
+
+  GetStringBox(_text, _angle);
+  
+  //Is our string larger than max texture dimension
+  if ((expanded_width > maximum_texture_dimension) || (expanded_height > maximum_texture_dimension)) {
+   char *_temp_text = (char*)malloc(sizeof(char)*num_chars);
+   size_t _temp_text_len = strlen(_temp_text);
+   strncpy(_temp_text,_text,num_chars);
+   if (expanded_height > maximum_texture_dimension) {
+    while((expanded_height > maximum_texture_dimension)&&())
+   }
+   else {
+   }
+   free(_temp_text);
+   return GL_INVALID_VALUE;
+  }
+
+
+ }
 
  GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double _angle, float *ub, float *vb, float *ut, float *vt) {
-
   InitFreeType();
   if(char_width){
    SetFaceSize();
@@ -334,37 +370,10 @@ public:
   pen.y = start_pos.y >> 6;
   //pen.x = 0 * 64;
   //pen.y = 0 * 64;
-  size_t num_chars = strlen(_text);
 
-  unsigned int predicted_width;
-  unsigned int predicted_height;
-  int expanded_width = 0;
-  int expanded_height = 0;
+  computeTextureSize(_text, _angle);
+
   GLubyte* expanded_data = NULL;
-  struct SRGBA {
-   unsigned char r, g, b, a;
-  };
-  union URGBA {
-   SRGBA rgba;
-   unsigned int field : 32;
-  };
-  URGBA foreground, background;
-  foreground.rgba.r = 25;
-  foreground.rgba.g = 100;
-  foreground.rgba.b = 250;
-  foreground.rgba.a = 255;
-  background.rgba.r = 10;
-  background.rgba.g = 19;
-  background.rgba.b = 135;
-  background.rgba.a = 70;
-
-
-  FT_BBox stringBBox;
-  computeStringBBox(_text, &stringBBox, _angle, pen);
-  predicted_width = stringBBox.xMax-stringBBox.xMin;
-  predicted_height = stringBBox.yMax - stringBBox.yMin;
-  expanded_width = next_p2(predicted_width);
-  expanded_height = next_p2(predicted_height);
   // Allocate Memory For The Texture Data.
   //GLubyte* expanded_data = new GLubyte[2 * expanded_width * expanded_height];
   expanded_data = new GLubyte[4 * expanded_width * expanded_height];
@@ -459,7 +468,7 @@ public:
   GLenum glerror = glGetError();
   if (glerror){
    delete[] expanded_data;
-   return texture;
+   return GL_INVALID_VALUE;
   }
 
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

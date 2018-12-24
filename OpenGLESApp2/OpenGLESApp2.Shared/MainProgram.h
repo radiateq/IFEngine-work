@@ -41,10 +41,13 @@ struct engine {
  EGLDisplay display;
  EGLSurface surface;
  EGLContext context;
+ CIFTextRender TextRenderer;
  int32_t width;
  int32_t height;
  struct saved_state state;
 };
+
+
 
 struct SFANNPong {
  int max_neurons = 30, neurons_between_reports = 0, input_neurons = 4, output_neurons = 1;
