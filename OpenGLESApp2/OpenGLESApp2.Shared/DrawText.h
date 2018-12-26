@@ -406,7 +406,7 @@ public:
      text_new_line_pos.push_back(scan_pos);
      prev_scan_pos = scan_pos = text_new_line_pos[text_new_line_pos.size()-1];  
     }while((total_height < maximum_texture_dimension ) &&(num_chars>scan_pos));
-
+    
 
 
     free(_text_copy);
@@ -431,8 +431,8 @@ public:
   text_new_line_pos.push_back(num_chars);
   //pen.y = expanded_height - pen.y;
   FT_Vector ret_val;
-  ret_val.x = max_width;
-  ret_val.y = total_height;
+  ret_val.x = expanded_width;
+  ret_val.y = expanded_height;
   return ret_val; 
  }
 
@@ -586,8 +586,8 @@ public:
   SFloatRect charbbox_val;
   char_key = '\0';
   charbbox_val.xMin = charbbox_val.yMin = 0;
-  charbbox_val.xMax = k1;
-  charbbox_val.yMax = l1;
+  charbbox_val.xMax = l1;
+  charbbox_val.yMax = k1;
   CharMap.Add(char_key, charbbox_val);
   //CharMap.ResetIterator();
   //while(CharMap.GetNextIterator(char_key, charbbox_val)>0){

@@ -853,8 +853,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    //  game_body[5]->OGL_body->z_pos = zDefaultLayer*1.1;
    // }
    //}
-   if(false)
-   {
+   if(true){
     char print_char = '\0';//null box does not encompass whole text
     SFloatRect *char_rect;
     char_rect = TextRender.CharMap.GetRef(print_char);
@@ -870,6 +869,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
     game_body[5]->OGL_body->UVmapping[6] = char_rect->xMin / TextRender.expanded_width;
     game_body[5]->OGL_body->UVmapping[7] = char_rect->yMin / TextRender.expanded_height;
+
    }
 
 
