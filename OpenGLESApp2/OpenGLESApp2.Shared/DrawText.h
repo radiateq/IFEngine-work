@@ -96,6 +96,7 @@ public:
  //////////////////////////////////////////////////////////////////////////////////////////////////
 public:
  IFGeneralUtils::SMapWrap<char, SFloatRect> CharMap;
+ std::vector<FT_Pos> LineHeigth;
  GLuint texture_ID;
 
 private:
@@ -227,13 +228,14 @@ public:
 
 
 
- bool computeStringBBox(char const * const facestring, FT_BBox  *abbox, float angle)
+ bool computeStringBBox(char const * const facestring, FT_BBox  *abbox, float angle, FT_Pos &glyphs_advancey_max)
  {
   if (buffer == NULL) 
    return false;
 
   FT_BBox  bbox;
   FT_BBox  glyph_bbox;
+  glyphs_advancey_max = 0;
 
   FT_Matrix matrix;
   // set up matrix 
@@ -241,6 +243,7 @@ public:
   matrix.xy = (FT_Fixed)(-sin(angle) * 0x10000L);
   matrix.yx = (FT_Fixed)(sin(angle) * 0x10000L);
   matrix.yy = (FT_Fixed)(cos(angle) * 0x10000L);
+
 
   /* initialize string bbox to "empty" values */
   bbox.xMin = bbox.yMin = 32000;
@@ -253,7 +256,7 @@ public:
 
   FT_Vector pos;
   pos.x = 0;
-  pos.y = expanded_height;
+  pos.y = 0;
   for (size_t n = 0; n < num_chars; n++) {
    error = FT_Load_Char(face, (unsigned char)facestring[n], FT_LOAD_DEFAULT);
    if (error)
@@ -264,7 +267,10 @@ public:
     FT_Vector  delta;
     FT_Get_Kerning(face, previous, glyph_index,
      FT_KERNING_DEFAULT, &delta);
-    pos.x += delta.x>>6;
+    pos.x += delta.x>>6;    
+    if(pos.y<(delta.y >> 6)){
+     pos.y += next_p2(delta.y >> 6);
+    }
     pos.y += delta.y>>6;
    }
    previous = glyph_index;
@@ -275,10 +281,17 @@ public:
     FT_Done_Glyph(glyph);
    }
 
+   if (pos.y < (face->glyph->advance.y >> 6)) {
+    pos.y += next_p2(face->glyph->advance.y >> 6);
+   }
+
    FT_Set_Transform(face, &matrix, &pos);
 
    pos.x += face->glyph->advance.x>>6;
    pos.y += face->glyph->advance.y>>6;
+
+
+   
 
    glyph_bbox.xMin += pos.x;
    glyph_bbox.xMax += pos.x;
@@ -297,6 +310,9 @@ public:
    if (glyph_bbox.yMax > bbox.yMax)
     bbox.yMax = glyph_bbox.yMax;
 
+   if (glyphs_advancey_max < slot->bitmap.rows ) {
+    glyphs_advancey_max = slot->bitmap.rows;
+   }
 
   }
 
@@ -320,6 +336,7 @@ public:
   int expanded_height;
   unsigned int predicted_width;
   unsigned int predicted_height;
+  FT_Pos max_advancey;
 
  private:
   int maximum_texture_dimension, specified_texture_width;
@@ -328,7 +345,7 @@ public:
   FT_BBox stringBBox;
 
   void GetStringBox(char const * const _text, float const _angle){
-   computeStringBBox(_text, &stringBBox, _angle);
+   computeStringBBox(_text, &stringBBox, _angle, max_advancey);
    predicted_width = stringBBox.xMax - stringBBox.xMin;
    predicted_height = stringBBox.yMax - stringBBox.yMin;
    expanded_width = next_p2(predicted_width);
@@ -339,17 +356,23 @@ public:
   float const _angle = 0.0;
 
   text_new_line_pos.clear();
+  LineHeigth.clear();
 
   size_t num_chars = strlen(_text);
   size_t total_height = 0, max_width = 0;
   
   GetStringBox(_text, _angle);
-  expanded_width = next_p2( predicted_width);  
-  expanded_height = next_p2(predicted_height);  
+  if(expanded_width < specified_texture_width){
+   predicted_width = specified_texture_width;
+   expanded_width = next_p2(predicted_width);
+  }
+  predicted_height = max_advancey;
+  expanded_height = next_p2(predicted_height);
 
   max_width = expanded_width;
   total_height = expanded_height;
   text_new_line_pos.push_back(0);
+  LineHeigth.push_back(total_height);
 
   //Is our string larger than max texture dimension
   if ((expanded_width > (specified_texture_width?specified_texture_width:maximum_texture_dimension)) || (expanded_height > maximum_texture_dimension)) {
@@ -357,6 +380,7 @@ public:
    if (expanded_width > (specified_texture_width ? specified_texture_width : maximum_texture_dimension)) {
     max_width = 0;
     total_height = 0;
+    LineHeigth.clear();
 
     size_t scan_pos;
     size_t prev_scan_pos;
@@ -374,6 +398,9 @@ public:
       _text_copy[scan_pos] = '\0';
       GetStringBox(&_text_copy[prev_scan_pos], _angle);     
       _text_copy[scan_pos] = _temp_text;
+      predicted_height = max_advancey;
+      expanded_height = next_p2(predicted_height);
+      
 
       if(predicted_width > (specified_texture_width ? specified_texture_width : maximum_texture_dimension)){
        scan_pos--;
@@ -382,10 +409,14 @@ public:
         _text_copy[scan_pos] = '\0';
         GetStringBox(&_text_copy[prev_scan_pos], _angle);
         _text_copy[scan_pos] = _temp_text;
+        predicted_height = max_advancey;
+        expanded_height = next_p2(predicted_height);
+
        }else{
 
 
         free(_text_copy);
+
 
         return FT_Vector{0,0};       
        }
@@ -402,6 +433,7 @@ public:
 
      }while( num_chars > scan_pos );
      total_height += max_height;
+     LineHeigth.push_back(max_height);
      max_height = 0;     
      text_new_line_pos.push_back(scan_pos);
      prev_scan_pos = scan_pos = text_new_line_pos[text_new_line_pos.size()-1];  
@@ -423,8 +455,7 @@ public:
     if ((expanded_width > (specified_texture_width ? specified_texture_width : maximum_texture_dimension)) || (expanded_height > maximum_texture_dimension)) {
      return FT_Vector{0,0};
     }
-   }
-   else {
+   } else {
     return FT_Vector{0,0};
    }   
   }
@@ -506,14 +537,10 @@ public:
 
   //FOR LOOP FOR LINES
   FT_Vector pen;
+  pen.y = expanded_height;
   for( size_t line_cnt = 1; line_cnt < text_new_line_pos.size(); line_cnt++){
    pen.x = 0;
-   pen.y = expanded_height;
-   if(char_width){
-    pen.y -= (line_cnt) * (char_height << 6);
-   }else{
-    pen.y -= (line_cnt) * char_height_px;
-   }
+   pen.y -= LineHeigth[line_cnt-1];
    for (size_t n = text_new_line_pos[line_cnt-1]; n < text_new_line_pos[line_cnt]; n++) {
 
     //load glyph image into the slot (erase previous one) 

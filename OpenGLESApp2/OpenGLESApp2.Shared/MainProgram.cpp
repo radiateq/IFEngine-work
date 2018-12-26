@@ -790,7 +790,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
    polyShape2 = new b2PolygonShape;
-#define  zoom_factor 1.4
+#define  zoom_factor 2.4
    //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
    //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
    //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
@@ -816,9 +816,9 @@ void TESTFN_AddRandomBody(engine &engine) {
    game_body[5] = IFAdapter.OrderedBody();
    if (!IFAdapter.MakeBody())
     return;
-   game_body[5]->body->SetTransform(b2Vec2(-30.0, 0.0), 0.0);
+   game_body[5]->body->SetTransform(b2Vec2(-0.0, 0.0), 0.0);
    game_body[5]->OGL_body->z_pos -= 0.1;   
-   char outstring[120];
+   char outstring[1200];
    strcpy(outstring, "train");
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    CIFTextRender TextRender;
@@ -826,7 +826,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    TextRender.SetBackgroundColor(20, 80, 20, 255);
    TextRender.SetForegroundColor(230, 230, 230, 255);
    TextRender.SetCharSize_px(40, 40);
-   TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("train",256);
+   TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",512);
    // (FT_Pos)(( 0.0 * (( 64.0 * 72.0 ) / (float)RQNDKUtils::getDensityDpi(User_Data.state))) * 64 ),
    // (FT_Pos)(( 1.0 * (( 64.0 * 72.0 ) / (float)RQNDKUtils::getDensityDpi(User_Data.state) ) ) * 64 )
    // },
@@ -855,12 +855,10 @@ void TESTFN_AddRandomBody(engine &engine) {
    // }
    //}
    if(false){
-    char print_char = '\0';//null box does not encompass whole text
+    char print_char = 'i';//null box does not encompass whole text
     SFloatRect *char_rect;
     char_rect = TextRender.CharMap.GetRef(print_char);
     size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
-    float fontbbsizex = char_rect->xMax - char_rect->xMin;
-    float fontbbsizey = char_rect->yMax - char_rect->yMin;
     game_body[5]->OGL_body->UVmapping[0] = char_rect->xMax / TextRender.expanded_width;
     game_body[5]->OGL_body->UVmapping[1] = char_rect->yMin / TextRender.expanded_height;
 
@@ -917,7 +915,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    NetworkNodes[0].FANNOptions.desired_error = 0.000;
    NetworkNodes[0].FANNOptions.input_scale = 0.1;
    NetworkNodes[0].FANNOptions.output_scale = 0.1;
-   NetworkNodes[0].node_data_counter_limit = 7000*train_size_factor;
+   NetworkNodes[0].node_data_counter_limit = 500*train_size_factor;
    NetworkNodes[0].Load_Node( "pongpaddle");
    NetworkNodes[0].Load_Train_Data();      
    NetworkNodes[0].Node->AddFlag(TNodeStates::E_Training);
@@ -929,7 +927,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    NetworkNodes[1].FANNOptions.desired_error = 0.000;
    NetworkNodes[1].FANNOptions.input_scale = 0.1;
    NetworkNodes[1].FANNOptions.output_scale = 0.1;
-   NetworkNodes[1].node_data_counter_limit = 600*train_size_factor;
+   NetworkNodes[1].node_data_counter_limit = 50*train_size_factor;
    NetworkNodes[1].Load_Node("pongpaddlebounce", false);
    NetworkNodes[1].Load_Train_Data();
    NetworkNodes[1].Node->AddFlag(TNodeStates::E_Training);
@@ -940,7 +938,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    NetworkNodes[2].FANNOptions.desired_error = 0.000;
    NetworkNodes[2].FANNOptions.input_scale = NetworkNodes[1].FANNOptions.input_scale;
    NetworkNodes[2].FANNOptions.output_scale = NetworkNodes[1].FANNOptions.output_scale;
-   NetworkNodes[2].node_data_counter_limit = 600*train_size_factor;
+   NetworkNodes[2].node_data_counter_limit = 50*train_size_factor;
    NetworkNodes[2].Load_Node("pongpaddlebouncetune");
    NetworkNodes[2].Load_Train_Data();
    NetworkNodes[2].Node->AddFlag(TNodeStates::E_Training);
