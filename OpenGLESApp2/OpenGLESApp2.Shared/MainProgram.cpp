@@ -141,6 +141,7 @@ public:
   else {
    Node->ClearFlag(TNodeStates::E_NoData);
    {//Limit train size    
+    node_new_samples++;
     if (node_output_data.size() > node_data_counter_limit) {
      Node->AddFlag(TNodeStates::E_FullData);
      node_input_data.erase(node_input_data.begin(), node_input_data.begin() + node_input_data.size() - node_data_counter_limit * FANNOptions.input_neurons);
@@ -183,16 +184,16 @@ public:
   for (unsigned int paramno = 0; paramno < FANNOptions.output_neurons; paramno++) {
    node_output_data.push_back(output[paramno]);
   }
-
   CheckNodeTrainDataState();
 
   return true;
  }
 
- bool Epoch_Train(bool SaveNewData = true, unsigned int _node_train_samples = 200, unsigned long int timeToRunus = 3000) {
+ bool Epoch_Train(bool SaveNewData = true, unsigned int _node_train_samples = 5, unsigned long int timeToRunus = 3000) {
   if(!(Node->NodeStates&IFFANNEngine::CNode::ENodeStates::E_ContTraining))
    return false;
-  if (!Node->GetFlag(TNodeStates::E_FullData))
+//  if (!Node->GetFlag(TNodeStates::E_FullData))
+  if(node_train_samples==0)
    return false;
   //if (false)
   {/////////////////////////////////   TRAIN node
@@ -699,7 +700,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    game_body[2] = IFAdapter.OrderedBody();
    if (!IFAdapter.MakeBody())
     return;
-   game_body[2]->OGL_body->texture_ID = User_Data.CubeTexture;
+   game_body[2]->OGL_body->texture_ID = User_Data.Textures[2];
 
 
 
@@ -789,7 +790,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
    polyShape2 = new b2PolygonShape;
-#define  zoom_factor 3.8
+#define  zoom_factor 1.4
    //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
    //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
    //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
@@ -815,7 +816,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    game_body[5] = IFAdapter.OrderedBody();
    if (!IFAdapter.MakeBody())
     return;
-   game_body[5]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
+   game_body[5]->body->SetTransform(b2Vec2(-30.0, 0.0), 0.0);
    game_body[5]->OGL_body->z_pos -= 0.1;   
    char outstring[120];
    strcpy(outstring, "train");
@@ -824,8 +825,8 @@ void TESTFN_AddRandomBody(engine &engine) {
    TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
    TextRender.SetBackgroundColor(20, 80, 20, 255);
    TextRender.SetForegroundColor(230, 230, 230, 255);
-   TextRender.SetCharSize_px(60, 60);
-   TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("123ABC456DEF",128);
+   TextRender.SetCharSize_px(40, 40);
+   TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("train",256);
    // (FT_Pos)(( 0.0 * (( 64.0 * 72.0 ) / (float)RQNDKUtils::getDensityDpi(User_Data.state))) * 64 ),
    // (FT_Pos)(( 1.0 * (( 64.0 * 72.0 ) / (float)RQNDKUtils::getDensityDpi(User_Data.state) ) ) * 64 )
    // },
@@ -853,11 +854,13 @@ void TESTFN_AddRandomBody(engine &engine) {
    //  game_body[5]->OGL_body->z_pos = zDefaultLayer*1.1;
    // }
    //}
-   if(true){
+   if(false){
     char print_char = '\0';//null box does not encompass whole text
     SFloatRect *char_rect;
     char_rect = TextRender.CharMap.GetRef(print_char);
     size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
+    float fontbbsizex = char_rect->xMax - char_rect->xMin;
+    float fontbbsizey = char_rect->yMax - char_rect->yMin;
     game_body[5]->OGL_body->UVmapping[0] = char_rect->xMax / TextRender.expanded_width;
     game_body[5]->OGL_body->UVmapping[1] = char_rect->yMin / TextRender.expanded_height;
 
@@ -906,51 +909,54 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
 
-  static int train_size_factor = 3;
-  static float neuron_count_factor = 0.5;
+  static float train_size_factor = 1;
+  static float neuron_count_factor = 1.0;
       ////////////////////////////  Load Nodes START
    NetworkNodes[0].FANNOptions.input_neurons = 3;
-   NetworkNodes[0].FANNOptions.max_neurons = 40 * neuron_count_factor;
+   NetworkNodes[0].FANNOptions.max_neurons = 5 * neuron_count_factor;
    NetworkNodes[0].FANNOptions.desired_error = 0.000;
    NetworkNodes[0].FANNOptions.input_scale = 0.1;
    NetworkNodes[0].FANNOptions.output_scale = 0.1;
-   NetworkNodes[0].node_data_counter_limit = 150*train_size_factor;
+   NetworkNodes[0].node_data_counter_limit = 7000*train_size_factor;
    NetworkNodes[0].Load_Node( "pongpaddle");
    NetworkNodes[0].Load_Train_Data();      
    NetworkNodes[0].Node->AddFlag(TNodeStates::E_Training);
+   NetworkNodes[0].Node->AddFlag(TNodeStates::E_ContTraining);
 
 
    NetworkNodes[1].FANNOptions.input_neurons = 6;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
-   NetworkNodes[1].FANNOptions.max_neurons = 40 * neuron_count_factor;
+   NetworkNodes[1].FANNOptions.max_neurons = 25 * neuron_count_factor;
    NetworkNodes[1].FANNOptions.desired_error = 0.000;
    NetworkNodes[1].FANNOptions.input_scale = 0.1;
    NetworkNodes[1].FANNOptions.output_scale = 0.1;
-   NetworkNodes[1].node_data_counter_limit = 100*train_size_factor;
+   NetworkNodes[1].node_data_counter_limit = 600*train_size_factor;
    NetworkNodes[1].Load_Node("pongpaddlebounce", false);
    NetworkNodes[1].Load_Train_Data();
    NetworkNodes[1].Node->AddFlag(TNodeStates::E_Training);
+   NetworkNodes[1].Node->AddFlag(TNodeStates::E_ContTraining);
 
    NetworkNodes[2].FANNOptions.input_neurons = 7;//
-   NetworkNodes[2].FANNOptions.max_neurons = 40 * neuron_count_factor;
+   NetworkNodes[2].FANNOptions.max_neurons = 25 * neuron_count_factor;
    NetworkNodes[2].FANNOptions.desired_error = 0.000;
    NetworkNodes[2].FANNOptions.input_scale = NetworkNodes[1].FANNOptions.input_scale;
    NetworkNodes[2].FANNOptions.output_scale = NetworkNodes[1].FANNOptions.output_scale;
-   NetworkNodes[2].node_data_counter_limit = 100*train_size_factor;
+   NetworkNodes[2].node_data_counter_limit = 600*train_size_factor;
    NetworkNodes[2].Load_Node("pongpaddlebouncetune");
    NetworkNodes[2].Load_Train_Data();
    NetworkNodes[2].Node->AddFlag(TNodeStates::E_Training);
+   NetworkNodes[2].Node->AddFlag(TNodeStates::E_ContTraining);
 
    //Inputs x start, arctan2(speed vec y, ), magnitude(speedvec), ball end x, input 1, input 2, input 3
    NetworkNodes[3].FANNOptions.input_neurons = 7;//
-   NetworkNodes[3].FANNOptions.max_neurons = 55 * neuron_count_factor;
+   NetworkNodes[3].FANNOptions.max_neurons = 30 * neuron_count_factor;
    NetworkNodes[3].FANNOptions.desired_error = 0.00000;
    NetworkNodes[3].FANNOptions.input_scale = 0.1;
    NetworkNodes[3].FANNOptions.output_scale = 0.1;
-   NetworkNodes[3].node_data_counter_limit= 500*train_size_factor;
+   NetworkNodes[3].node_data_counter_limit= 1000*train_size_factor;
    NetworkNodes[3].Load_Node("pongpaddleselect");
    NetworkNodes[3].Load_Train_Data();
    NetworkNodes[3].Node->AddFlag(TNodeStates::E_Training);
-   //NetworkNodes[3].Node->AddFlag(TNodeStates::E_ContTraining);
+   NetworkNodes[3].Node->AddFlag(TNodeStates::E_ContTraining);
    
 
    ////////////////////////////  Load Nodes STOP
@@ -1140,25 +1146,35 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
     {/////////////////////////////////////  TRAINIG START
-     
+
+      //Train network
+     for (unsigned int cnt = 0; cnt < 4; cnt++) {
+      if (!trained[cnt]) {
+       if (NetworkNodes[cnt].Node->GetFlag(TNodeStates::E_ContTraining)) {
+        trained[cnt] = NetworkNodes[cnt].Epoch_Train();
+       }
+       else {
+        //trained[cnt] = NetworkNodes[cnt].Train_Node();
+       }
+      }
+     }
+
+
 
 
 
      if(AutoPlayer){
 
-
-
-      //Train network
-      for(unsigned int cnt = 0; cnt < 4; cnt++){
+      for (unsigned int cnt = 0; cnt < 4; cnt++) {
        if (!trained[cnt]) {
         if (NetworkNodes[cnt].Node->GetFlag(TNodeStates::E_ContTraining)) {
-         trained[cnt] = NetworkNodes[cnt].Epoch_Train();
-        }else{
+         //trained[cnt] = NetworkNodes[cnt].Epoch_Train();
+        }
+        else {
          trained[cnt] = NetworkNodes[cnt].Train_Node();
         }
        }
       }
-
 
       if((trained[0] == true)&&
       (trained[1] == true)&&
@@ -1221,7 +1237,7 @@ void TESTFN_AddRandomBody(engine &engine) {
       PongBallStateMachine.ProcessBallState(game_body);      
 
       if( balllinvel.y > 0 ){ //PongBallStateMachine.BallState.PlayfieldLocation == CPongBallStateMachine::E_TravelUp ){
-       if( ballposition.y > ( bottom * 0.6 * 0.9 )){
+       if( ballposition.y > ( bottom * 0.6 * 0.6 )){
         NetworkNodes[3].Node->IsRunning = false;
         NetworkNodes[0].Node->IsRunning = true;
        }else{
@@ -1257,9 +1273,9 @@ void TESTFN_AddRandomBody(engine &engine) {
 
       if ((skipCnt++ >= skipnum)) {
        skipCnt = 0;        
-       if(bal_pad_distance < (radius*4.0)){//Ball close to pad
-        if((abs(abs(paddleposition.x)- abs(ballposition.x))<(paddle_width*0.5))&&//Ball is not close but to the side
-           (abs(ballposition.y)<abs(paddleposition.y))//Ball is not behind pad
+       if(bal_pad_distance < (radius*8.0)){//Ball close to pad
+        if(//(abs(abs(paddleposition.x)- abs(ballposition.x))<(paddle_width*0.5))&&//Ball is not close but to the side
+           (abs(ballposition.y)<(abs(paddleposition.y) + radius))//Ball is not behind pad
            //&&   (((abs(balllinvel.y / balllinvel.x)))>1.0)//Ball is traveling in y direction two times faster than in x direction
         // &&(abs(abs(ballposition.x) - abs(paddleposition.x))<radius)
           )
@@ -1303,8 +1319,8 @@ void TESTFN_AddRandomBody(engine &engine) {
            //for (unsigned int cnt = 0; cnt < sizeof(train_ndelta_y)/ sizeof(train_ndelta_y[0]); cnt++) {
            // input_data.push_back((train_ndelta_y[cnt] = train_ndelta_y[cnt + 1] - train_ndelta_y[cnt]));
            //}
-           if (paddleposition.x) {
-            NetworkNodes[0].node_output_data.push_back((-paddleposition.x) * NetworkNodes[0].Node->ifann.output_scale);
+           if (ballposition.x) {
+            NetworkNodes[0].node_output_data.push_back((-ballposition.x) * NetworkNodes[0].Node->ifann.output_scale);
            }
            else {
             NetworkNodes[0].node_output_data.push_back(0);
@@ -1356,8 +1372,8 @@ void TESTFN_AddRandomBody(engine &engine) {
           //output_data.push_back(paddleposition.x / NetworkNodes[0].Node->ifann.output_scale);
           //input_data.push_back((paddleposition.x) / NetworkNodes[0].Node->ifann.input_scale);
           //input_data.push_back((ballposition.x) / NetworkNodes[0].Node->ifann.input_scale);
-          if(paddleposition.x){
-           NetworkNodes[0].node_output_data.push_back((paddleposition.x) * NetworkNodes[0].Node->ifann.output_scale);
+          if(ballposition.x){
+           NetworkNodes[0].node_output_data.push_back((ballposition.x) * NetworkNodes[0].Node->ifann.output_scale);
           }else{
            NetworkNodes[0].node_output_data.push_back(0);
           }
@@ -1382,7 +1398,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        if(AI_paddle_desired_position_x != AI_paddle_desired_position_x)
         AI_paddle_desired_position_x = right * 2.0;
        b2Vec2 position = game_body[4]->body->GetPosition();
-       game_body[4]->body->SetLinearVelocity(b2Vec2((AI_paddle_desired_position_x - game_body[4]->body->GetPosition().x)*sqrt(game_body[2]->body->GetPosition().x*game_body[2]->body->GetPosition().x + game_body[2]->body->GetPosition().y*game_body[2]->body->GetPosition().y+0.0)*1.0, 0.0));//+2.0 is to make sure result is larger than 1
+       game_body[4]->body->SetLinearVelocity(b2Vec2((AI_paddle_desired_position_x - game_body[4]->body->GetPosition().x)*sqrt(game_body[2]->body->GetPosition().x*game_body[2]->body->GetPosition().x + game_body[2]->body->GetPosition().y*game_body[2]->body->GetPosition().y+1.0)*1.8, 0.0));//+2.0 is to make sure result is larger than 1
        if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
        if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
 
@@ -1419,7 +1435,7 @@ void TESTFN_AddRandomBody(engine &engine) {
         }
        }
 
-
+//NetworkNodes[0].Node->IsRunning = true;//ERR01
 
        while (0 <= Network.NodeRegister.InputPinRegister.input_pins.GetNextIterator(ID, pin_value)) {
         //if() 
@@ -1597,6 +1613,7 @@ void Init_IFAdapter(engine &engine) {
   GLuint texint;
 
   User_Data.CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+  User_Data.Textures[2] = IFEUtilsLoadTexture::png_texture_load("ball.png", &twidth, &theight);
 
   FANN_TEST_initialized = false;
   anns_body = anns_learned_body = NULL;

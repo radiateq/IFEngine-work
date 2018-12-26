@@ -122,6 +122,7 @@
     </AntPackage>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <Content Include="assets\ball.png" />
     <Content Include="assets\Roboto-Thin.ttf" />
     <Content Include="assets\RobotoMono-Regular.ttf" />
     <Content Include="assets\testcube.png" />

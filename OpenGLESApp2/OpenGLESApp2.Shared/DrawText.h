@@ -318,11 +318,11 @@ public:
 
   int expanded_width;
   int expanded_height;
+  unsigned int predicted_width;
+  unsigned int predicted_height;
 
  private:
   int maximum_texture_dimension, specified_texture_width;
-  unsigned int predicted_width;
-  unsigned int predicted_height;
   //When string reaches over texture width, that position is marked as new line and added to text_new_line_pos
   std::vector<size_t> text_new_line_pos;
   FT_BBox stringBBox;
@@ -431,6 +431,8 @@ public:
   text_new_line_pos.push_back(num_chars);
   //pen.y = expanded_height - pen.y;
   FT_Vector ret_val;
+  predicted_width = max_width;
+  predicted_height = total_height;
   ret_val.x = expanded_width;
   ret_val.y = expanded_height;
   return ret_val; 
