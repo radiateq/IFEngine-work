@@ -13,26 +13,28 @@
 
 #include <freetype/ftglyph.h>
 
-extern FT_Library  library;
-extern FT_Face     face;
-extern int32_t deviceDPI;
-extern FT_GlyphSlot  slot;
-extern FT_Matrix     matrix;              /* transformation matrix */
-extern FT_UInt       glyph_index;
-extern FT_Vector     pen;                 /* untransformed origin */
-extern int           n;
-extern FT_Byte *buffer;
-extern struct android_app* android_app_state;
+//extern struct android_app* android_app_state;
 
-//state can be passed only on a first call
-bool InitFreeType(struct android_app* _state = NULL);
-void DoneFreeType();
-bool SetFaceSize(FT_F26Dot6  char_width = 0, FT_F26Dot6  char_height = 0);
-bool SetFontPixelSize(FT_UInt _width = 0, FT_UInt _heigth = 0);
-void  computeStringBBox(char *glyphs, FT_BBox  *abbox, float angle, FT_Vector _pos);
-GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double _angle, float *ub = NULL, float *vb = NULL, float *ut = NULL, float *vt = NULL);
-
-inline int next_p2(int a);
+//extern FT_Library  library;
+//extern FT_Face     face;
+//extern int32_t deviceDPI;
+//extern FT_GlyphSlot  slot;
+//extern FT_Matrix     matrix;              /* transformation matrix */
+//extern FT_UInt       glyph_index;
+//extern FT_Vector     pen;                 /* untransformed origin */
+//extern int           n;
+//extern FT_Byte *buffer;
+//extern struct android_app* android_app_state;
+//
+////state can be passed only on a first call
+//bool InitFreeType(struct android_app* _state = NULL);
+//void DoneFreeType();
+//bool SetFaceSize(FT_F26Dot6  char_width = 0, FT_F26Dot6  char_height = 0);
+//bool SetFontPixelSize(FT_UInt _width = 0, FT_UInt _heigth = 0);
+//void  computeStringBBox(char *glyphs, FT_BBox  *abbox, float angle, FT_Vector _pos);
+//GLuint DrawText(char *_text, FT_UInt _target_height, FT_Vector start_pos, double _angle, float *ub = NULL, float *vb = NULL, float *ut = NULL, float *vt = NULL);
+//
+//inline int next_p2(int a);
 
 
 
@@ -60,6 +62,10 @@ potential problems
 - trim text that does not fit
 */
 
+struct SFloatRect{
+ float xMin, xMax, yMin, yMax;
+};
+
 class CIFTextRender{
 public:
  CIFTextRender(){
@@ -86,23 +92,24 @@ public:
   workRGBA.rgba.a = a;
   return workRGBA;
  }
+
  //////////////////////////////////////////////////////////////////////////////////////////////////
+public:
+ IFGeneralUtils::SMapWrap<char, SFloatRect> CharMap;
+ GLuint texture_ID;
 
 private:
  FT_Library  library;
- FT_Face     face;
+ FT_Face     face = NULL;
  FT_GlyphSlot  slot;
  FT_Matrix     matrix;              /* transformation matrix */
  FT_UInt       glyph_index;
- FT_Vector     pen;                 /* untransformed origin */
+ //FT_Vector     pen;                 /* untransformed origin */
  FT_Byte      *buffer = NULL;
- URGBA foreground, background;
- IFGeneralUtils::SMapWrap<char, FT_BBox> CharMap;
- GLuint texture_ID;
+ URGBA foreground, background; 
  GLuint texture_map_max_width, texture_map_max_height;//read this from OpenGLES driver
  int char_width = 0, char_height = 0;
  int char_width_px = 0, char_height_px = 0;
- struct android_app* android_app_state = NULL;
  char font_file_name[BUFSIZ+1];
  
 
@@ -164,8 +171,7 @@ public:
 
 
 
- bool InitTextRender(char const * const _font_file_name, struct android_app* _state){
-  android_app_state = _state;  
+ bool InitTextRender(char const * const _font_file_name, struct android_app* _state){  
   strncpy(font_file_name,_font_file_name, BUFSIZ);
 
   return InitFreeType();
@@ -174,12 +180,12 @@ private:
  bool InitFreeType(){
 
   if (buffer != NULL) {
-   DoneFreeType();  
+   free(buffer), buffer = NULL;  
   }
 
   size_t size;
   //buffer = (FT_Byte*)RQNDKUtils::getAssetFileToBuffer(android_app_state, "RobotoMono-Regular.ttf", size);
-  buffer = (FT_Byte*)RQNDKUtils::getAssetFileToBuffer(android_app_state, font_file_name, size);//"Roboto-Thin.ttf"
+  buffer = (FT_Byte*)RQNDKUtils::getAssetFileToBuffer(User_Data.state, font_file_name, size);//"Roboto-Thin.ttf"
 
   if (buffer == NULL){
    return false;
@@ -187,7 +193,7 @@ private:
 
   FT_Error error = FT_Init_FreeType(&library);
   if (error) { 
-   free(buffer);
+   free(buffer), buffer = NULL;
    return false;
   }
 
@@ -197,19 +203,22 @@ private:
    0,         
    &face); 
   if (error) { 
-   free(buffer); 
+   free(buffer), buffer = NULL;
    return false; 
   }
 
-  deviceDPI = RQNDKUtils::getDensityDpi(android_app_state);
+  deviceDPI = RQNDKUtils::getDensityDpi(User_Data.state);
 
   return true;
  }
 public:
 
  void DoneFreeType(){ 
+  //if (face!=NULL){
+  // FT_Done_Face(face);
+  // face = NULL;
+  //}
   if(buffer){
-   FT_Done_Face(face);
    free(buffer), buffer = NULL;
   }
  }
@@ -218,7 +227,7 @@ public:
 
 
 
- bool computeStringBBox(char const * const facestring, FT_BBox  *abbox, float angle, FT_Vector _pos )
+ bool computeStringBBox(char const * const facestring, FT_BBox  *abbox, float angle)
  {
   if (buffer == NULL) 
    return false;
@@ -241,6 +250,10 @@ public:
   bool use_kerning = FT_HAS_KERNING(face);
   FT_UInt previous = 0;
   //memset(&glyph,0,sizeof(glyph));
+
+  FT_Vector pos;
+  pos.x = 0;
+  pos.y = expanded_height;
   for (size_t n = 0; n < num_chars; n++) {
    error = FT_Load_Char(face, (unsigned char)facestring[n], FT_LOAD_DEFAULT);
    if (error)
@@ -251,8 +264,8 @@ public:
     FT_Vector  delta;
     FT_Get_Kerning(face, previous, glyph_index,
      FT_KERNING_DEFAULT, &delta);
-    _pos.x += delta.x>>6;
-    _pos.y += delta.y>>6;
+    pos.x += delta.x>>6;
+    pos.y += delta.y>>6;
    }
    previous = glyph_index;
    {
@@ -262,15 +275,15 @@ public:
     FT_Done_Glyph(glyph);
    }
 
-   FT_Set_Transform(face, &matrix, &_pos);
+   FT_Set_Transform(face, &matrix, &pos);
 
-   _pos.x += face->glyph->advance.x>>6;
-   _pos.y += face->glyph->advance.y>>6;
+   pos.x += face->glyph->advance.x>>6;
+   pos.y += face->glyph->advance.y>>6;
 
-   glyph_bbox.xMin += _pos.x;
-   glyph_bbox.xMax += _pos.x;
-   glyph_bbox.yMin += _pos.y;
-   glyph_bbox.yMax += _pos.y;
+   glyph_bbox.xMin += pos.x;
+   glyph_bbox.xMax += pos.x;
+   glyph_bbox.yMin += pos.y;
+   glyph_bbox.yMax += pos.y;
 
    if (glyph_bbox.xMin < bbox.xMin)
     bbox.xMin = glyph_bbox.xMin;
@@ -301,19 +314,21 @@ public:
 
   return true;
  }
+ public:
 
- private:
-  int maximum_texture_dimension;
-  unsigned int predicted_width;
-  unsigned int predicted_height;
   int expanded_width;
   int expanded_height;
+
+ private:
+  int maximum_texture_dimension, specified_texture_width;
+  unsigned int predicted_width;
+  unsigned int predicted_height;
   //When string reaches over texture width, that position is marked as new line and added to text_new_line_pos
   std::vector<size_t> text_new_line_pos;
   FT_BBox stringBBox;
 
   void GetStringBox(char const * const _text, float const _angle){
-   computeStringBBox(_text, &stringBBox, _angle, pen);
+   computeStringBBox(_text, &stringBBox, _angle);
    predicted_width = stringBBox.xMax - stringBBox.xMin;
    predicted_height = stringBBox.yMax - stringBBox.yMin;
    expanded_width = next_p2(predicted_width);
@@ -329,16 +344,17 @@ public:
   size_t total_height = 0, max_width = 0;
   
   GetStringBox(_text, _angle);
-  expanded_width = next_p2( predicted_width + pen.x );
-  expanded_height = next_p2(predicted_height + pen.y);
+  expanded_width = next_p2( predicted_width);  
+  expanded_height = next_p2(predicted_height);  
+
   max_width = expanded_width;
   total_height = expanded_height;
   text_new_line_pos.push_back(0);
 
   //Is our string larger than max texture dimension
-  if ((expanded_width > maximum_texture_dimension) || (expanded_height > maximum_texture_dimension)) {
+  if ((expanded_width > (specified_texture_width?specified_texture_width:maximum_texture_dimension)) || (expanded_height > maximum_texture_dimension)) {
    //text position currently being checked for length, previous position is last position in text_new_line_pos
-   if (expanded_width > maximum_texture_dimension) {
+   if (expanded_width > (specified_texture_width ? specified_texture_width : maximum_texture_dimension)) {
     max_width = 0;
     total_height = 0;
 
@@ -358,16 +374,14 @@ public:
       _text_copy[scan_pos] = '\0';
       GetStringBox(&_text_copy[prev_scan_pos], _angle);     
       _text_copy[scan_pos] = _temp_text;
-      predicted_width += pen.x;
 
-      if(predicted_width > maximum_texture_dimension){
+      if(predicted_width > (specified_texture_width ? specified_texture_width : maximum_texture_dimension)){
        scan_pos--;
        if (scan_pos > 0) {
         _temp_text = _text_copy[scan_pos];
         _text_copy[scan_pos] = '\0';
         GetStringBox(&_text_copy[prev_scan_pos], _angle);
         _text_copy[scan_pos] = _temp_text;
-        predicted_width += pen.x;
        }else{
 
 
@@ -399,14 +413,14 @@ public:
 
 
     max_width = next_p2(max_width);
-    if(pen.y < total_height ){
-     total_height = next_p2(pen.y);
-    }else{
-     total_height = next_p2(pen.y-total_height);
-    }
-    expanded_width = next_p2(max_width);
-    expanded_height = total_height;
-    if ((expanded_width > maximum_texture_dimension) || (expanded_height > maximum_texture_dimension) || (pen.y <= 0)) {
+    //if(pen.y < total_height ){
+    // total_height = next_p2(pen.y);
+    //}else{
+    // total_height = next_p2(pen.y-total_height);
+    //}    
+    expanded_width = next_p2(max_width);   
+    expanded_height = next_p2(total_height);
+    if ((expanded_width > (specified_texture_width ? specified_texture_width : maximum_texture_dimension)) || (expanded_height > maximum_texture_dimension)) {
      return FT_Vector{0,0};
     }
    }
@@ -415,13 +429,14 @@ public:
    }   
   }
   text_new_line_pos.push_back(num_chars);
+  //pen.y = expanded_height - pen.y;
   FT_Vector ret_val;
   ret_val.x = max_width;
   ret_val.y = total_height;
   return ret_val; 
  }
 
- GLuint DrawText(char *_text, FT_Vector start_pos) {
+ GLuint DrawText(char *_text, unsigned int _width = 0) {
   InitFreeType();
   if(char_width){
    SetCharSize_F26Dot6();
@@ -437,7 +452,8 @@ public:
                                      //glDisable(GL_TEXTURE_2D);
   glGenTextures(1, &texture);
   glActiveTexture(GL_TEXTURE0);
-  maximum_texture_dimension = 512;// GetMaxTextureSize();
+  specified_texture_width = _width;
+  maximum_texture_dimension = GetMaxTextureSize();
 
   FT_Matrix matrix;
   // set up matrix 
@@ -449,13 +465,10 @@ public:
 
   ///* the pen position in 26.6 cartesian space coordinates 
   ///* start at (300,200)                                   
-  pen.x = start_pos.x>>6;
-  pen.y = start_pos.y >> 6;
   //pen.x = 0 * 64;
   //pen.y = 0 * 64;
 
   FT_Vector map_size = computeTextureSize(_text);
-
   GLubyte* expanded_data = NULL;
   expanded_width = map_size.x;
   expanded_height = map_size.y;
@@ -484,15 +497,20 @@ public:
   FT_Error error;
   bool use_kerning = FT_HAS_KERNING(face);
   FT_UInt previous = 0;
+  SFloatRect char_bbox, *pchar_bbox;
+  char_bbox.xMin = char_bbox.yMin = UINT_MAX;//Underlining type is float but we are first seting value to integers, then converting it in to uv
+  char_bbox.xMax = char_bbox.yMax = -UINT_MAX;
+  
 
   //FOR LOOP FOR LINES
+  FT_Vector pen;
   for( size_t line_cnt = 1; line_cnt < text_new_line_pos.size(); line_cnt++){
-   pen.x = start_pos.x >> 6;
-   pen.y = start_pos.y >> 6;
+   pen.x = 0;
+   pen.y = expanded_height;
    if(char_width){
-    pen.y -= (line_cnt-1) * (char_height << 6);
+    pen.y -= (line_cnt) * (char_height << 6);
    }else{
-    pen.y -= (line_cnt - 1) * char_height_px;
+    pen.y -= (line_cnt) * char_height_px;
    }
    for (size_t n = text_new_line_pos[line_cnt-1]; n < text_new_line_pos[line_cnt]; n++) {
 
@@ -500,6 +518,10 @@ public:
     //error = FT_Load_Char(face, _text[n], FT_LOAD_RENDER);
 
     glyph_index = FT_Get_Char_Index(face, _text[n]);
+    
+    CharMap.Add(_text[n], char_bbox);
+    pchar_bbox = CharMap.GetRef(_text[n]);
+    //pchar_bbox->xMin = pchar_bbox->xMax = pchar_bbox->yMin = pchar_bbox->yMax = 0.0;
 
     if (use_kerning && previous && glyph_index)
     {
@@ -532,8 +554,16 @@ public:
        if((i>= expanded_width)||(j>=expanded_height)||(i <0)||(j<0)){
         continue;
        }
-       if (k1 < j) k1 = j;
        if( l1 < i ) l1 = i;
+       if (k1 < j) k1 = j;
+       if(pchar_bbox->xMin > i)
+        pchar_bbox->xMin = i;
+       if (pchar_bbox->xMax < i)
+        pchar_bbox->xMax = i;
+       if (pchar_bbox->yMin > j)
+        pchar_bbox->yMin = j;
+       if (pchar_bbox->yMax < j)
+        pchar_bbox->yMax = j;
        if ((slot->bitmap.buffer)[ib + bmp_width * jb] > 0) {
         expanded_data[4 * (i + j * expanded_width) + 0] = (unsigned char)((float)(foreground.rgba.r + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
         expanded_data[4 * (i + j * expanded_width) + 1] = (unsigned char)((float)(foreground.rgba.g + (slot->bitmap.buffer)[ib + bmp_width * jb])*0.5);
@@ -552,12 +582,25 @@ public:
    }   
   }
 
-
+  char char_key;
+  SFloatRect charbbox_val;
+  char_key = '\0';
+  charbbox_val.xMin = charbbox_val.yMin = 0;
+  charbbox_val.xMax = k1;
+  charbbox_val.yMax = l1;
+  CharMap.Add(char_key, charbbox_val);
+  //CharMap.ResetIterator();
+  //while(CharMap.GetNextIterator(char_key, charbbox_val)>0){
+  // (*CharMap.Iter_Map).second.xMin /= (float)expanded_width;
+  // (*CharMap.Iter_Map).second.xMax /= (float)expanded_width;
+  // (*CharMap.Iter_Map).second.yMin /= (float)expanded_height;
+  // (*CharMap.Iter_Map).second.yMax /= (float)expanded_height;
+  //}
 
   //if (ub) *ub = 0;
   //if (vb) *vb = 0;
   //if (ut) *ut = ((float)l1 + (float)(slot->advance.x >> 6)) / (float)expanded_width;
-  //if (vt) *vt = ((float)k1 + (float)(slot->advance.y >> 6)) / (float)expanded_height ;
+  //if (vt) *vt = ((float)k1 + (float)(slot->advance.y >> 6)) / (float)expanded_height;
 
   glBindTexture(GL_TEXTURE_2D, texture);
   //  glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, expanded_width, expanded_height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, (GLvoid*)(expanded_data) );

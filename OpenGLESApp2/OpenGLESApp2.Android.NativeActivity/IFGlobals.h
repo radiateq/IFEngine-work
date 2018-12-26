@@ -19,6 +19,7 @@ typedef struct {
  GLuint CubeTexture;
  bool TrainInProgress;
 }TS_User_Data;
+extern TS_User_Data User_Data;
 
 
 
@@ -32,6 +33,6 @@ typedef int(*Tp_Cube_Test_Init)(const void *);
 //List of functions using p_user_data
 //This pointer is casted to any type defined in CubeTest_Test_Interface.h
 //01 - CubeTest_update
-extern void *p_user_data;
+//extern void *p_user_data;
 
 #endif

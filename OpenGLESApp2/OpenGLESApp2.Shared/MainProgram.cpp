@@ -14,7 +14,7 @@ ifCB2Adapter IFAdapter;
 
 ifCB2BodyUtils B2BodyUtils(&IFAdapter);
 
-TS_User_Data User_Data;
+extern TS_User_Data User_Data;
 
 
 //DEMO 1 GLOBAL VARIABLES START
@@ -539,7 +539,18 @@ void TESTFN_PostOperations(engine &engine) {
     glDeleteTextures(0, &TEST_GUI_Tex_Ary[texture_index]);
     char outstring[120];
     strcpy(outstring, "touched");
-    TEST_GUI_Tex_Ary[texture_index] = last_touched_object->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
+
+
+    CIFTextRender TextRender;
+    TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
+    TextRender.SetBackgroundColor(20, 80, 20, 255);
+    TextRender.SetForegroundColor(230, 230, 230, 255);
+    TextRender.SetCharSize_px(60, 30);
+    
+
+
+
+    TEST_GUI_Tex_Ary[texture_index] = last_touched_object->OGL_body->texture_ID = TextRender.DrawText(outstring, 128);
 
     static bool _temp_lastScale = false;
     if (_temp_lastScale) {
@@ -588,7 +599,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
 
-   thickness = RQNDKUtils::getDensityDpi(android_app_state) / 25.4;
+   thickness = RQNDKUtils::getDensityDpi(User_Data.state) / 25.4;
    left = thickness; bottom = thickness; right = engine.width - thickness; top = engine.height - thickness;
    Window2ObjectCoordinates(left, bottom, zDefaultLayer, engine.width, engine.height);
    left /= IFA_box2D_factor; bottom /= IFA_box2D_factor;
@@ -805,28 +816,61 @@ void TESTFN_AddRandomBody(engine &engine) {
    if (!IFAdapter.MakeBody())
     return;
    game_body[5]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
-   game_body[5]->OGL_body->z_pos -= 0.1;
-   SetFaceSize(100 * 64, 60 * 64);
+   game_body[5]->OGL_body->z_pos -= 0.1;   
    char outstring[120];
    strcpy(outstring, "train");
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    CIFTextRender TextRender;
    TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
-   TextRender.SetBackgroundColor(0, 20, 0, 255);
+   TextRender.SetBackgroundColor(20, 80, 20, 255);
    TextRender.SetForegroundColor(230, 230, 230, 255);
-   TextRender.SetCharSize_px(30, 60);
-   TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("12345678911234567892-----+-----+-----+abcdefghijklmnopqrstuvwxyz12345678911234567892-----+-----+-----+abcdefghijklmnopqrstuvwxyz12345678911234567892-----+-----+-----+abcdefghijklmnopqrstuvwxyz", FT_Vector() = { 0 * 64, 85 * 64 });
+   TextRender.SetCharSize_px(60, 60);
+   TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("123ABC456DEF",128);
+   // (FT_Pos)(( 0.0 * (( 64.0 * 72.0 ) / (float)RQNDKUtils::getDensityDpi(User_Data.state))) * 64 ),
+   // (FT_Pos)(( 1.0 * (( 64.0 * 72.0 ) / (float)RQNDKUtils::getDensityDpi(User_Data.state) ) ) * 64 )
+   // },
+   //128);
    //TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
-   //size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
-   //for (int cntuv = 0; cntuv < UVsize; cntuv++) {
-   // game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_ut;
-   // cntuv++;
-   // game_body[5]->OGL_body->UVmapping[cntuv] *= TEST_text_vt;
-   // game_body[5]->OGL_body->z_pos = zDefaultLayer*1.01;
+
+
+
+
+   //{
+   // char print_char = 'a';
+   // SFloatRect *char_rect;
+   // char_rect = TextRender.CharMap.GetRef(print_char);
+   // float deltabbx, deltabby;
+   // deltabbx = char_rect->xMax - char_rect->xMin;
+   // deltabby = char_rect->yMax - char_rect->yMin;
+   // size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
+   // for (int cntuv = 0; cntuv < UVsize; cntuv++) {
+   //  game_body[5]->OGL_body->UVmapping[cntuv] *= deltabbx;
+   //  game_body[5]->OGL_body->UVmapping[cntuv] += char_rect->xMin;
+   //  cntuv++;
+   //  game_body[5]->OGL_body->UVmapping[cntuv] *= deltabby;
+   //  game_body[5]->OGL_body->UVmapping[cntuv] +=char_rect->yMin;
+   //  game_body[5]->OGL_body->z_pos = zDefaultLayer*1.1;
+   // }
    //}
+   if(false)
+   {
+    char print_char = '\0';//null box does not encompass whole text
+    SFloatRect *char_rect;
+    char_rect = TextRender.CharMap.GetRef(print_char);
+    size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
+    game_body[5]->OGL_body->UVmapping[0] = char_rect->xMax / TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[1] = char_rect->yMin / TextRender.expanded_height;
 
+    game_body[5]->OGL_body->UVmapping[2] = char_rect->xMax / TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[3] = char_rect->yMax / TextRender.expanded_height;
 
+    game_body[5]->OGL_body->UVmapping[4] = char_rect->xMin / TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[5] = char_rect->yMax / TextRender.expanded_height;
+
+    game_body[5]->OGL_body->UVmapping[6] = char_rect->xMin / TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[7] = char_rect->yMin / TextRender.expanded_height;
+   }
 
 
 
@@ -1552,7 +1596,7 @@ void Init_IFAdapter(engine &engine) {
   int twidth, theight;
   GLuint texint;
 
-  ((TS_User_Data*)p_user_data)->CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+  User_Data.CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
 
   FANN_TEST_initialized = false;
   anns_body = anns_learned_body = NULL;

@@ -11,12 +11,14 @@
 #include <set>
 #include <Eigen/Dense>
 
+#include "../OpenGLESApp2.Android.NativeActivity/IFGlobals.h"
 
 using Eigen::MatrixXf;
 
 #define IF_NULL_DELETE(PARAM) if( NULL != PARAM ) { delete PARAM; PARAM = NULL; }
 #define IF_NULL_DELETE_ARRAY(PARAM) if( NULL != PARAM ) { delete [] PARAM; PARAM = NULL; }
 
+extern TS_User_Data User_Data;
 
 namespace IFGeneralUtils{
  

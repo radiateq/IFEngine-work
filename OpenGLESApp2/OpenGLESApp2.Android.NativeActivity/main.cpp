@@ -340,10 +340,6 @@ void android_main(struct android_app* state) {
 
  Init_IFEngine();
  //               FREETYPE               SAMPLE START
- if (!InitFreeType(state)) {
-  return;
- }
-
 
 
  User_Data.state = state;
@@ -368,7 +364,7 @@ void android_main(struct android_app* state) {
  engine.sensorEventQueue2 = ASensorManager_createEventQueue(engine.sensorManager2, state->looper, LOOPER_ID_USER + 1, NULL, NULL);
 
 
- p_user_data = &User_Data;
+ //p_user_data = &User_Data;
 
 
 
@@ -480,7 +476,6 @@ void android_main(struct android_app* state) {
 
    if (state->destroyRequested != 0) {
     engine_term_display(&engine);
-    DoneFreeType();
     return;
    }
   }

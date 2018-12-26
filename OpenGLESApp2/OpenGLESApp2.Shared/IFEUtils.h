@@ -115,7 +115,7 @@ public:
   //}
 
 
-  memory_reader_state.png_file_data = (png_byte*)RQNDKUtils::getAssetFileToBuffer(((TS_User_Data*)p_user_data)->state, file_name, memory_reader_state.png_file_data_size);
+  memory_reader_state.png_file_data = (png_byte*)RQNDKUtils::getAssetFileToBuffer(User_Data.state, file_name, memory_reader_state.png_file_data_size);
   memory_reader_state.png_file_data_position = 0;
   if (memory_reader_state.png_file_data == NULL)
   {

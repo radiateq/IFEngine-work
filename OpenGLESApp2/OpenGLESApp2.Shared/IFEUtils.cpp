@@ -307,8 +307,8 @@ unsigned decodeBMP(std::vector<unsigned char>& image, unsigned& w, unsigned& h, 
 }
 
 void Setup_OpenGL(double width, double height) {
- ((TS_User_Data*)p_user_data)->screenWidth = width;
- ((TS_User_Data*)p_user_data)->screenHeight = height;
+ User_Data.screenWidth = width;
+ User_Data.screenHeight = height;
  //// Initialize GL state for 3D
  //glDisable(GL_DITHER);
  //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);

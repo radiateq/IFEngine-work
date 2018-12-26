@@ -228,7 +228,7 @@ public:
    Init_ifTbodyDefinition(work_body);
    (*iter)->BodyToVertices(cnt, work_body->vertices_cnt, work_body->indices_cnt, &(work_body->vertices_mode), &(work_body->vertices), &(work_body->indices));
    (*iter)->OGL_body = work_body;
-   (*iter)->OGL_body->line_thickness = RQNDKUtils::getDensityDpi(android_app_state) / 25.4;
+   (*iter)->OGL_body->line_thickness = RQNDKUtils::getDensityDpi(User_Data.state) / 25.4;
    work_body->z_pos = zDefaultLayer;
    work_body->colors_cnt = work_body->vertices_cnt * 2;
    work_body->colors = (GLfloat*)malloc(sizeof(GLfloat) * work_body->colors_cnt);

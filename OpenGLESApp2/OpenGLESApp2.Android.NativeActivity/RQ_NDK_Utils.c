@@ -59,14 +59,14 @@ int32_t getDensityDpi(android_app* app) {
 
 char *Make_storageDataPath(char * const path_buffer, int buffer_length, char const * const file_name) {
 
- TS_User_Data *user_data = (TS_User_Data *)p_user_data;
- int intpathlen = strlen(user_data->state->activity->externalDataPath);
+ //TS_User_Data *user_data = (TS_User_Data *)p_user_data;
+ int intpathlen = strlen(User_Data.state->activity->externalDataPath);
 
  if (buffer_length < (intpathlen + strlen(file_name) + 2)) {
   return NULL;
  } 
 
- strcpy(path_buffer, user_data->state->activity->externalDataPath);
+ strcpy(path_buffer, User_Data.state->activity->externalDataPath);
  strcpy(&path_buffer[intpathlen], "/");
  intpathlen++;
  strcpy(&path_buffer[intpathlen], file_name);
@@ -75,15 +75,14 @@ char *Make_storageDataPath(char * const path_buffer, int buffer_length, char con
 }
 
 char *Make_privateeDataPath(char * const path_buffer, int buffer_length, char const * const file_name){
-
- TS_User_Data *user_data = (TS_User_Data *)p_user_data;
- int intpathlen = strlen(user_data->state->activity->internalDataPath);
+ 
+ int intpathlen = strlen(User_Data.state->activity->internalDataPath);
 
  if (buffer_length < (intpathlen + strlen(file_name) + 2)) {
   return NULL;
  }
 
- strcpy(path_buffer, user_data->state->activity->internalDataPath);
+ strcpy(path_buffer, User_Data.state->activity->internalDataPath);
  strcpy(&path_buffer[intpathlen], "/");
  intpathlen++;
  strcpy(&path_buffer[intpathlen], file_name);
