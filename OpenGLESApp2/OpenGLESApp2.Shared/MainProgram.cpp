@@ -52,6 +52,7 @@ float thickness;
 float left, bottom, right, top;
 float radius, paddle_width, dummy;
 IFFANNEngine::CNetwork Network;
+unsigned int Last_AI_Paddle_Network_Active = -1;
 bool LastAIPaddle = false;
 //NODE 3 -------   TEMPLATE FOR CLASS START
 //Selects what node to use for paddle x output based on 
@@ -435,6 +436,50 @@ public:
   b2Vec2 balllinvel = game_body[2]->body->GetLinearVelocity();
   b2Vec2 ballposition = game_body[2]->body->GetPosition();
 
+  if (BallState.NewContactObjects&E_ContactAI) {//leaving AI paddle        
+   NetworkNodes[4].Node->inputs[0] = game_body[4]->body->GetPosition().x;
+   NetworkNodes[4].Node->inputs[1] = game_body[4]->body->GetLinearVelocity().x;
+
+   NetworkNodes[4].Node->inputs[2] = ballposition.x;
+   NetworkNodes[4].Node->inputs[3] = atan2(balllinvel.y, balllinvel.x);
+   NetworkNodes[4].Node->inputs[4] = sqrt(balllinvel.x*balllinvel.x + balllinvel.y*balllinvel.y)* NetworkNodes[3].Node->ifann.output_scale;
+
+   NetworkNodes[4].Node->outputs = IFFANNEngine::Run_Cascade_FANN(&NetworkNodes[4].Node->ifann, NetworkNodes[4].Node->inputs);
+   NetworkNodes[0].Node->IsRunning = NetworkNodes[4].Node->outputs[0]>0.5;
+   NetworkNodes[1].Node->IsRunning = NetworkNodes[4].Node->outputs[1] > 0.5;
+   NetworkNodes[2].Node->IsRunning = NetworkNodes[1].Node->IsRunning;
+   NetworkNodes[3].Node->IsRunning = NetworkNodes[4].Node->outputs[2] > 0.5;
+
+   if( Last_AI_Paddle_Network_Active == 0 )
+    NetworkNodes[4].Node->inputs[5] = 1;
+   else
+    NetworkNodes[4].Node->inputs[5] = 0;
+
+   if (Last_AI_Paddle_Network_Active == 1)
+    NetworkNodes[4].Node->inputs[6] = 1;
+   else
+    NetworkNodes[4].Node->inputs[6] = 0;
+
+   if (Last_AI_Paddle_Network_Active == 2)
+    NetworkNodes[4].Node->inputs[7] = 1;
+   else
+    NetworkNodes[4].Node->inputs[7] = 0;
+   NetworkNodes[4].node_new_samples = 1;
+  }
+
+  if(BallState.PlayfieldLocation & E_PlayerMiss ){
+   if(NetworkNodes[4].node_new_samples == 1){
+    NetworkNodes[4].node_new_samples = 0;
+    for(unsigned int cnt = 0; cnt < NetworkNodes[4].Node->ifann.ann->num_input; cnt++){
+     NetworkNodes[4].node_input_data.push_back(NetworkNodes[4].Node->inputs[cnt]);
+    }
+
+    for (unsigned int cnt = 0; cnt < NetworkNodes[4].Node->ifann.ann->num_output; cnt++) {
+     NetworkNodes[4].node_output_data.push_back(NetworkNodes[4].Node->outputs[cnt]);
+    }
+    //NetworkNodes[4].Save_Train_Data();
+   }
+  }
   if (BallState.BrokenContactObjects&E_ContactPlayer) {//leaving player paddle        
    NetworkNodes[3].Node->inputs[0] = ballposition.x * NetworkNodes[3].Node->ifann.output_scale;
    NetworkNodes[3].Node->inputs[1] = atan2(balllinvel.y, balllinvel.x);
@@ -498,6 +543,7 @@ void TESTFN_SaveAllTrainData(){
  NetworkNodes[1].Save_Train_Data();
  NetworkNodes[2].Save_Train_Data(); 
  NetworkNodes[3].Save_Train_Data();
+ NetworkNodes[4].Save_Train_Data();
 }
 
 void ConnectNetwork01(){
@@ -955,7 +1001,35 @@ void TESTFN_AddRandomBody(engine &engine) {
    NetworkNodes[3].Load_Train_Data();
    NetworkNodes[3].Node->AddFlag(TNodeStates::E_Training);
    NetworkNodes[3].Node->AddFlag(TNodeStates::E_ContTraining);
+
+   //Network node MAIN BRAIN
+   //On inputs it receives:
+   //PAD POSITION X at the moment of ball leaving pad
+   //PAD HORIZONTAL LINEAR VELOCITY MAGNITUDE at the moment ball leaving pad
+   //BALL Position X, leaving pad
+   //BALL linear velocity
+   //BALL linear velocity magnitude
+   //1/0 - network 1 was running
+   //1/0 - networks 2 and 2_1 were running
+   //1/0 - network 3 was running
+   //PLAYER PAD POSITION X AT THE MOMENT OF BALL LEAVING PAD
    
+   //output 1 - last net running was 1
+   //output 2 - last net running was 2
+   //output 3 - last net running was 3
+
+   NetworkNodes[4].FANNOptions.input_neurons = 8;//
+   NetworkNodes[4].FANNOptions.output_neurons = 3;//
+   NetworkNodes[4].FANNOptions.max_neurons = 30 * neuron_count_factor;
+   NetworkNodes[4].FANNOptions.desired_error = 0.00000;
+   NetworkNodes[4].FANNOptions.input_scale = 0.1;
+   NetworkNodes[4].FANNOptions.output_scale = 0.1;
+   NetworkNodes[4].node_data_counter_limit = 1000 * train_size_factor;
+   NetworkNodes[4].Load_Node("pongmainbrain");
+   NetworkNodes[4].Load_Train_Data();
+   NetworkNodes[4].Node->AddFlag(TNodeStates::E_Training);
+   NetworkNodes[4].Node->AddFlag(TNodeStates::E_ContTraining);
+
 
    ////////////////////////////  Load Nodes STOP
 
@@ -1025,6 +1099,8 @@ void TESTFN_AddRandomBody(engine &engine) {
     NetworkNodes[0].Node->IsRunning = false;
     NetworkNodes[1].Node->IsRunning = false;
     NetworkNodes[2].Node->IsRunning = false;
+    NetworkNodes[3].Node->IsRunning = false;
+    NetworkNodes[4].Node->IsRunning = true;
     //direction_x+=0.1;
     //if(direction_x>1.0)direction_x = -1.0;
 
@@ -1095,6 +1171,10 @@ void TESTFN_AddRandomBody(engine &engine) {
              NetworkNodes[3].Train_Node();
              //Train_Node(Select1_Node,&Select1_FANNPong, Select1_Node->ifann.unique_name,&select1_input_data, &select1_output_data);
             }
+            if (!trained[4]) {
+             NetworkNodes[4].Train_Node();
+             //Train_Node(Select1_Node,&Select1_FANNPong, Select1_Node->ifann.unique_name,&select1_input_data, &select1_output_data);
+            }
             //NetworkNodes[3].Save_Train_Data();
             //Setup_Train_Cascade_FANN_Train_Callback(NetworkNodes[3].Node->ifann.ann, &select1_input_data, &select1_output_data);
             //IFFANN::Train_Cascade_FANN(&NetworkNodes[3].Node->ifann, Train_Cascade_FANN_Train_Callback, select1_output_data.size(), 2, false);
@@ -1114,6 +1194,10 @@ void TESTFN_AddRandomBody(engine &engine) {
             }
             if (trained[3]) {
              NetworkNodes[3].Save_Fann();
+             //IFFANN::Save_Cascade_FANN(&NetworkNodes[3].Node->ifann, IFFANN::CnFinalFannPostscript);
+            }
+            if (trained[4]) {
+             NetworkNodes[4].Save_Fann();
              //IFFANN::Save_Cascade_FANN(&NetworkNodes[3].Node->ifann, IFFANN::CnFinalFannPostscript);
             }
            }
@@ -1177,7 +1261,8 @@ void TESTFN_AddRandomBody(engine &engine) {
       if((trained[0] == true)&&
       (trained[1] == true)&&
       (trained[2] == true)&&
-       (trained[3] == true)
+       (trained[3] == true) &&
+       (trained[4] == true)
       ){
        AutoPlayer = false;
        game_body[3]->body->SetLinearVelocity(b2Vec2(0, 0));       
@@ -1535,6 +1620,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           if (pin_value) {
            fann_type val = *pin_value / NetworkNodes[0].Node->ifann.output_scale;
            AI_paddle_desired_position_x = -val;
+           Last_AI_Paddle_Network_Active = 0;
           }
          }else if(NetworkNodes[1].Node->IsRunning && NetworkNodes[1].Node == Network.GetNodeByPinID(ID)){
           NetworkNodes[1].Node->IsRunning = false;         
@@ -1543,6 +1629,7 @@ void TESTFN_AddRandomBody(engine &engine) {
           NetworkNodes[2].Node->IsRunning = false;
           b2Vec2 position = game_body[4]->body->GetPosition();
           AI_paddle_desired_position_x = NetworkNodes[2].Node->outputs[0] / NetworkNodes[2].Node->ifann.output_scale;
+          Last_AI_Paddle_Network_Active = 1;
          }else if (NetworkNodes[3].Node->IsRunning && NetworkNodes[3].Node == Network.GetNodeByPinID(ID)) {
           NetworkNodes[3].Node->IsRunning = false;
 
@@ -1569,12 +1656,15 @@ void TESTFN_AddRandomBody(engine &engine) {
           }
           if(select1_train_trigger){
            select1_train_trigger = false;
-           if(AutoPlayer)
+           if(AutoPlayer){
             AI_paddle_desired_position_x = left * 1.3;
-           else
+           }else{
             AI_paddle_desired_position_x = NetworkNodes[3].Node->outputs[0] / NetworkNodes[3].Node->ifann.output_scale;
+            Last_AI_Paddle_Network_Active = 2;
+           }
           }else{ ////////////////////              DOUBLED LINE
            AI_paddle_desired_position_x = NetworkNodes[3].Node->outputs[0] / NetworkNodes[3].Node->ifann.output_scale;
+           Last_AI_Paddle_Network_Active = 2;
           }
          }
         }else{
