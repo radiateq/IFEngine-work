@@ -331,15 +331,16 @@ void Setup_OpenGL(double width, double height) {
  //glDisable(GL_TEXTURE_2D);
  //glDisable(GL_DITHER);
  glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
- glClearColor(0.10f, 0.43f, 0.28f, 1.0f);
+ glClearColor(0.995f, 0.995f, 0.998f, 1.0f);
  //glDisable(GL_CULL_FACE); //     ORIGINAL VALUE glEnable(GL_CULL_FACE);
  glShadeModel(GL_SMOOTH);
  //glDisable(GL_DEPTH_TEST); //     ORIGINAL VALUE glEnable(GL_DEPTH_TEST);
  glEnable(GL_NORMALIZE);
  glEnable(GL_BLEND);
+ //glDisable(GL_BLEND);
  glEnable(GL_TEXTURE_2D);
  glFrontFace(GL_CCW);
- glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
+ glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA);
 
 
  IFEUtils::zvnear = 0.0;

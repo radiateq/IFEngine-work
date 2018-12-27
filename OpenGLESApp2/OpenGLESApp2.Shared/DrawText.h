@@ -477,6 +477,9 @@ public:
    SetCharSize_px();
   }
 
+  CharMap.Map.clear();
+
+
   GLuint texture = GL_INVALID_VALUE;
   //  _angle=0;
 

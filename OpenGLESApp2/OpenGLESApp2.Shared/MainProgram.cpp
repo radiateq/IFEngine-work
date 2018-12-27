@@ -472,10 +472,10 @@ public:
    NetworkNodes[4].node_new_samples = 1;
   }
 
-  if((BallState.PlayfieldLocation != BallState.LastPlayfieldLocation)&&(BallState.PlayfieldLocation&E_PlayerMiss)){
+  if((BallState.PlayfieldLocation&E_PlayerMiss)&&!(BallState.PlayfieldLocation&E_Repeating)){
    score--;
   }
-  if ((BallState.PlayfieldLocation != BallState.LastPlayfieldLocation) && (BallState.PlayfieldLocation&E_AIMiss)) {
+  if ((BallState.PlayfieldLocation&E_AIMiss)&&!(BallState.PlayfieldLocation&E_Repeating)) {
    score++;
   }
   if(BallState.PlayfieldLocation & E_PlayerMiss ){
@@ -581,23 +581,23 @@ void TESTFN_PostOperations(engine &engine) {
    char outtext[BUFSIZ+1];
    sprintf(outtext,"%i", score);   
    glDeleteTextures(1, &TEST_GUI_Tex_Ary[5]);
-   game_body[5]->OGL_body->texture_ID = TextRender.DrawText(outtext, 128);
+   game_body[5]->OGL_body->texture_ID = TextRender.DrawText(outtext, 256);
    if (true) {
     char print_char = '\0';//null box does not encompass whole text
     SFloatRect *char_rect;
     char_rect = TextRender.CharMap.GetRef(print_char);
     size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
-    game_body[5]->OGL_body->UVmapping[0] = char_rect->xMax / TextRender.expanded_width;
-    game_body[5]->OGL_body->UVmapping[1] = char_rect->yMin / TextRender.expanded_height;
+    game_body[5]->OGL_body->UVmapping[0] = char_rect->xMax / (float)TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[1] = char_rect->yMin / (float)TextRender.expanded_height;
 
-    game_body[5]->OGL_body->UVmapping[2] = char_rect->xMax / TextRender.expanded_width;
-    game_body[5]->OGL_body->UVmapping[3] = char_rect->yMax / TextRender.expanded_height;
+    game_body[5]->OGL_body->UVmapping[2] = char_rect->xMax / (float)TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[3] = char_rect->yMax / (float)TextRender.expanded_height;
 
-    game_body[5]->OGL_body->UVmapping[4] = char_rect->xMin / TextRender.expanded_width;
-    game_body[5]->OGL_body->UVmapping[5] = char_rect->yMax / TextRender.expanded_height;
+    game_body[5]->OGL_body->UVmapping[4] = char_rect->xMin / (float)TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[5] = char_rect->yMax / (float)TextRender.expanded_height;
 
-    game_body[5]->OGL_body->UVmapping[6] = char_rect->xMin / TextRender.expanded_width;
-    game_body[5]->OGL_body->UVmapping[7] = char_rect->yMin / TextRender.expanded_height;
+    game_body[5]->OGL_body->UVmapping[6] = char_rect->xMin / (float)TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[7] = char_rect->yMin / (float)TextRender.expanded_height;
 
    }
 
@@ -689,7 +689,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
    thickness = RQNDKUtils::getDensityDpi(User_Data.state) / 25.4;
-   left = thickness; bottom = thickness; right = engine.width - thickness; top = engine.height - thickness;
+   left = -thickness*0.5; bottom = 0; right = engine.width; top = engine.height;
    Window2ObjectCoordinates(left, bottom, zDefaultLayer, engine.width, engine.height);
    left /= IFA_box2D_factor; bottom /= IFA_box2D_factor;
    Window2ObjectCoordinates(right, top, zDefaultLayer, engine.width, engine.height);
@@ -878,7 +878,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
    polyShape2 = new b2PolygonShape;
-#define  zoom_factor 2.4
+#define  zoom_factor 1.45
    //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
    //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
    //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
@@ -904,12 +904,12 @@ void TESTFN_AddRandomBody(engine &engine) {
    game_body[5] = IFAdapter.OrderedBody();
    if (!IFAdapter.MakeBody())
     return;
-   game_body[5]->body->SetTransform(b2Vec2(-20.0, 0.0), 0.0);
+   game_body[5]->body->SetTransform(b2Vec2(0.0, bottom - zoom_factor * 5), 0.0);
    game_body[5]->OGL_body->z_pos -= 0.1;   
    char outstring[1200];
    strcpy(outstring, "train");
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
-   TEST_GUI_Tex_Ary[5] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("0-0", 128);
+   TEST_GUI_Tex_Ary[5] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("0", 128);
 
 //("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",512);
    // (FT_Pos)(( 0.0 * (( 64.0 * 72.0 ) / (float)RQNDKUtils::getDensityDpi(User_Data.state))) * 64 ),
@@ -1771,9 +1771,9 @@ void Init_IFAdapter(engine &engine) {
 
 
   TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
-  TextRender.SetBackgroundColor(20, 80, 20, 255);
-  TextRender.SetForegroundColor(230, 230, 230, 255);
-  TextRender.SetCharSize_px(40, 40);
+  TextRender.SetBackgroundColor(19, 187, 236, 255);
+  TextRender.SetForegroundColor(255, 128, 0, 120);
+  TextRender.SetCharSize_px(80, 60);
 
   for (unsigned int cnt = 0; cnt < 10; cnt++) {
    TEST_GUI_Tex_Ary[cnt] = GL_INVALID_VALUE;
