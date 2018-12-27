@@ -143,7 +143,7 @@ public:
    Node->ClearFlag(TNodeStates::E_NoData);
    {//Limit train size    
     node_new_samples++;
-    if (node_output_data.size() > node_data_counter_limit) {
+    if ((node_output_data.size()/FANNOptions.output_neurons) > node_data_counter_limit) {
      Node->AddFlag(TNodeStates::E_FullData);
      node_input_data.erase(node_input_data.begin(), node_input_data.begin() + node_input_data.size() - node_data_counter_limit * FANNOptions.input_neurons);
      node_output_data.erase(node_output_data.begin(), node_output_data.begin() + node_output_data.size() - node_data_counter_limit * FANNOptions.output_neurons);
@@ -862,7 +862,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    game_body[5] = IFAdapter.OrderedBody();
    if (!IFAdapter.MakeBody())
     return;
-   game_body[5]->body->SetTransform(b2Vec2(-0.0, 0.0), 0.0);
+   game_body[5]->body->SetTransform(b2Vec2(-20.0, 0.0), 0.0);
    game_body[5]->OGL_body->z_pos -= 0.1;   
    char outstring[1200];
    strcpy(outstring, "train");
@@ -1230,14 +1230,14 @@ void TESTFN_AddRandomBody(engine &engine) {
     {/////////////////////////////////////  TRAINIG START
 
       //Train network
-     for (unsigned int cnt = 0; cnt < 4; cnt++) {
-      if (!trained[cnt]) {
+     for (unsigned int cnt = 0; cnt < 5; cnt++) {
+      //if (!trained[cnt]) {
        if (NetworkNodes[cnt].Node->GetFlag(TNodeStates::E_ContTraining)) {
         trained[cnt] = NetworkNodes[cnt].Epoch_Train();
-       }
-       else {
+       //}
+       //else {
         //trained[cnt] = NetworkNodes[cnt].Train_Node();
-       }
+      // }
       }
      }
 
