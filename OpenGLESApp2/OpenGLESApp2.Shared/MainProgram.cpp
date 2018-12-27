@@ -46,7 +46,8 @@ ifCB2Body *buttons_body[10];
 unsigned long int Last_GUI_Click_Time;
 bool AutoPlayer = false;
 char char_buffer[BUFSIZ];
-ifCB2Body *game_body[10];
+unsigned int const Cn_Max_Bodies = 10;
+ifCB2Body *game_body[Cn_Max_Bodies];
 bool DEMO4_initialized = false;
 float thickness;
 float left, bottom, right, top;
@@ -63,7 +64,7 @@ typedef std::vector<fann_type> TFannVector;
 bool select1_train_trigger = false;
 float ball_to_pad_prev_distance = FLT_MAX;
 //NODE 5 -------  STOP
-
+int score = 0;
 //unsigned int BounceBrainTrainSizeLimit = 30, PaddleBrainsTrainSizeLimit = 2000;
 //unsigned int Node2_1_train_size_limit = 60;
 bool trained[5] = { 0 }; 
@@ -76,6 +77,7 @@ fann_type AI_paddle_desired_position_x = 0.0;
 //unsigned int Node2_1_train_size_limit = 500, select2_data_counter_limit = 500;
 //unsigned int select1_data_counter_limit = 1000;
 //unsigned int select1_data_counter_limit = 1500;
+CIFTextRender TextRender;
 
 
 
@@ -339,6 +341,7 @@ public:
   EBallStates NewContactObjects = E_Start;//After ball is not in contact with body any more its flag is set in this variable and cleared in ContactObjects, objects must be present in ContactObjects as well
   EBallStates BrokenContactObjects = E_Start;//After ball is not in contact with body any more its flag is set in this variable and cleared in ContactObjects, objects must be present in ContactObjects as well
   EBallStates PlayfieldLocation = E_Start;
+  EBallStates LastPlayfieldLocation = E_Start;
  };
 public:
  SBallStates BallState;
@@ -403,6 +406,7 @@ public:
     CurrentBallState.ContactState = E_NoContact;
    }
    //CONTACTS STOP
+   CurrentBallState.LastPlayfieldLocation = BallState.PlayfieldLocation;
    //Position on playfield START
    if (ballposition.y > game_body[4]->body->GetPosition().y) {
     CurrentBallState.PlayfieldLocation = E_AIMiss;
@@ -418,6 +422,7 @@ public:
   }
   else {
    //Position on playfield START
+   BallState.LastPlayfieldLocation = BallState.PlayfieldLocation;
    if (ballposition.y < game_body[3]->body->GetPosition().y) {
     CurrentBallState.PlayfieldLocation = E_PlayerMiss;
    }
@@ -426,7 +431,7 @@ public:
    }
    if (CurrentBallState.PlayfieldLocation == (BallState.PlayfieldLocation&~E_Repeating)) {
     CurrentBallState.PlayfieldLocation = (EBallStates)(CurrentBallState.PlayfieldLocation | E_Repeating);
-   }
+   }   
    //Position on playfield STOP
    BallState.TravelDirection = CurrentBallState.TravelDirection;
    BallState.PlayfieldLocation = CurrentBallState.PlayfieldLocation;
@@ -467,6 +472,12 @@ public:
    NetworkNodes[4].node_new_samples = 1;
   }
 
+  if((BallState.PlayfieldLocation != BallState.LastPlayfieldLocation)&&(BallState.PlayfieldLocation&E_PlayerMiss)){
+   score--;
+  }
+  if ((BallState.PlayfieldLocation != BallState.LastPlayfieldLocation) && (BallState.PlayfieldLocation&E_AIMiss)) {
+   score++;
+  }
   if(BallState.PlayfieldLocation & E_PlayerMiss ){
    if(NetworkNodes[4].node_new_samples == 1){
     NetworkNodes[4].node_new_samples = 0;
@@ -561,6 +572,37 @@ void DisonnectNetwork01() {
 }
 void TESTFN_PostOperations(engine &engine) {
  if (engine.EGL_initialized) {
+  if(DEMO4_initialized){   
+
+   static int prev_score = 0;
+   if(score == prev_score )
+    return;
+   prev_score = score;
+   char outtext[BUFSIZ+1];
+   sprintf(outtext,"%i", score);   
+   glDeleteTextures(1, &TEST_GUI_Tex_Ary[5]);
+   game_body[5]->OGL_body->texture_ID = TextRender.DrawText(outtext, 128);
+   if (true) {
+    char print_char = '\0';//null box does not encompass whole text
+    SFloatRect *char_rect;
+    char_rect = TextRender.CharMap.GetRef(print_char);
+    size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
+    game_body[5]->OGL_body->UVmapping[0] = char_rect->xMax / TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[1] = char_rect->yMin / TextRender.expanded_height;
+
+    game_body[5]->OGL_body->UVmapping[2] = char_rect->xMax / TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[3] = char_rect->yMax / TextRender.expanded_height;
+
+    game_body[5]->OGL_body->UVmapping[4] = char_rect->xMin / TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[5] = char_rect->yMax / TextRender.expanded_height;
+
+    game_body[5]->OGL_body->UVmapping[6] = char_rect->xMin / TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[7] = char_rect->yMin / TextRender.expanded_height;
+
+   }
+
+  }
+
   //DEMO 3 - USER INTERFACE - START
   if (!BODY_DEMO_initialized) {
   }
@@ -583,7 +625,7 @@ void TESTFN_PostOperations(engine &engine) {
      texture_index = 1;
     }
 
-    glDeleteTextures(0, &TEST_GUI_Tex_Ary[texture_index]);
+    glDeleteTextures(1, &TEST_GUI_Tex_Ary[texture_index]);
     char outstring[120];
     strcpy(outstring, "touched");
 
@@ -696,7 +738,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    if (!IFAdapter.MakeBody())
     return;
    game_body[0]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
-   game_body[0]->OGL_body->texture_ID = User_Data.CubeTexture;
+   game_body[0]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[0] = User_Data.CubeTexture;
    game_body[0]->OGL_body->line_thickness = thickness;
 
 
@@ -717,7 +759,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    if (!IFAdapter.MakeBody())
     return;
    game_body[1]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
-   game_body[1]->OGL_body->texture_ID = User_Data.CubeTexture;
+   game_body[1]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[1] = User_Data.CubeTexture;
    game_body[1]->OGL_body->line_thickness = thickness;
 
 
@@ -746,7 +788,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    game_body[2] = IFAdapter.OrderedBody();
    if (!IFAdapter.MakeBody())
     return;
-   game_body[2]->OGL_body->texture_ID = User_Data.Textures[2];
+   game_body[2]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[2] = User_Data.Textures[2];
 
 
 
@@ -790,7 +832,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    if (!IFAdapter.MakeBody())
     return;
    game_body[3]->body->SetTransform(b2Vec2(0.0, -bottom * 0.6), 0.0);
-   game_body[3]->OGL_body->texture_ID = User_Data.CubeTexture;
+   game_body[3]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[3] = User_Data.CubeTexture;
    game_body[3]->body->SetFixedRotation(true);
 
 
@@ -826,7 +868,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    if (!IFAdapter.MakeBody())
     return;
    game_body[4]->body->SetTransform(b2Vec2(0.0, bottom * 0.6), 0.0);
-   game_body[4]->OGL_body->texture_ID = User_Data.CubeTexture;
+   game_body[4]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[4] = User_Data.CubeTexture;
 
 
 
@@ -867,22 +909,16 @@ void TESTFN_AddRandomBody(engine &engine) {
    char outstring[1200];
    strcpy(outstring, "train");
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector()={160*64,40*64}, 3.141593*0.50, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
-   CIFTextRender TextRender;
-   TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
-   TextRender.SetBackgroundColor(20, 80, 20, 255);
-   TextRender.SetForegroundColor(230, 230, 230, 255);
-   TextRender.SetCharSize_px(40, 40);
-   TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",512);
+   TEST_GUI_Tex_Ary[5] = game_body[5]->OGL_body->texture_ID = TextRender.DrawText("0-0", 128);
+
+//("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",512);
    // (FT_Pos)(( 0.0 * (( 64.0 * 72.0 ) / (float)RQNDKUtils::getDensityDpi(User_Data.state))) * 64 ),
    // (FT_Pos)(( 1.0 * (( 64.0 * 72.0 ) / (float)RQNDKUtils::getDensityDpi(User_Data.state) ) ) * 64 )
    // },
    //128);
    //TEST_GUI_Tex_Ary[0] = game_body[5]->OGL_body->texture_ID = DrawText(outstring, 15, FT_Vector() = { 160 * 64,40 * 64 }, 0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
    //TEST_textid = first_body->OGL_body->texture_ID = DrawText(outstring, 5, FT_Vector() = { 40 * 64,60 * 64 }, 3.141593*0.0, &TEST_text_ub, &TEST_text_vb, &TEST_text_ut, &TEST_text_vt);
-
-
-
-
+   //////////////////////////////////////////////////////////////////////////////////////
    //{
    // char print_char = 'a';
    // SFloatRect *char_rect;
@@ -920,8 +956,28 @@ void TESTFN_AddRandomBody(engine &engine) {
    }
 
 
+   //
 
-
+   ////Left Wall
+   //IFAdapter.OrderBody();
+   //IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+   //edgeShape = new b2EdgeShape;
+   //edgeShape->Set(b2Vec2(left, bottom), b2Vec2(left, top));
+   //fixture = new b2FixtureDef;
+   //fixture->shape = edgeShape;
+   //fixture->density = 1.0;
+   //fixture->density = 1.0;
+   //fixture->friction = 0.0;
+   //fixture->restitution = 1.000;
+   ////fixture->filter.categoryBits = 0x0008;
+   ////fixture->filter.maskBits = 0x0010;
+   //IFAdapter.OrderedBody()->AddShapeAndFixture(edgeShape, fixture);
+   //game_body[0] = IFAdapter.OrderedBody();
+   //if (!IFAdapter.MakeBody())
+   // return;
+   //game_body[0]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
+   //game_body[0]->OGL_body->texture_ID = User_Data.CubeTexture;
+   //game_body[0]->OGL_body->line_thickness = thickness;
 
 
 
@@ -1134,7 +1190,9 @@ void TESTFN_AddRandomBody(engine &engine) {
        float screeny = touchy;
        Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height);
        //game_body[3]->body->SetTransform(b2Vec2(screenx / IFA_box2D_factor, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
-       game_body[3]->body->SetLinearVelocity(b2Vec2(((screenx)/ IFA_box2D_factor- game_body[3]->body->GetPosition().x) * sqrt(game_body[2]->body->GetLinearVelocity().y*game_body[2]->body->GetLinearVelocity().y + game_body[2]->body->GetLinearVelocity().x*game_body[2]->body->GetLinearVelocity().x) , 0.0));
+       float desired_x = (screenx * 1.457) / IFA_box2D_factor - game_body[3]->body->GetPosition().x;
+       game_body[3]->body->SetLinearVelocity(
+        b2Vec2((-log(1/abs(desired_x+1.0)/log(3))*desired_x) * sqrt(game_body[2]->body->GetLinearVelocity().y*game_body[2]->body->GetLinearVelocity().y + game_body[2]->body->GetLinearVelocity().x*game_body[2]->body->GetLinearVelocity().x) , 0.0));
        
        //Player may press train button but not more often than once per second       
        if ((input_event_time_stamp - Last_GUI_Click_Time) > 1000000000) {
@@ -1481,7 +1539,12 @@ void TESTFN_AddRandomBody(engine &engine) {
        if(AI_paddle_desired_position_x != AI_paddle_desired_position_x)
         AI_paddle_desired_position_x = right * 2.0;
        b2Vec2 position = game_body[4]->body->GetPosition();
-       game_body[4]->body->SetLinearVelocity(b2Vec2((AI_paddle_desired_position_x - game_body[4]->body->GetPosition().x)*sqrt(game_body[2]->body->GetPosition().x*game_body[2]->body->GetPosition().x + game_body[2]->body->GetPosition().y*game_body[2]->body->GetPosition().y+1.0)*1.8, 0.0));//+2.0 is to make sure result is larger than 1
+       float ball_pad_distance = AI_paddle_desired_position_x - game_body[4]->body->GetPosition().x;
+       game_body[4]->body->SetLinearVelocity(
+        b2Vec2( -(log( 1.0 / (abs(ball_pad_distance) + 1.0))/log(3) ) * ball_pad_distance *
+        sqrt(
+         game_body[2]->body->GetPosition().x*game_body[2]->body->GetPosition().x + game_body[2]->body->GetPosition ().y*game_body[2]->body->GetPosition().y+1.0)*1.0, 
+       0.0));//+2.0 is to make sure result is larger than 1
        if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
        if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
 
@@ -1706,6 +1769,16 @@ void Init_IFAdapter(engine &engine) {
   FANN_TEST_initialized = false;
   anns_body = anns_learned_body = NULL;
 
+
+  TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
+  TextRender.SetBackgroundColor(20, 80, 20, 255);
+  TextRender.SetForegroundColor(230, 230, 230, 255);
+  TextRender.SetCharSize_px(40, 40);
+
+  for (unsigned int cnt = 0; cnt < 10; cnt++) {
+   TEST_GUI_Tex_Ary[cnt] = GL_INVALID_VALUE;
+  }
+
   return;
  }
 }
@@ -1723,7 +1796,10 @@ void TEST_Cleanup(){
  last_touched_object = NULL;
  DEMO4_initialized = false;
 
-
+ glDeleteTextures(10, TEST_GUI_Tex_Ary);
+ for( unsigned int cnt = 0; cnt < 10; cnt++){
+  TEST_GUI_Tex_Ary[cnt] = GL_INVALID_VALUE;
+ }
 }
 
 
