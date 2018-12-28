@@ -6,6 +6,8 @@
 
 
 
+
+
 class CPongBallStateMachine;
 class CNetworkNode;
 
@@ -1253,7 +1255,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        float screeny = touchy;
        Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, engine.width, engine.height);
        //game_body[3]->body->SetTransform(b2Vec2(screenx / IFA_box2D_factor, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
-       float desired_x = (screenx * 1.457) / IFA_box2D_factor - game_body[3]->body->GetPosition().x;
+       float desired_x = (screenx) / IFA_box2D_factor - game_body[3]->body->GetPosition().x;
        game_body[3]->body->SetLinearVelocity(
         b2Vec2(desired_x*desired_x*desired_x, 0.0));
        //Player may press train button but not more often than once per second       
