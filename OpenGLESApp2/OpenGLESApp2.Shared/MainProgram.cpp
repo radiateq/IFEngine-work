@@ -65,6 +65,7 @@ bool select1_train_trigger = false;
 float ball_to_pad_prev_distance = FLT_MAX;
 //NODE 5 -------  STOP
 int score = 0;
+int prev_score = -10000;
 //unsigned int BounceBrainTrainSizeLimit = 30, PaddleBrainsTrainSizeLimit = 2000;
 //unsigned int Node2_1_train_size_limit = 60;
 bool trained[5] = { 0 }; 
@@ -478,7 +479,7 @@ public:
   if ((BallState.PlayfieldLocation&E_AIMiss)&&!(BallState.PlayfieldLocation&E_Repeating)) {
    score++;
   }
-  if(BallState.PlayfieldLocation & E_PlayerMiss ){
+  if ((BallState.PlayfieldLocation&E_PlayerMiss) && !(BallState.PlayfieldLocation&E_Repeating)) {
    if(NetworkNodes[4].node_new_samples == 1){
     NetworkNodes[4].node_new_samples = 0;
     for(unsigned int cnt = 0; cnt < NetworkNodes[4].Node->ifann.ann->num_input; cnt++){
@@ -500,15 +501,16 @@ public:
    select1_train_trigger = true;
   }
 
-  if (BallState.NewContactObjects & E_ContactWall) {//Hitting the wall
+  if ((BallState.NewContactObjects & E_ContactWall) && (BallState.TravelDirection&E_TravelUp)) {//Hitting the wall
    NetworkNodes[2].Node->inputs[0] = NetworkNodes[1].Node->inputs[0] = (ballposition.x) * NetworkNodes[1].Node->ifann.input_scale;
    NetworkNodes[2].Node->inputs[1] = NetworkNodes[1].Node->inputs[1] = (ballposition.y) * NetworkNodes[1].Node->ifann.input_scale;
    NetworkNodes[2].Node->inputs[2] = NetworkNodes[1].Node->inputs[2] = atan2(balllinvel.y, balllinvel.x) * NetworkNodes[1].Node->ifann.input_scale;
    //select1_train_trigger = false;
   }
   
-  if (BallState.BrokenContactObjects & E_ContactWall) {//Leaving the wall
+  if ((BallState.BrokenContactObjects & E_ContactWall)&&(BallState.TravelDirection&E_TravelUp)) {//Leaving the wall
    //if (b2Distance(ballposition, b2Vec2(NetworkNodes[1].Node->inputs[0], NetworkNodes[1].Node->inputs[1])) > ((right - left)*0.2)) {
+    NetworkNodes[1].node_new_samples++;
     NetworkNodes[2].Node->inputs[3] = NetworkNodes[1].Node->inputs[3] = (ballposition.x) * NetworkNodes[1].Node->ifann.input_scale;
     NetworkNodes[2].Node->inputs[4] = NetworkNodes[1].Node->inputs[4] = (ballposition.y) * NetworkNodes[1].Node->ifann.input_scale;
     NetworkNodes[2].Node->inputs[5] = NetworkNodes[1].Node->inputs[5] = atan2(balllinvel.y, balllinvel.x) * NetworkNodes[1].Node->ifann.input_scale;
@@ -524,7 +526,12 @@ public:
    //}
   }
 
-  if ((BallState.NewContactObjects & E_ContactAI) || (BallState.PlayfieldLocation == E_AIMiss)) {//The moment ball hits or passes AI Pad
+  if (NetworkNodes[1].node_new_samples
+      &&
+     (BallState.NewContactObjects & E_ContactAI)&&!(BallState.PlayfieldLocation & E_AIMiss)
+     ||
+   (((BallState.PlayfieldLocation & E_AIMiss) && !(BallState.PlayfieldLocation&E_Repeating)))
+   ) {//The moment ball hits or passes AI Pad
    //NetworkNodes[1].node_input_data.push_back(NetworkNodes[1].Node->inputs[0]);
    //NetworkNodes[1].node_input_data.push_back(NetworkNodes[1].Node->inputs[1]);
    //NetworkNodes[1].node_input_data.push_back(NetworkNodes[1].Node->inputs[2]);
@@ -533,6 +540,8 @@ public:
    //NetworkNodes[1].node_input_data.push_back(NetworkNodes[1].Node->inputs[5]);
    //NetworkNodes[1].node_output_data.push_back(((ballposition.x))*NetworkNodes[1].Node->ifann.output_scale);
    //NetworkNodes[1].NumTrainData() = NetworkNodes[1].node_output_data.size();
+   
+   
 
    fann_type outputs[1];
    outputs[0] = (((ballposition.x))*NetworkNodes[1].Node->ifann.output_scale);
@@ -541,7 +550,8 @@ public:
    //outputs[0] = ((ballposition.x)*NetworkNodes[1].Node->ifann.output_scale);
    //NetworkNodes[1].Node->outputs = IFFANNEngine::Run_Cascade_FANN(&NetworkNodes[1].Node->ifann, NetworkNodes[1].Node->inputs);
    NetworkNodes[2].Add_Data( NetworkNodes[2].Node->inputs, outputs);
-          
+   
+   NetworkNodes[1].node_new_samples = 0;
   }
 
  }
@@ -574,12 +584,26 @@ void TESTFN_PostOperations(engine &engine) {
  if (engine.EGL_initialized) {
   if(DEMO4_initialized){   
 
-   static int prev_score = 0;
+   
    if(score == prev_score )
     return;
    prev_score = score;
    char outtext[BUFSIZ+1];
-   sprintf(outtext,"%i", score);   
+   if((score<10)&&(score >= 0)){
+    sprintf(outtext," %i ", score);   
+   }else{
+    sprintf(outtext, "%i", abs(score));
+   }
+   if(score==0){
+    TextRender.SetForegroundColor(10, 250, 10, 255);
+   }else if(score>0){
+    TextRender.SetForegroundColor(250, 150 + ((abs(score) < 11) ? (score * 10) : 100), 10, 255);
+   }else{
+    TextRender.SetForegroundColor(250, 10, 10, 255);
+   }
+   //TextRender.SetForegroundColor(250, 250, 10, 255);
+
+
    glDeleteTextures(1, &TEST_GUI_Tex_Ary[5]);
    game_body[5]->OGL_body->texture_ID = TextRender.DrawText(outtext, 256);
    if (true) {
@@ -587,14 +611,14 @@ void TESTFN_PostOperations(engine &engine) {
     SFloatRect *char_rect;
     char_rect = TextRender.CharMap.GetRef(print_char);
     size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
-    game_body[5]->OGL_body->UVmapping[0] = char_rect->xMax / (float)TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[0] = char_rect->xMax*1.1 / (float)TextRender.expanded_width;
     game_body[5]->OGL_body->UVmapping[1] = char_rect->yMin / (float)TextRender.expanded_height;
 
-    game_body[5]->OGL_body->UVmapping[2] = char_rect->xMax / (float)TextRender.expanded_width;
+    game_body[5]->OGL_body->UVmapping[2] = char_rect->xMax*1.1 / (float)TextRender.expanded_width;
     game_body[5]->OGL_body->UVmapping[3] = char_rect->yMax / (float)TextRender.expanded_height;
 
     game_body[5]->OGL_body->UVmapping[4] = char_rect->xMin / (float)TextRender.expanded_width;
-    game_body[5]->OGL_body->UVmapping[5] = char_rect->yMax / (float)TextRender.expanded_height;
+    game_body[5]->OGL_body->UVmapping[5] = char_rect->yMax*1.1 / (float)TextRender.expanded_height;
 
     game_body[5]->OGL_body->UVmapping[6] = char_rect->xMin / (float)TextRender.expanded_width;
     game_body[5]->OGL_body->UVmapping[7] = char_rect->yMin / (float)TextRender.expanded_height;
@@ -631,7 +655,8 @@ void TESTFN_PostOperations(engine &engine) {
 
 
     CIFTextRender TextRender;
-    TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
+  //  TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
+    TextRender.InitTextRender("RobotoMono-Regular.ttf", User_Data.state);
     TextRender.SetBackgroundColor(20, 80, 20, 255);
     TextRender.SetForegroundColor(230, 230, 230, 255);
     TextRender.SetCharSize_px(60, 30);
@@ -875,6 +900,40 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
    //GUI Train button
+   //Button Background
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+   polyShape2 = new b2PolygonShape;
+#define  zoom_factor 2.0
+   //shapeCoords[0] = { zoom_factor *-5.0, zoom_factor * 0.0 };
+   //shapeCoords[1] = { zoom_factor *-3, zoom_factor *  -2 };
+   //shapeCoords[2] = { zoom_factor * 0,zoom_factor *-3};
+   //shapeCoords[3] = { zoom_factor * 3,zoom_factor *-2};
+   //shapeCoords[4] = { zoom_factor * 5,zoom_factor * 0};
+   //shapeCoords[5] = { zoom_factor * 2,zoom_factor * 2};
+   //shapeCoords[6] = { zoom_factor * 0,zoom_factor * 3 };
+   //shapeCoords[7] = { zoom_factor *-2, zoom_factor * 2 };
+   shapeCoords[0] = { zoom_factor *-5, zoom_factor *-2.5 };
+   shapeCoords[1] = { zoom_factor * 5, zoom_factor * -2.5 };
+   shapeCoords[2] = { zoom_factor * 5, zoom_factor * 2.5 };
+   shapeCoords[3] = { zoom_factor *-5, zoom_factor * 2.5 };
+#undef zoom_factor
+   polyShape2->Set(shapeCoords, 4);
+   fixture = new b2FixtureDef;
+   fixture->shape = polyShape2;
+   fixture->density = 1.1;
+   fixture->friction = 0.3;
+   fixture->restitution = 0.001;
+   fixture->filter.categoryBits = 0x0008;
+   fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+   game_body[6] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   game_body[6]->body->SetTransform(b2Vec2(0.0, bottom - zoom_factor * 5), 0.0);
+   game_body[6]->OGL_body->z_pos -= 0.1;
+   TEST_GUI_Tex_Ary[6] = game_body[6]->OGL_body->texture_ID = TextRender.DrawText(" ", 128);
+   //////////////////////BUTTON
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_staticBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
    polyShape2 = new b2PolygonShape;
@@ -956,6 +1015,7 @@ void TESTFN_AddRandomBody(engine &engine) {
    }
 
 
+
    //
 
    ////Left Wall
@@ -980,6 +1040,9 @@ void TESTFN_AddRandomBody(engine &engine) {
    //game_body[0]->OGL_body->line_thickness = thickness;
 
 
+
+   //Reduce image to occupy only part of the scren
+   IFAdapter.CalculateBox2DSizeFactor(25);
 
    ///////////////////////////////////////////////////////////////////////    LOAD GRAPHICS STOP
 
@@ -1009,11 +1072,11 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
 
-  static float train_size_factor = 1;
-  static float neuron_count_factor = 1.0;
+  static float train_size_factor = 0.3;
+  static float neuron_count_factor = 0.6;
       ////////////////////////////  Load Nodes START
    NetworkNodes[0].FANNOptions.input_neurons = 3;
-   NetworkNodes[0].FANNOptions.max_neurons = 5 * neuron_count_factor;
+   NetworkNodes[0].FANNOptions.max_neurons = 10 * neuron_count_factor;
    NetworkNodes[0].FANNOptions.desired_error = 0.000;
    NetworkNodes[0].FANNOptions.input_scale = 0.1;
    NetworkNodes[0].FANNOptions.output_scale = 0.1;
@@ -1025,22 +1088,22 @@ void TESTFN_AddRandomBody(engine &engine) {
 
 
    NetworkNodes[1].FANNOptions.input_neurons = 6;//x, y, linear atan2 - paddle bounce off, x, y of impact, atan2 on impact
-   NetworkNodes[1].FANNOptions.max_neurons = 25 * neuron_count_factor;
+   NetworkNodes[1].FANNOptions.max_neurons = 30 * neuron_count_factor;
    NetworkNodes[1].FANNOptions.desired_error = 0.000;
    NetworkNodes[1].FANNOptions.input_scale = 0.1;
    NetworkNodes[1].FANNOptions.output_scale = 0.1;
-   NetworkNodes[1].node_data_counter_limit = 50*train_size_factor;
+   NetworkNodes[1].node_data_counter_limit = 250*train_size_factor;
    NetworkNodes[1].Load_Node("pongpaddlebounce", false);
    NetworkNodes[1].Load_Train_Data();
    NetworkNodes[1].Node->AddFlag(TNodeStates::E_Training);
    NetworkNodes[1].Node->AddFlag(TNodeStates::E_ContTraining);
 
    NetworkNodes[2].FANNOptions.input_neurons = 7;//
-   NetworkNodes[2].FANNOptions.max_neurons = 25 * neuron_count_factor;
+   NetworkNodes[2].FANNOptions.max_neurons = 30 * neuron_count_factor;
    NetworkNodes[2].FANNOptions.desired_error = 0.000;
    NetworkNodes[2].FANNOptions.input_scale = NetworkNodes[1].FANNOptions.input_scale;
    NetworkNodes[2].FANNOptions.output_scale = NetworkNodes[1].FANNOptions.output_scale;
-   NetworkNodes[2].node_data_counter_limit = 50*train_size_factor;
+   NetworkNodes[2].node_data_counter_limit = 250*train_size_factor;
    NetworkNodes[2].Load_Node("pongpaddlebouncetune");
    NetworkNodes[2].Load_Train_Data();
    NetworkNodes[2].Node->AddFlag(TNodeStates::E_Training);
@@ -1048,7 +1111,7 @@ void TESTFN_AddRandomBody(engine &engine) {
 
    //Inputs x start, arctan2(speed vec y, ), magnitude(speedvec), ball end x, input 1, input 2, input 3
    NetworkNodes[3].FANNOptions.input_neurons = 7;//
-   NetworkNodes[3].FANNOptions.max_neurons = 30 * neuron_count_factor;
+   NetworkNodes[3].FANNOptions.max_neurons = 40 * neuron_count_factor;
    NetworkNodes[3].FANNOptions.desired_error = 0.00000;
    NetworkNodes[3].FANNOptions.input_scale = 0.1;
    NetworkNodes[3].FANNOptions.output_scale = 0.1;
@@ -1094,8 +1157,8 @@ void TESTFN_AddRandomBody(engine &engine) {
 
    //Launch the ball
    //float launch_y = (drand48()) * 500.0 - 250.0;
-   float launch_y = -(drand48()) * 250.0;
-   game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*1000.0-500.0, launch_y), game_body[2]->body->GetPosition(), true);
+   float launch_y = (drand48()) * 150.0+100;
+   game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*500.0-500.0, launch_y), game_body[2]->body->GetPosition(), true);
 
 
 //   trained[0] = trained[1] = trained[2] = trained[3] =true;
@@ -1150,8 +1213,8 @@ void TESTFN_AddRandomBody(engine &engine) {
     //static float direction_x = -1.0;
     //game_body[2]->body->ApplyLinearImpulse((b2Vec2((drand48()*2.0-1.0)* 550.0, (drand48() * -1.0) * 300.0)), game_body[2]->body->GetPosition(), true);
     //float launch_y = drand48()*1000.0 - 500.0;
-    float launch_y = -(drand48()) * 250.0;
-    game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*1000.0-500.0, launch_y), game_body[2]->body->GetPosition(), true);
+    float launch_y = (drand48()) * 150.0 + 100;
+    game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*500.0 - 500.0, launch_y), game_body[2]->body->GetPosition(), true);
     NetworkNodes[0].Node->IsRunning = false;
     NetworkNodes[1].Node->IsRunning = false;
     NetworkNodes[2].Node->IsRunning = false;
@@ -1192,8 +1255,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        //game_body[3]->body->SetTransform(b2Vec2(screenx / IFA_box2D_factor, game_body[3]->body->GetPosition().y), game_body[3]->body->GetAngle());
        float desired_x = (screenx * 1.457) / IFA_box2D_factor - game_body[3]->body->GetPosition().x;
        game_body[3]->body->SetLinearVelocity(
-        b2Vec2((-log(1/abs(desired_x+1.0)/log(3))*desired_x) * sqrt(game_body[2]->body->GetLinearVelocity().y*game_body[2]->body->GetLinearVelocity().y + game_body[2]->body->GetLinearVelocity().x*game_body[2]->body->GetLinearVelocity().x) , 0.0));
-       
+        b2Vec2(desired_x*desired_x*desired_x, 0.0));
        //Player may press train button but not more often than once per second       
        if ((input_event_time_stamp - Last_GUI_Click_Time) > 1000000000) {
         Last_GUI_Click_Time = input_event_time_stamp;
@@ -1541,10 +1603,7 @@ void TESTFN_AddRandomBody(engine &engine) {
        b2Vec2 position = game_body[4]->body->GetPosition();
        float ball_pad_distance = AI_paddle_desired_position_x - game_body[4]->body->GetPosition().x;
        game_body[4]->body->SetLinearVelocity(
-        b2Vec2( -(log( 1.0 / (abs(ball_pad_distance) + 1.0))/log(3) ) * ball_pad_distance *
-        sqrt(
-         game_body[2]->body->GetPosition().x*game_body[2]->body->GetPosition().x + game_body[2]->body->GetPosition ().y*game_body[2]->body->GetPosition().y+1.0)*1.0, 
-       0.0));//+2.0 is to make sure result is larger than 1
+        b2Vec2(ball_pad_distance*ball_pad_distance*ball_pad_distance, 0.0));//+2.0 is to make sure result is larger than 1
        if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
        if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
 
@@ -1758,7 +1817,7 @@ void Init_IFAdapter(engine &engine) {
   //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
   IFAdapter.screenResolutionX = engine.width;
   IFAdapter.screenResolutionY = engine.height;
-  IFAdapter.CalculateBox2DSizeFactor(40);
+  IFAdapter.CalculateBox2DSizeFactor(30);
 
   int twidth, theight;
   GLuint texint;
@@ -1769,15 +1828,20 @@ void Init_IFAdapter(engine &engine) {
   FANN_TEST_initialized = false;
   anns_body = anns_learned_body = NULL;
 
-
-  TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
+  //TextRender.InitTextRender("Roboto-Thin.ttf", User_Data.state);
+  TextRender.InitTextRender("RobotoMono-Regular.ttf", User_Data.state);
   TextRender.SetBackgroundColor(19, 187, 236, 255);
   TextRender.SetForegroundColor(255, 128, 0, 120);
-  TextRender.SetCharSize_px(80, 60);
+  TextRender.SetCharSize_px(50, 80);
+
+  prev_score = -10000;
 
   for (unsigned int cnt = 0; cnt < 10; cnt++) {
    TEST_GUI_Tex_Ary[cnt] = GL_INVALID_VALUE;
   }
+
+  prev_score = -10000;
+
 
   return;
  }

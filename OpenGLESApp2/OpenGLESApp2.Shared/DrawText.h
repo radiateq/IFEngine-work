@@ -540,7 +540,7 @@ public:
 
   //FOR LOOP FOR LINES
   FT_Vector pen;
-  pen.y = expanded_height;
+  pen.y = expanded_height+1;
   for( size_t line_cnt = 1; line_cnt < text_new_line_pos.size(); line_cnt++){
    pen.x = 0;
    pen.y -= LineHeigth[line_cnt-1];
