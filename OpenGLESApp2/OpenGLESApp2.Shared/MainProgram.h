@@ -47,22 +47,24 @@ struct engine {
 };
 
 
+extern ifCB2Adapter IFAdapter;
+extern ifCB2BodyUtils B2BodyUtils;
 
-struct SFANNPong {
- int max_neurons = 30, neurons_between_reports = 0, input_neurons = 4, output_neurons = 1;
- float desired_error = 0.05, input_scale = 0.1, output_scale = 10.00;
+
+
+
+
+class CIFLevel {
+public:
+ static int current_level;
+ engine *game_engine = NULL;
+ virtual void Init_IFAdapter() = 0;
+ virtual void AdvanceGame() = 0;
+ virtual void PostOperations() = 0;
+ virtual void Cleanup() = 0;
 };
 
-
-void Init_IFAdapter(engine &engine);
-//void Train_Cascade_FANN_Forces_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output);
-//void Train_Cascade_FANN_PaddleBrains_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output);
-void TESTFN_PostOperations(engine &engine);
-void TESTFN_AddRandomBody(engine &engine);
-void TEST_Cleanup();
-
-
-
+extern CIFLevel *IFLevel[10];
 
 
 

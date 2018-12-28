@@ -31,6 +31,14 @@
 
 
 #include <MainProgram.h>
+#include <Level01.h>
+
+
+
+ifCB2Adapter IFAdapter;
+ifCB2BodyUtils B2BodyUtils(&IFAdapter);
+
+
 
 extern TS_User_Data User_Data;
 extern ifCB2Adapter IFAdapter;
@@ -132,7 +140,8 @@ static int engine_init_display(struct engine* engine) {
  //CubeTest_setupGL(w, h);
  Setup_OpenGL(w, h);
 
- Init_IFAdapter(*engine);
+ IFLevel[CIFLevel::current_level]->game_engine = engine;
+ IFLevel[CIFLevel::current_level]->Init_IFAdapter();
 
  IFAudioSLES::BuildAudioEngine(User_Data.state->activity);
 
@@ -167,19 +176,19 @@ static void engine_draw_frame(struct engine* engine) {
   clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
   unsigned long int start_time = RQNDKUtils::timespec2us64(&temp_timespec), end_time = start_time + 14667;
   while(end_time > start_time) {
-   TESTFN_AddRandomBody(*engine);
+   IFLevel[CIFLevel::current_level]->AdvanceGame();
    IFAdapter.UpdateSimFF();
    IFAdapter.UpdateGraphics();
-   TESTFN_PostOperations(*engine);
+   IFLevel[CIFLevel::current_level]->PostOperations();
    clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
    start_time = RQNDKUtils::timespec2us64(&temp_timespec);
   }
   /////////////////////////////////////NC01STOP
  }else{
-  TESTFN_AddRandomBody(*engine);
+  IFLevel[CIFLevel::current_level]->AdvanceGame();
   IFAdapter.UpdateSim();
   IFAdapter.UpdateGraphics();
-  TESTFN_PostOperations(*engine);
+  IFLevel[CIFLevel::current_level]->PostOperations();
  }
 //#define SPEEDUP
 ////#undef SPEEDUP
@@ -242,7 +251,7 @@ static void engine_term_display(struct engine* engine) {
 
  IFAudioSLES::TearDownAudioEngine();
  
- TEST_Cleanup();
+ IFLevel[CIFLevel::current_level]->Cleanup();
 }
 
 /**

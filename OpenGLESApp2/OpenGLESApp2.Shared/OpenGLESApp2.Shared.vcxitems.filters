@@ -15,6 +15,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)IF_General_Utils.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)MainProgram.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)Level01.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Level02.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEngine.h" />
@@ -44,6 +45,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)IF_General_Utils.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)MainProgram.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Level01.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Level02.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="External">
