@@ -10,6 +10,7 @@
 #include "IFGameEditor.h"
 #include "IFFANN.h"
 #include "IFFANNEngine.h"
+#include "IFFANNUtils.h"
 
 
 #include <Eigen/Dense>

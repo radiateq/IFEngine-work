@@ -10,7 +10,6 @@ extern ifCB2BodyUtils B2BodyUtils;
 namespace Level01{
 
  class CPongBallStateMachine;
- class CNetworkNode;
 
 
 
@@ -77,223 +76,6 @@ namespace Level01{
  //unsigned int select1_data_counter_limit = 1500;
  CIFTextRender TextRender;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
- typedef IFFANNEngine::CNode::ENodeStates TNodeStates;
- typedef std::vector<fann_type> TFannVector;
- TFannVector *train_input_vector, *train_output_vector;
- struct fann *train_ann;
- void Setup_Train_Cascade_FANN_Callback(fann *_train_ann, TFannVector *_train_input_vector, TFannVector *_train_output_vector) {
-  train_input_vector = _train_input_vector;
-  train_output_vector = _train_output_vector;
-  train_ann = _train_ann;
- }
- void Train_Cascade_FANN_Callback(unsigned int num_data, unsigned int num_input, unsigned int num_output, fann_type *input, fann_type *output) {
-  for (unsigned int cnt = 0; cnt < train_ann->num_input; cnt++) {
-   input[cnt] = (*train_input_vector)[num_data * train_ann->num_input + cnt];
-  }
-  for (unsigned int cnt = 0; cnt < train_ann->num_output; cnt++) {
-   output[cnt] = (*train_output_vector)[num_data * train_ann->num_output + cnt];
-  }
- }
-
-
- class CNetworkNode {
- public:
-  ~CNetworkNode() {
-   Free();
-  }
-  void Free() {
-   if (Node) {
-    Node->NodeRegister->Unregister(Node);
-    delete Node;
-   }
-  }
-  SFANNPong FANNOptions;
-  IFFANNEngine::CNode *Node = NULL;
-  TFannVector node_input_data, node_output_data;
-  bool node_train_trigger = false, node_can_train = false;
-  unsigned int node_data_counter = 0;
-  char node_unique_name[1024];
-  unsigned int node_train_samples = 50, node_train_pos = 0, node_last_save_index = 0, node_new_samples = 0;
-  fann_type node_train_error = 1, epoch_train_desired_eror = 1e-6;
-  unsigned int node_data_counter_limit = 1000;
-
-  size_t NumTrainData() {
-   return node_output_data.size() / FANNOptions.output_neurons;
-  }
-
-  void CheckNodeTrainDataState() {
-   if (node_output_data.size() == 0) {
-    Node->AddFlag(TNodeStates::E_NoData);
-    Node->ClearFlag(TNodeStates::E_FullData);
-   }
-   else {
-    Node->ClearFlag(TNodeStates::E_NoData);
-    {//Limit train size    
-     node_new_samples++;
-     if ((node_output_data.size() / FANNOptions.output_neurons) > node_data_counter_limit) {
-      Node->AddFlag(TNodeStates::E_FullData);
-      node_input_data.erase(node_input_data.begin(), node_input_data.begin() + node_input_data.size() - node_data_counter_limit * FANNOptions.input_neurons);
-      node_output_data.erase(node_output_data.begin(), node_output_data.begin() + node_output_data.size() - node_data_counter_limit * FANNOptions.output_neurons);
-     }
-     else {
-      Node->NodeStates = (IFFANNEngine::CNode::ENodeStates)(Node->NodeStates & (~IFFANNEngine::CNode::ENodeStates::E_FullData));
-     }
-    }
-   }
-  }
-
-  void Load_Node(char const * const unique_name, bool is_running = true) {
-   Free();
-   Node = new IFFANNEngine::CNode;
-   Node->IsRunning = is_running;
-   Network.NodeRegister.Register(Node);
-
-   if (IFFANN::Check_Save_Cascade_FANN(unique_name, IFFANN::CnFinalFannPostscript)) {
-    IFFANN::Load_Cascade_FANN(&Node->ifann, unique_name, IFFANN::CnFinalFannPostscript);
-    Node->NodeStates = IFFANNEngine::CNode::ENodeStates::E_Trained;
-   }
-   if (!Node->ifann.ann) {
-    IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node->ifann), FANNOptions.input_neurons, FANNOptions.output_neurons, unique_name), FANNOptions.max_neurons, FANNOptions.neurons_between_reports, FANNOptions.desired_error, FANNOptions.input_scale, FANNOptions.output_scale);
-    IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
-    Node->NodeStates = IFFANNEngine::CNode::ENodeStates::E_FreshTrain;
-   }
-   CheckNodeTrainDataState();
-
-   Node->LoadCore(unique_name);
-  }
-
-  bool Add_Data(fann_type *input, fann_type *output) {
-   if ((Node->NodeStates&IFFANNEngine::CNode::ENodeStates::E_FullData) && !(Node->NodeStates&IFFANNEngine::CNode::ENodeStates::E_OverwriteData))
-    return false;
-
-   for (unsigned int paramno = 0; paramno < FANNOptions.input_neurons; paramno++) {
-    node_input_data.push_back(input[paramno]);
-   }
-   for (unsigned int paramno = 0; paramno < FANNOptions.output_neurons; paramno++) {
-    node_output_data.push_back(output[paramno]);
-   }
-   CheckNodeTrainDataState();
-
-   return true;
-  }
-
-  bool Epoch_Train(bool SaveNewData = true, unsigned int _node_train_samples = 5, unsigned long int timeToRunus = 3000) {
-   if (!(Node->NodeStates&IFFANNEngine::CNode::ENodeStates::E_ContTraining))
-    return false;
-   //  if (!Node->GetFlag(TNodeStates::E_FullData))
-   if (node_train_samples == 0)
-    return false;
-   //if (false)
-   {/////////////////////////////////   TRAIN node
-    /////////////////////////////////////NC02START
-    if ((node_train_error > epoch_train_desired_eror) && ((node_train_error != std::numeric_limits<fann_type>::max())) && trained[3] == false)
-    {
-     //Save new chunk of data
-     if (SaveNewData && (node_new_samples%node_train_samples) > node_last_save_index) {
-      node_last_save_index = (node_new_samples%node_train_samples);
-      node_new_samples = 0;
-      Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
-      IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, NumTrainData(), 2, false);
-     }
-
-     if (!SaveNewData) {
-      node_train_samples = _node_train_samples;
-     }
-
-     if (Node->ifann.ann_train->train_data) {
-      struct fann_train_data *train_subset;
-
-      //Get time
-      struct timespec temp_timespec;
-      clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
-      unsigned long int start_time = RQNDKUtils::timespec2us64(&temp_timespec), end_time = start_time + timeToRunus;
-      //Create subset to train on
-      train_subset = fann_subset_train_data(Node->ifann.ann_train->train_data, Node->ifann.ann_train->train_data->num_data - node_train_samples - node_train_pos, node_train_samples);
-      while ((end_time > start_time) && (node_train_samples <= Node->ifann.ann_train->train_data->num_data)) {
-       node_train_error = fann_train_epoch(Node->ifann.ann, train_subset);
-       clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
-       start_time = RQNDKUtils::timespec2us64(&temp_timespec);
-      }
-      fann_destroy_train(train_subset);
-      IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
-     }
-     else {
-      Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
-      IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, NumTrainData(), 1, false);
-     }
-    }
-    else {
-     if (node_train_error != std::numeric_limits<fann_type>::max()) {
-      if ((node_train_error <= epoch_train_desired_eror) && Node->ifann.ann_train->train_data->num_data >= node_data_counter_limit) {
-       Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
-       IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, NumTrainData(), 2, false);
-       IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
-       node_train_error = std::numeric_limits<fann_type>::max();
-      }
-     }
-     return true;
-    }
-   }
-   return false;
-   /////////////////////////////////////NC02STOP
-  }
-
-  void Load_Train_Data() {
-   if (IFFANN::Train_Cascade_FANN(&(Node->ifann), NULL, 0, 1, false)) {
-    node_input_data.clear();
-    node_output_data.clear();
-    for (unsigned int cnt = 0; cnt < Node->ifann.ann_train->train_data->num_data; cnt++) {
-     for (unsigned int inputcnt = 0; inputcnt < Node->ifann.ann_train->train_data->num_input; inputcnt++) {
-      node_input_data.push_back(Node->ifann.ann_train->train_data->input[cnt][inputcnt]);
-     }
-     for (unsigned int outputcnt = 0; outputcnt < Node->ifann.ann_train->train_data->num_output; outputcnt++) {
-      node_output_data.push_back(Node->ifann.ann_train->train_data->output[cnt][outputcnt]);
-     }
-    }
-    //NetworkNodes[1].NumTrainData() = NetworkNodes[2].Node->ifann.ann_train->train_data->num_data;
-   }
-   CheckNodeTrainDataState();
-  }
-  void Save_Train_Data() {
-   Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
-   IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Callback, NumTrainData(), 2, false);
-  }
-
-  bool Train_Node() {
-   if (!Node->GetFlag(TNodeStates::E_Training))
-    return false;
-   if (!Node->GetFlag(TNodeStates::E_FullData))
-    return false;
-   if (Node->GetFlag(TNodeStates::E_ContTraining))
-    return false;
-   char unique_name[BUFSIZ + 1];
-   strcpy(unique_name, Node->ifann.unique_name);
-   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&(Node->ifann)), FANNOptions.input_neurons, FANNOptions.output_neurons, unique_name), FANNOptions.max_neurons, FANNOptions.neurons_between_reports, FANNOptions.desired_error, FANNOptions.input_scale, FANNOptions.output_scale);
-   Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);
-   IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Callback, NumTrainData(), 2);
-   IFFANN::Load_Cascade_FANN(&(Node->ifann), Node->ifann.unique_name, IFFANN::CnTrainedFannPostscript);
-   IFFANN::Save_Cascade_FANN(&(Node->ifann), IFFANN::CnFinalFannPostscript);
-   Node->LoadCore(Node->ifann.unique_name);
-   return true;
-  }
-  //Retrived by Load_Node or any function using Load_Cascade_FANN
-  bool Save_Fann() {
-   return IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
-  }
- };
 
  const unsigned int Max_Network_Nodes = 10;
  CNetworkNode NetworkNodes[Max_Network_Nodes];
@@ -733,7 +515,7 @@ namespace Level01{
     b2PolygonShape *polyShape2;
     b2Vec2 shapeCoords[8];
     float zoom_factor;
-
+    int twidth, theight;
 
 
 
@@ -763,7 +545,7 @@ namespace Level01{
     if (!IFAdapter.MakeBody())
      return;
     game_body[0]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
-    game_body[0]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[0] = User_Data.CubeTexture;
+    game_body[0]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[0] = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
     game_body[0]->OGL_body->line_thickness = thickness;
 
 
@@ -784,7 +566,7 @@ namespace Level01{
     if (!IFAdapter.MakeBody())
      return;
     game_body[1]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
-    game_body[1]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[1] = User_Data.CubeTexture;
+    game_body[1]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[1] = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
     game_body[1]->OGL_body->line_thickness = thickness;
 
 
@@ -812,8 +594,8 @@ namespace Level01{
     IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape, fixture);
     game_body[2] = IFAdapter.OrderedBody();
     if (!IFAdapter.MakeBody())
-     return;
-    game_body[2]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[2] = User_Data.Textures[2];
+     return;    
+    game_body[2]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[2] = IFEUtilsLoadTexture::png_texture_load("ball.png", &twidth, &theight);
 
 
 
@@ -857,7 +639,7 @@ namespace Level01{
     if (!IFAdapter.MakeBody())
      return;
     game_body[3]->body->SetTransform(b2Vec2(0.0, -bottom * 0.6), 0.0);
-    game_body[3]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[3] = User_Data.CubeTexture;
+    game_body[3]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[3] = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
     game_body[3]->body->SetFixedRotation(true);
 
 
@@ -893,7 +675,7 @@ namespace Level01{
     if (!IFAdapter.MakeBody())
      return;
     game_body[4]->body->SetTransform(b2Vec2(0.0, bottom * 0.6), 0.0);
-    game_body[4]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[4] = User_Data.CubeTexture;
+    game_body[4]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[4] = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
 
 
 
@@ -999,7 +781,7 @@ namespace Level01{
      char print_char = 'i';//null box does not encompass whole text
      SFloatRect *char_rect;
      char_rect = TextRender.CharMap.GetRef(print_char);
-     size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
+     //size_t UVsize = game_body[5]->OGL_body->UVmapping_cnt;
      game_body[5]->OGL_body->UVmapping[0] = char_rect->xMax / TextRender.expanded_width;
      game_body[5]->OGL_body->UVmapping[1] = char_rect->yMin / TextRender.expanded_height;
 
@@ -1081,7 +863,7 @@ namespace Level01{
     NetworkNodes[0].FANNOptions.input_scale = 0.1;
     NetworkNodes[0].FANNOptions.output_scale = 0.1;
     NetworkNodes[0].node_data_counter_limit = 500 * train_size_factor;
-    NetworkNodes[0].Load_Node("pongpaddle");
+    NetworkNodes[0].Load_Node(Network, "pongpaddle");
     NetworkNodes[0].Load_Train_Data();
     NetworkNodes[0].Node->AddFlag(TNodeStates::E_Training);
     NetworkNodes[0].Node->AddFlag(TNodeStates::E_ContTraining);
@@ -1093,7 +875,7 @@ namespace Level01{
     NetworkNodes[1].FANNOptions.input_scale = 0.1;
     NetworkNodes[1].FANNOptions.output_scale = 0.1;
     NetworkNodes[1].node_data_counter_limit = 250 * train_size_factor;
-    NetworkNodes[1].Load_Node("pongpaddlebounce", false);
+    NetworkNodes[1].Load_Node(Network, "pongpaddlebounce", false);
     NetworkNodes[1].Load_Train_Data();
     NetworkNodes[1].Node->AddFlag(TNodeStates::E_Training);
     NetworkNodes[1].Node->AddFlag(TNodeStates::E_ContTraining);
@@ -1104,7 +886,7 @@ namespace Level01{
     NetworkNodes[2].FANNOptions.input_scale = NetworkNodes[1].FANNOptions.input_scale;
     NetworkNodes[2].FANNOptions.output_scale = NetworkNodes[1].FANNOptions.output_scale;
     NetworkNodes[2].node_data_counter_limit = 250 * train_size_factor;
-    NetworkNodes[2].Load_Node("pongpaddlebouncetune");
+    NetworkNodes[2].Load_Node(Network, "pongpaddlebouncetune");
     NetworkNodes[2].Load_Train_Data();
     NetworkNodes[2].Node->AddFlag(TNodeStates::E_Training);
     NetworkNodes[2].Node->AddFlag(TNodeStates::E_ContTraining);
@@ -1116,7 +898,7 @@ namespace Level01{
     NetworkNodes[3].FANNOptions.input_scale = 0.1;
     NetworkNodes[3].FANNOptions.output_scale = 0.1;
     NetworkNodes[3].node_data_counter_limit = 1000 * train_size_factor;
-    NetworkNodes[3].Load_Node("pongpaddleselect");
+    NetworkNodes[3].Load_Node(Network, "pongpaddleselect");
     NetworkNodes[3].Load_Train_Data();
     NetworkNodes[3].Node->AddFlag(TNodeStates::E_Training);
     NetworkNodes[3].Node->AddFlag(TNodeStates::E_ContTraining);
@@ -1144,7 +926,7 @@ namespace Level01{
     NetworkNodes[4].FANNOptions.input_scale = 0.1;
     NetworkNodes[4].FANNOptions.output_scale = 0.1;
     NetworkNodes[4].node_data_counter_limit = 1000 * train_size_factor;
-    NetworkNodes[4].Load_Node("pongmainbrain");
+    NetworkNodes[4].Load_Node(Network, "pongmainbrain");
     NetworkNodes[4].Load_Train_Data();
     NetworkNodes[4].Node->AddFlag(TNodeStates::E_Training);
     NetworkNodes[4].Node->AddFlag(TNodeStates::E_ContTraining);
@@ -1252,7 +1034,7 @@ namespace Level01{
       clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
       //temp_int64 = timespec2ms64(&temp_timespec) - timespec2ms64(&game_time_0);
       //unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec) - RQNDKUtils::timespec2ms64(&Last_GUI_Click_Time);
-      unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec);
+      //unsigned long int temp_int64 = RQNDKUtils::timespec2ms64(&temp_timespec);
       unsigned long int input_event_time_stamp;
       //if (temp_int64 > 0) 
       {
@@ -1469,7 +1251,7 @@ namespace Level01{
 
         ////////////////////////////////////////////////////////////////////////////////
         static int skipCnt = 0;
-        static float prev_dist = 0;
+        //static float prev_dist = 0;
         static float prev_padx = 0;
         static float skipnum = 0;
         ballposition = game_body[2]->body->GetPosition();
@@ -1783,7 +1565,7 @@ namespace Level01{
           else if (NetworkNodes[2].Node->IsRunning && NetworkNodes[2].Node == Network.GetNodeByPinID(ID)) {
            //get executed data and train with current
            NetworkNodes[2].Node->IsRunning = false;
-           b2Vec2 position = game_body[4]->body->GetPosition();
+           //b2Vec2 position = game_body[4]->body->GetPosition();
            AI_paddle_desired_position_x = NetworkNodes[2].Node->outputs[0] / NetworkNodes[2].Node->ifann.output_scale;
            Last_AI_Paddle_Network_Active = 1;
           }
@@ -1856,12 +1638,9 @@ namespace Level01{
    IFAdapter.screenResolutionX = game_engine->width;
    IFAdapter.screenResolutionY = game_engine->height;
    IFAdapter.CalculateBox2DSizeFactor(30);
-
-   int twidth, theight;
-   GLuint texint;
-
-   User_Data.CubeTexture = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
-   User_Data.Textures[2] = IFEUtilsLoadTexture::png_texture_load("ball.png", &twidth, &theight);
+   
+   //IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
+   //IFEUtilsLoadTexture::png_texture_load("ball.png", &twidth, &theight);
 
    FANN_TEST_initialized = false;
    anns_body = anns_learned_body = NULL;

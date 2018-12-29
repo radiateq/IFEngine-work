@@ -16,8 +16,8 @@ typedef struct {
  unsigned long int Touch_Time;
  double screenWidth;
  double screenHeight;
- GLuint CubeTexture;
- GLuint Textures[10];
+ //GLuint CubeTexture;
+ //GLuint Textures[10];
  bool TrainInProgress;
 }TS_User_Data;
 extern TS_User_Data User_Data;
