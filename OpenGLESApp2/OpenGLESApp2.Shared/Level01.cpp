@@ -962,7 +962,7 @@ namespace Level01{
    }
    else {
 
-    if(abs(score)==3){
+    if(abs(score)!=100){
      score = 0;
      CIFLevel::NextLevel();
      Cleanup();
@@ -1128,8 +1128,7 @@ namespace Level01{
 
        }
       }
-     }
-     else {
+     } else {
       if (AutoPlayer) {
        if (b2Distance(game_body[3]->body->GetPosition(), game_body[2]->body->GetPosition()) > (radius*3.0)) {
         game_body[3]->body->SetLinearVelocity(b2Vec2(((game_body[2]->body->GetPosition().x - game_body[3]->body->GetPosition().x
