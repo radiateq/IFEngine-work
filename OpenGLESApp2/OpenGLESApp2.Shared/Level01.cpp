@@ -496,7 +496,7 @@ namespace Level01{
 
 
     thickness = RQNDKUtils::getDensityDpi(User_Data.state) / 25.4;
-    left = -thickness * 0.5; bottom = 0; right = game_engine->width; top = game_engine->height;
+    left = -thickness * 0.5; bottom = game_engine->height; right = game_engine->width; top = 0;
     Window2ObjectCoordinates(left, bottom, zDefaultLayer, game_engine->width, game_engine->height);
     left /= IFA_box2D_factor; bottom /= IFA_box2D_factor;
     Window2ObjectCoordinates(right, top, zDefaultLayer, game_engine->width, game_engine->height);
@@ -638,7 +638,7 @@ namespace Level01{
     game_body[3] = IFAdapter.OrderedBody();
     if (!IFAdapter.MakeBody())
      return;
-    game_body[3]->body->SetTransform(b2Vec2(0.0, -bottom * 0.6), 0.0);
+    game_body[3]->body->SetTransform(b2Vec2(0.0, bottom * 0.6), 0.0);
     game_body[3]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[3] = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
     game_body[3]->body->SetFixedRotation(true);
 
@@ -674,7 +674,7 @@ namespace Level01{
     game_body[4] = IFAdapter.OrderedBody();
     if (!IFAdapter.MakeBody())
      return;
-    game_body[4]->body->SetTransform(b2Vec2(0.0, bottom * 0.6), 0.0);
+    game_body[4]->body->SetTransform(b2Vec2(0.0, top * 0.6), 0.0);
     game_body[4]->OGL_body->texture_ID = TEST_GUI_Tex_Ary[4] = IFEUtilsLoadTexture::png_texture_load("testcube.png", &twidth, &theight);
 
 
@@ -712,7 +712,7 @@ namespace Level01{
     game_body[6] = IFAdapter.OrderedBody();
     if (!IFAdapter.MakeBody())
      return;
-    game_body[6]->body->SetTransform(b2Vec2(0.0, bottom - zoom_factor * 5), 0.0);
+    game_body[6]->body->SetTransform(b2Vec2(0.0, top - zoom_factor * 5), 0.0);
     game_body[6]->OGL_body->z_pos -= 0.1;
     TEST_GUI_Tex_Ary[6] = game_body[6]->OGL_body->texture_ID = TextRender.DrawText(" ", 128);
     //////////////////////BUTTON
@@ -745,7 +745,7 @@ namespace Level01{
     game_body[5] = IFAdapter.OrderedBody();
     if (!IFAdapter.MakeBody())
      return;
-    game_body[5]->body->SetTransform(b2Vec2(0.0, bottom - zoom_factor * 5), 0.0);
+    game_body[5]->body->SetTransform(b2Vec2(0.0, top - zoom_factor * 5), 0.0);
     game_body[5]->OGL_body->z_pos -= 0.1;
     char outstring[1200];
     strcpy(outstring, "train");
@@ -962,7 +962,7 @@ namespace Level01{
    }
    else {
 
-    if(abs(score)!=100){
+    if(abs(score)==2){
      score = 0;
      CIFLevel::NextLevel();
      Cleanup();
@@ -1238,7 +1238,7 @@ namespace Level01{
         PongBallStateMachine.ProcessBallState(game_body);
 
         if (balllinvel.y > 0) { //PongBallStateMachine.BallState.PlayfieldLocation == CPongBallStateMachine::E_TravelUp ){
-         if (ballposition.y > (bottom * 0.6 * 0.6)) {
+         if (ballposition.y > (top * 0.6 * 0.6)) {
           NetworkNodes[3].Node->IsRunning = false;
           NetworkNodes[0].Node->IsRunning = true;
          }

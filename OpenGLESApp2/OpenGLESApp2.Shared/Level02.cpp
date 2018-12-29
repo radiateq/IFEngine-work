@@ -19,20 +19,20 @@ namespace Level02{
  int touchx, touchy;
  unsigned long int Last_GUI_Click_Time = 0;
  void ProcessUserInput();
- 
+ void RemoveFarBodies();
+
  void CRacerLevel::PostOperations() {
  }
  void CRacerLevel::AdvanceGame() {
   if(game_initialized){
    
    ProcessUserInput();
+   RemoveFarBodies();
 
-
-
-
-
-
-
+   if(ifbodies[2]->body->GetPosition().y<(bottom*1.3 )){
+    ifbodies[2]->body->SetTransform(b2Vec2(drand48()*(right-left)-right, top*1.3 ), 0.0);
+    ifbodies[2]->body->SetLinearVelocity(b2Vec2(0.0, -9.0));
+   }
 
 
 
@@ -43,7 +43,7 @@ namespace Level02{
   game_initialized = true;  
   {
    thickness = RQNDKUtils::getDensityDpi(User_Data.state) / 25.4;
-   left = -thickness * 0.5; bottom = 0; right = game_engine->width; top = game_engine->height;
+   left = 0; bottom = game_engine->height; right = game_engine->width; top = 0;
    Window2ObjectCoordinates(left, bottom, zDefaultLayer, game_engine->width, game_engine->height);
    left /= IFA_box2D_factor; bottom /= IFA_box2D_factor;
    Window2ObjectCoordinates(right, top, zDefaultLayer, game_engine->width, game_engine->height);
@@ -105,6 +105,39 @@ namespace Level02{
    ifbodies[1]->body->SetTransform(b2Vec2(0.0, -bottom * 0.4), 0.0);
    ifbodies[1]->OGL_body->texture_ID = IFEUtilsLoadTexture::png_texture_load("boat.png", &twidth, &theight);
 
+
+
+   //Rock
+   IFAdapter.OrderBody();
+   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    b2_kinematicBody
+   polyShape2 = new b2PolygonShape;
+   shapeCoords[0].x = 0.0, shapeCoords[0].y = 0.0;
+   shapeCoords[1].x = -7.9, shapeCoords[1].y = -7.9;
+   shapeCoords[2].x = -10.0, shapeCoords[2].y = -12.6;
+   shapeCoords[3].x = -10.0, shapeCoords[3].y = -15.3;
+   shapeCoords[4].x = 13.9, shapeCoords[4].y = -15.3;
+   shapeCoords[5].x = 11, shapeCoords[5].y = -10.0;
+   shapeCoords[6].x = 9.8, shapeCoords[6].y = -6.2;
+   shapeCoords[7].x = 3.8, shapeCoords[7].y = -1.4;
+   zoom_factor = 0.8;
+   for (unsigned int cnt = 0; cnt < 8; cnt++) {
+    shapeCoords[cnt].x *= zoom_factor, shapeCoords[cnt].y *= zoom_factor;
+   }
+   polyShape2->Set(shapeCoords, 8);
+   fixture = new b2FixtureDef;
+   fixture->shape = polyShape2;
+   fixture->density = 1.0;
+   fixture->friction = 0.0;
+   fixture->restitution = 1.010;
+   //fixture->filter.categoryBits = 0x0008;
+   //fixture->filter.maskBits = 0x0010;
+   IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+   ifbodies[2] = IFAdapter.OrderedBody();
+   if (!IFAdapter.MakeBody())
+    return;
+   ifbodies[2]->body->SetFixedRotation(true);
+   ifbodies[2]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
+   ifbodies[2]->OGL_body->texture_ID = IFEUtilsLoadTexture::png_texture_load("rock.png", &twidth, &theight);
 
 
 
@@ -203,6 +236,10 @@ namespace Level02{
 
  void CRacerLevel::Cleanup() {
   game_initialized = false;
+
+  for( unsigned int cnt = 0; cnt < 3; cnt++){
+   glDeleteTextures(1, &ifbodies[2]->OGL_body->texture_ID);
+  }
  }
 
 
@@ -222,8 +259,9 @@ namespace Level02{
      float screeny = touchy;
      Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, User_Data.screenWidth, User_Data.screenHeight);
      float desired_x = (screenx) / IFA_box2D_factor - ifbodies[0]->body->GetPosition().x;
+     float desired_y = (screeny) / IFA_box2D_factor - ifbodies[0]->body->GetPosition().y + 30.0;
      ifbodies[0]->body->SetLinearVelocity(
-      b2Vec2(desired_x*desired_x*desired_x, 0.0));
+      b2Vec2(desired_x*desired_x*desired_x, desired_y*desired_y*desired_y));
      //Player may press train button but not more often than once per second       
      if ((input_event_time_stamp - Last_GUI_Click_Time) > 1000000000) {
       Last_GUI_Click_Time = input_event_time_stamp;
@@ -240,6 +278,22 @@ namespace Level02{
   }
  }
 
+ void RemoveFarBodies(){
+  float maxx = User_Data.screenWidth;
+  float maxy = User_Data.screenHeight;
+  Window2ObjectCoordinates(maxx, maxy, zDefaultLayer, maxx, maxy);
+  float cut_off_distance = b2Distance(b2Vec2(0, 0), b2Vec2(maxx / IFA_box2D_factor, maxy / IFA_box2D_factor)) * 2.0;
+
+  for (typename std::list<ifCB2Body*>::iterator iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
+   b2Vec2 position = (*iter)->body->GetPosition();
+   if(b2Distance(b2Vec2(position.x, position.y), b2Vec2(0,0))> cut_off_distance){
+    //Reset the ball to the center
+    (*iter)->body->SetTransform(b2Vec2(0, 0), (*iter)->body->GetAngle());
+    (*iter)->body->SetLinearVelocity(b2Vec2(0, 0));
+    (*iter)->body->SetAngularVelocity(0);
+   }
+  }
+ }
 
 }
 

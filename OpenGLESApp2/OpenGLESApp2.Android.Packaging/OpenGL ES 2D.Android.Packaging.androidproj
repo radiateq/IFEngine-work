@@ -126,6 +126,7 @@
     <Content Include="assets\boat.png" />
     <Content Include="assets\Roboto-Thin.ttf" />
     <Content Include="assets\RobotoMono-Regular.ttf" />
+    <Content Include="assets\rock.png" />
     <Content Include="assets\testcube.png" />
     <Content Include="res\values\strings.xml" />
     <AntBuildXml Include="build.xml" />
