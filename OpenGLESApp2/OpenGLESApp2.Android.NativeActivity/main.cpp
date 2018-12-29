@@ -40,14 +40,14 @@ ifCB2BodyUtils B2BodyUtils(&IFAdapter);
 
 
 
-extern TS_User_Data User_Data;
-extern ifCB2Adapter IFAdapter;
-extern GLuint TEST_textid;
-extern GLuint TEST_GUI_Tex_Ary[10];
-extern bool FANN_TEST_initialized;
-extern IFFANN::IFS_Cascade_FANN LittleBrains;
-extern ifCB2Body *last_touched_object;
-extern float last_y_acceleration, last_x_acceleration;
+//extern TS_User_Data User_Data;
+//extern ifCB2Adapter IFAdapter;
+//extern GLuint TEST_textid;
+//extern GLuint TEST_GUI_Tex_Ary[10];
+//extern bool FANN_TEST_initialized;
+//extern IFFANN::IFS_Cascade_FANN LittleBrains;
+//extern ifCB2Body *last_touched_object;
+//extern float last_y_acceleration, last_x_acceleration;
 
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "AndroidProject1.NativeActivity", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "AndroidProject1.NativeActivity", __VA_ARGS__))
@@ -138,7 +138,7 @@ static int engine_init_display(struct engine* engine) {
 
  // Initialize GL state.
  //CubeTest_setupGL(w, h);
- Setup_OpenGL(w, h);
+ IFLevel[CIFLevel::current_level]->Setup_OpenGL(w, h);
 
  IFLevel[CIFLevel::current_level]->game_engine = engine;
  IFLevel[CIFLevel::current_level]->Init_IFAdapter();
@@ -239,14 +239,14 @@ static void engine_term_display(struct engine* engine) {
  engine->surface = EGL_NO_SURFACE;
 
  //CubeTest_tearDownGL();  
- glDeleteTextures(1, &TEST_textid);
- TEST_textid = GL_INVALID_VALUE;
- glDeleteTextures(1, &User_Data.CubeTexture);
- User_Data.CubeTexture = GL_INVALID_VALUE;
- glDeleteTextures(10, TEST_GUI_Tex_Ary);
- for(unsigned int cnt = 0; cnt < sizeof(TEST_GUI_Tex_Ary)/ sizeof(TEST_GUI_Tex_Ary[0]); cnt++){
-  TEST_GUI_Tex_Ary[cnt] = GL_INVALID_VALUE;
- }
+ //glDeleteTextures(1, &TEST_textid);
+ //TEST_textid = GL_INVALID_VALUE;
+ //glDeleteTextures(1, &User_Data.CubeTexture);
+ //User_Data.CubeTexture = GL_INVALID_VALUE;
+ //glDeleteTextures(10, TEST_GUI_Tex_Ary);
+ //for(unsigned int cnt = 0; cnt < sizeof(TEST_GUI_Tex_Ary)/ sizeof(TEST_GUI_Tex_Ary[0]); cnt++){
+ // TEST_GUI_Tex_Ary[cnt] = GL_INVALID_VALUE;
+ //}
 
 
  IFAudioSLES::TearDownAudioEngine();
@@ -453,8 +453,8 @@ void android_main(struct android_app* state) {
       //LOGI("accelerometer: x=%f y=%f z=%f",
       //	event.acceleration.x, event.acceleration.y,
       //	event.acceleration.z);
-      last_x_acceleration = event.acceleration.x;
-      last_y_acceleration = event.acceleration.y;
+      //last_x_acceleration = event.acceleration.x;
+      //last_y_acceleration = event.acceleration.y;
      }     
     }
    }

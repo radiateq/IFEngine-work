@@ -50,21 +50,25 @@ struct engine {
 extern ifCB2Adapter IFAdapter;
 extern ifCB2BodyUtils B2BodyUtils;
 
+class CIFLevel;
 
-
-
+extern CIFLevel *IFLevel[10];
 
 class CIFLevel {
 public:
  static int current_level;
- engine *game_engine = NULL;
+ static void NextLevel(){
+  current_level++;
+ }
+ static engine *game_engine;
+ virtual void Setup_OpenGL(double _width, double _height) = 0;
  virtual void Init_IFAdapter() = 0;
  virtual void AdvanceGame() = 0;
  virtual void PostOperations() = 0;
  virtual void Cleanup() = 0;
 };
 
-extern CIFLevel *IFLevel[10];
+
 
 
 

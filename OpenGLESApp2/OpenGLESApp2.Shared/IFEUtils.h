@@ -64,10 +64,6 @@ private:
 };
 
 
-void Setup_OpenGL(double width, double height);
-
-
-
 typedef struct {
  png_byte *png_file_data;
  png_size_t png_file_data_size;
