@@ -208,7 +208,7 @@ public:
    format = GL_RGBA;
    break;
   default:
-   fprintf(stderr, "%s: Unknown libpng color type %d.\n", file_name, color_type);
+   //fprintf(stderr, "%s: Unknown libpng color type %d.\n", file_name, color_type);
    return 0;
   }
 

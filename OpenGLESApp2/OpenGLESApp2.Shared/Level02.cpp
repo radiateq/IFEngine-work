@@ -21,6 +21,9 @@ namespace Level02{
  void ProcessUserInput();
  void RemoveFarBodies();
 
+ unsigned int first_rock, last_rock;
+ float DeltaTime();//Function returns delta time between calls in milliseconds
+
  void CRacerLevel::PostOperations() {
  }
  void CRacerLevel::AdvanceGame() {
@@ -29,13 +32,43 @@ namespace Level02{
    ProcessUserInput();
    RemoveFarBodies();
 
-   if(ifbodies[2]->body->GetPosition().y<(bottom*1.3 )){
-    ifbodies[2]->body->SetTransform(b2Vec2(drand48()*(right-left)-right, top*1.3 ), 0.0);
-    ifbodies[2]->body->SetLinearVelocity(b2Vec2(0.0, -9.0));
+   float delta_t_ms = DeltaTime();
+   static float wave_t = 0.0;
+   float current_velocity = sin(wave_t) * 30.0 + 45.0;
+   current_velocity = -current_velocity;
+   if(2*M_PI < wave_t) wave_t = 0;
+
+   wave_t+=(1.0/600.0)*delta_t_ms;
+   for(unsigned int cnt = first_rock; cnt <= last_rock; cnt++){
+    if(ifbodies[cnt]->body->GetPosition().y<(bottom*1.3 )){
+     ifbodies[cnt]->body->SetTransform(b2Vec2(drand48()*(right-left)-right, top+ top*(drand48()+1.0)*1.7), 0.0);
+    }
+    ifbodies[cnt]->body->SetLinearVelocity(b2Vec2(0.0, current_velocity));
    }
-
-
-
+   bool boat_hit = false;
+   for (b2ContactEdge* ce = ifbodies[0]->body->GetContactList(); ce&&(boat_hit == false); ce = ce->next)
+   {    
+    b2Contact* c = ce->contact;
+    b2Fixture *hit_body_fix;
+    if (c->GetFixtureA()->GetBody() == ifbodies[0]->body) {
+     hit_body_fix = c->GetFixtureB();
+    }
+    else {
+     hit_body_fix = c->GetFixtureA();
+    }
+    for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
+     if (hit_body_fix->GetBody() == ifbodies[cnt]->body) {
+      boat_hit = true;
+      break;
+     }
+    }
+   }
+   if(boat_hit == true){
+    for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
+     ifbodies[cnt]->body->SetLinearVelocity(b2Vec2(0.0, 0.0));
+    }
+   }
+   ifbodies[0]->body->SetTransform(ifbodies[0]->body->GetPosition(), 0.0);
 
 
    return;
@@ -59,7 +92,7 @@ namespace Level02{
 
    //Player Boat
    IFAdapter.OrderBody();
-   IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :   b2_kinematicBody
    polyShape2 = new b2PolygonShape;
    shapeCoords[0].x = 0.0, shapeCoords[0].y = 0.0;
    shapeCoords[1].x = -1.7, shapeCoords[1].y = -2.3;
@@ -82,6 +115,7 @@ namespace Level02{
    if (!IFAdapter.MakeBody())
     return;
    ifbodies[0]->body->SetTransform(b2Vec2(0.0, -bottom * 0.4), 0.0);
+   //ifbodies[0]->body->SetFixedRotation(0.0);
    ifbodies[0]->OGL_body->texture_ID = IFEUtilsLoadTexture::png_texture_load("boat.png", &twidth, &theight);
 
 
@@ -107,9 +141,9 @@ namespace Level02{
 
 
 
-   //Rock
+   //Rocks
    IFAdapter.OrderBody();
-   IFAdapter.OrderedBody()->body_def->type = b2_dynamicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    b2_kinematicBody
+   IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    b2_kinematicBody
    polyShape2 = new b2PolygonShape;
    shapeCoords[0].x = 0.0, shapeCoords[0].y = 0.0;
    shapeCoords[1].x = -7.9, shapeCoords[1].y = -7.9;
@@ -119,7 +153,7 @@ namespace Level02{
    shapeCoords[5].x = 11, shapeCoords[5].y = -10.0;
    shapeCoords[6].x = 9.8, shapeCoords[6].y = -6.2;
    shapeCoords[7].x = 3.8, shapeCoords[7].y = -1.4;
-   zoom_factor = 0.8;
+   zoom_factor = 0.3;
    for (unsigned int cnt = 0; cnt < 8; cnt++) {
     shapeCoords[cnt].x *= zoom_factor, shapeCoords[cnt].y *= zoom_factor;
    }
@@ -132,15 +166,26 @@ namespace Level02{
    //fixture->filter.categoryBits = 0x0008;
    //fixture->filter.maskBits = 0x0010;
    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
-   ifbodies[2] = IFAdapter.OrderedBody();
+   first_rock = 2;
+   ifbodies[first_rock] = IFAdapter.OrderedBody();
    if (!IFAdapter.MakeBody())
     return;
-   ifbodies[2]->body->SetFixedRotation(true);
-   ifbodies[2]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
-   ifbodies[2]->OGL_body->texture_ID = IFEUtilsLoadTexture::png_texture_load("rock.png", &twidth, &theight);
+   ifbodies[first_rock]->body->SetFixedRotation(true);
+   ifbodies[first_rock]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
+   ifbodies[first_rock]->OGL_body->texture_ID = IFEUtilsLoadTexture::png_texture_load("rock.png", &twidth, &theight);
 
-
-
+   last_rock = 9;
+   for(unsigned int cnt = first_rock+1; cnt <= last_rock; cnt++){
+    IFAdapter.OrderBody();
+    IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
+    IFAdapter.OrderedBody()->AddShapeAndFixture(polyShape2, fixture);
+    ifbodies[cnt] = IFAdapter.OrderedBody();
+    if (!IFAdapter.MakeBody())
+     return;
+    ifbodies[cnt]->body->SetFixedRotation(true);
+    ifbodies[cnt]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
+    ifbodies[cnt]->OGL_body->texture_ID = IFEUtilsLoadTexture::png_texture_load("rock.png", &twidth, &theight);
+   }
   }  
  }
 
@@ -247,6 +292,7 @@ namespace Level02{
 
 
   ifbodies[0]->body->SetLinearVelocity(b2Vec2(0, 0));
+  ifbodies[0]->body->SetAngularVelocity(0.0);
   if (IFGameEditor::GetTouchEvent()) {
    struct timespec temp_timespec;
    clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
@@ -259,7 +305,7 @@ namespace Level02{
      float screeny = touchy;
      Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, User_Data.screenWidth, User_Data.screenHeight);
      float desired_x = (screenx) / IFA_box2D_factor - ifbodies[0]->body->GetPosition().x;
-     float desired_y = (screeny) / IFA_box2D_factor - ifbodies[0]->body->GetPosition().y + 30.0;
+     float desired_y = (screeny) / IFA_box2D_factor - ifbodies[0]->body->GetPosition().y + 20.0;
      ifbodies[0]->body->SetLinearVelocity(
       b2Vec2(desired_x*desired_x*desired_x, desired_y*desired_y*desired_y));
      //Player may press train button but not more often than once per second       
@@ -282,17 +328,44 @@ namespace Level02{
   float maxx = User_Data.screenWidth;
   float maxy = User_Data.screenHeight;
   Window2ObjectCoordinates(maxx, maxy, zDefaultLayer, maxx, maxy);
-  float cut_off_distance = b2Distance(b2Vec2(0, 0), b2Vec2(maxx / IFA_box2D_factor, maxy / IFA_box2D_factor)) * 2.0;
+  float cut_off_distance = b2Distance(b2Vec2(0, 0), b2Vec2(maxx / IFA_box2D_factor, maxy / IFA_box2D_factor)) * 2.5;
 
   for (typename std::list<ifCB2Body*>::iterator iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
    b2Vec2 position = (*iter)->body->GetPosition();
    if(b2Distance(b2Vec2(position.x, position.y), b2Vec2(0,0))> cut_off_distance){
-    //Reset the ball to the center
-    (*iter)->body->SetTransform(b2Vec2(0, 0), (*iter)->body->GetAngle());
-    (*iter)->body->SetLinearVelocity(b2Vec2(0, 0));
-    (*iter)->body->SetAngularVelocity(0);
+    
+
+    bool found = false;
+    for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
+     if (ifbodies[cnt] == (*iter)) {
+      //In order to increase distance between bodies we don't instantiate them first time
+      if(drand48()>0.987){
+       ifbodies[cnt]->body->SetTransform(b2Vec2(drand48()*(right - left) - right, top + top * (drand48() + 1.0)*1.7), 0.0);
+       ifbodies[cnt]->body->SetLinearVelocity(b2Vec2(0.0, -9.0));
+      }
+      found = true;
+      break;
+     }
+    }
+    if(!found){
+     (*iter)->body->SetTransform(b2Vec2(0, 0), (*iter)->body->GetAngle());
+     (*iter)->body->SetLinearVelocity(b2Vec2(0, 0));
+     (*iter)->body->SetAngularVelocity(0);
+    }
    }
   }
+ }
+
+ unsigned long int last_DeltaTime_time;
+ float DeltaTime(){
+  timespec temp_timespec;
+  unsigned long int ret_val;
+  unsigned long int temp_time;
+  clock_gettime(CLOCK_MONOTONIC, &temp_timespec);  
+  temp_time = RQNDKUtils::timespec2us64(&temp_timespec);
+  ret_val = temp_time - last_DeltaTime_time;
+  last_DeltaTime_time = temp_time;
+  return (float)ret_val/1000.0;
  }
 
 }
