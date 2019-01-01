@@ -962,7 +962,7 @@ namespace Level01{
    }
    else {
 
-    if(abs(score)==0){
+    if(abs(score)==1){
      score = 0;
      CIFLevel::NextLevel();
      Cleanup();
