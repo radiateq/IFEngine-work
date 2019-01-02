@@ -129,8 +129,14 @@ public:
      clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
      unsigned long int start_time = RQNDKUtils::timespec2us64(&temp_timespec), end_time = start_time + timeToRunus;
      //Create subset to train on
-     train_subset = fann_subset_train_data(Node->ifann.ann_train->train_data, Node->ifann.ann_train->train_data->num_data - node_train_samples - node_train_pos, node_train_samples);
-     while ((end_time > start_time) && (node_train_samples <= Node->ifann.ann_train->train_data->num_data)) {
+     unsigned int subset_node_train_samples = node_train_samples;
+     unsigned int subset_start = Node->ifann.ann_train->train_data->num_data - node_train_samples - node_train_pos;
+     if((node_train_samples - node_train_pos)> Node->ifann.ann_train->train_data->num_data){
+      subset_start = 0;
+      subset_node_train_samples = Node->ifann.ann_train->train_data->num_data;      
+     }
+     train_subset = fann_subset_train_data(Node->ifann.ann_train->train_data, subset_start, subset_node_train_samples);
+     while ((end_time > start_time) && (subset_node_train_samples <= Node->ifann.ann_train->train_data->num_data)) {
       node_train_error = fann_train_epoch(Node->ifann.ann, train_subset);
       clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
       start_time = RQNDKUtils::timespec2us64(&temp_timespec);
