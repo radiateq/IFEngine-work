@@ -165,10 +165,12 @@ namespace Level02{
      float screenx = touchx;
      float screeny = touchy;
      Window2ObjectCoordinates(screenx, screeny, zDefaultLayer, User_Data.screenWidth, User_Data.screenHeight);
-     float desired_x = (screenx) / IFA_box2D_factor - ifbodies[0]->body->GetPosition().x;
-     float desired_y = (screeny) / IFA_box2D_factor - ifbodies[0]->body->GetPosition().y + 20.0;
-     ifbodies[0]->body->SetLinearVelocity(
-      b2Vec2(desired_x*desired_x*desired_x, desired_y*desired_y*desired_y));
+     unsigned int n = 1;
+     float desired_x = (screenx) / IFA_box2D_factor - ifbodies[n]->body->GetPosition().x;
+     float desired_y = (screeny) / IFA_box2D_factor - ifbodies[n]->body->GetPosition().y + 20.0;
+     ifbodies[n]->body->SetTransform(b2Vec2(desired_x, desired_y),0);
+     //ifbodies[n]->body->SetLinearVelocity(
+     // b2Vec2(desired_x*desired_x*desired_x, desired_y*desired_y*desired_y));
      //Player may press train button but not more often than once per second       
      if ((input_event_time_stamp - Last_GUI_Click_Time) > 1000000000) {
       Last_GUI_Click_Time = input_event_time_stamp;
@@ -537,44 +539,42 @@ namespace Level02{
   IFGeneralUtils::SMapWrap<float, unsigned int> rocks_by_distance;
   for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
    rock_position = ifbodies[cnt]->body->GetPosition();
-   boat_rock_distance = b2Distance(boat_position, rock_position);
-   if (boat_closest_rock_distance > boat_rock_distance) {
-    boat_closest_rock_distance = boat_rock_distance;
+   boat_rock_distance = b2Distance(boat_position,rock_position);
+   if (boat_closest_rock_distance > abs(boat_rock_distance)) {
+    boat_closest_rock_distance = abs(boat_rock_distance);
     closest_rock = cnt;
    }
-   if(boat_position.x > rock_position.x){
-    boat_rock_distance*=-1.0;
-   }
-   NetworkNodes[n].Node->inputs[(cnt-first_rock) * 2 + 0] = boat_rock_distance * NetworkNodes[n].FANNOptions.input_scale;
-   NetworkNodes[n].Node->inputs[(cnt - first_rock) * 2 + 1] = rock_position.x;
+   NetworkNodes[n].Node->inputs[(cnt-first_rock) * 2 + 0] = (rock_position.x - boat_position.x) * NetworkNodes[n].FANNOptions.input_scale;
+   NetworkNodes[n].Node->inputs[(cnt - first_rock) * 2 + 1] = (rock_position.y-boat_position.y) * NetworkNodes[n].FANNOptions.input_scale;
    rocks_by_distance.Add(boat_rock_distance, cnt);
   }
   rocks_by_distance.ResetIterator();
-  float distance_treshold = boat_height*3.0;
+  float distance_treshold = boat_height*1.0;
   output = 0;
   while(0<rocks_by_distance.GetNextIterator(boat_rock_distance, rock_index)){
    if(rock_index == closest_rock){
     rock_position = ifbodies[rock_index]->body->GetPosition();
+    boat_rock_distance = rock_position.x - boat_position.x;
     if(
-       ((rock_position.y > boat_position.y) && (rock_position.y - boat_position.y) < (boat_height*2.0))
+       ((rock_position.y > (boat_position.y - boat_height)) && abs(rock_position.y - boat_position.y) < (boat_height*1.0))
         &&
        (distance_treshold>abs(boat_rock_distance))
       ){     
-     if(output_x <0){//Left
-      output = (rock_width * 0.7 + boat_width * 0.5 ) * -1.0;
-      if((output+boat_position.x)>right)
-       output = (rock_width * 0.7 + boat_width * 0.5) * 1.0;
+     if(boat_rock_distance>0){//Left
+      output = rock_width * -1.0;
+      if((output+boat_position.x) < left)
+       output = rock_width * 1.0;
      }else{//Right
-      output = (rock_width * 0.7 + boat_width * 0.5) * 1.0;
-      if ((output + boat_position.x) < left)
-       output = (rock_width * 0.7 + boat_width * 0.5) * -1.0;
+      output = rock_width * 1.0;
+      if ((output + boat_position.x)>right)
+       output = rock_width * -1.0;
      }
     }
     break;
    }
   }
   output *= NetworkNodes[n].FANNOptions.output_scale;
-  if(output){
+  if(output||false){
    NetworkNodes[n].Add_Data(NetworkNodes[n].Node->inputs, &output);
    NetworkNodes[n].node_train_error = 1.0;
   }
@@ -621,7 +621,7 @@ namespace Level02{
   float desired_x, desired_y;
   desired_x = NetworkNodes[0].Node->outputs[0] / NetworkNodes[0].FANNOptions.output_scale - boat_position.x;
   desired_y = NetworkNodes[1].Node->outputs[0] / NetworkNodes[1].FANNOptions.output_scale - boat_position.y;
-  //desired_y = 0;
+  desired_y = 0;
   ifbodies[1]->body->SetLinearVelocity(b2Vec2(desired_x, desired_y));
   ifbodies[1]->body->SetAngularVelocity(0);
   ifbodies[1]->body->SetTransform(ifbodies[1]->body->GetPosition(),0);
@@ -635,16 +635,13 @@ namespace Level02{
   unsigned int rock_index, closest_rock;  
   for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
    rock_position = ifbodies[cnt]->body->GetPosition();
-   boat_rock_distance = b2Distance(boat_position, rock_position);
-   if (boat_closest_rock_distance > boat_rock_distance) {
-    boat_closest_rock_distance = boat_rock_distance;
+   boat_rock_distance = b2Distance(boat_position,rock_position);
+   if (boat_closest_rock_distance > abs(boat_rock_distance)) {
+    boat_closest_rock_distance = abs(boat_rock_distance);
     closest_rock = cnt;
    }
-   if (boat_position.x > rock_position.x) {
-    boat_rock_distance *= -1.0;
-   }
-   NetworkNodes[n].Node->inputs[(cnt - first_rock) * 2 + 0] = boat_rock_distance * NetworkNodes[n].FANNOptions.input_scale;
-   NetworkNodes[n].Node->inputs[(cnt - first_rock) * 2 + 1] = rock_position.x;
+   NetworkNodes[n].Node->inputs[(cnt-first_rock) * 2 + 0] = (rock_position.x - boat_position.x) * NetworkNodes[n].FANNOptions.input_scale;
+   NetworkNodes[n].Node->inputs[(cnt - first_rock) * 2 + 1] = (rock_position.y-boat_position.y) * NetworkNodes[n].FANNOptions.input_scale;
   }
   //      // Run Network Before Training
   float distance_treshold = boat_height * 2.0;
