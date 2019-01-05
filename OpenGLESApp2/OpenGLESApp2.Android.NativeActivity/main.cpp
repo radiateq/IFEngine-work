@@ -268,7 +268,26 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event) 
   User_Data.Touch_Time = AMotionEvent_getEventTime(event);
   User_Data.Touch_Input_X = engine->state.x;
   User_Data.Touch_Input_Y = engine->state.y;
-  User_Data.Event_Indicator_Touch_Input++;
+  switch (AInputEvent_getSource(event)) {
+  case AINPUT_SOURCE_TOUCHSCREEN:
+   int action = AKeyEvent_getAction(event) & AMOTION_EVENT_ACTION_MASK;
+   switch (action) {
+   case AMOTION_EVENT_ACTION_DOWN:
+    User_Data.Event_Indicator_Touch_Input++;
+    User_Data.pointer_down = true;
+    break;
+   case AMOTION_EVENT_ACTION_UP:
+    //User_Data.Event_Indicator_Touch_Input++;
+    User_Data.pointer_down = false;
+    break;
+   case AMOTION_EVENT_ACTION_MOVE:
+    User_Data.Event_Indicator_Touch_Input++;
+    break;
+   }
+   break;
+  } // end switch
+
+
   return 1;
  };
  return 0;

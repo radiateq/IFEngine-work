@@ -138,6 +138,7 @@ public:
      train_subset = fann_subset_train_data(Node->ifann.ann_train->train_data, subset_start, subset_node_train_samples);
      while ((end_time > start_time) && (subset_node_train_samples <= Node->ifann.ann_train->train_data->num_data)) {
       node_train_error = fann_train_epoch(Node->ifann.ann, train_subset);
+      if(node_train_error != node_train_error)node_train_error = 2.0;
       clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
       start_time = RQNDKUtils::timespec2us64(&temp_timespec);
      }

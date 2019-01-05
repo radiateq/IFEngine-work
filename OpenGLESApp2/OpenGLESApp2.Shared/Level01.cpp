@@ -939,7 +939,7 @@ namespace Level01{
 
     //Launch the ball
     //float launch_y = (drand48()) * 500.0 - 250.0;
-    float launch_y = (drand48()) * 150.0 + 100;
+    float launch_y = -((drand48()) * 150.0 + 100);
     game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*500.0 - 500.0, launch_y), game_body[2]->body->GetPosition(), true);
 
 
@@ -961,15 +961,6 @@ namespace Level01{
 
    }
    else {
-
-    if(abs(score)==1){
-     score = 0;
-     CIFLevel::NextLevel();
-     Cleanup();
-     IFLevel[CIFLevel::current_level]->Setup_OpenGL(game_engine->width, game_engine->height);
-     IFLevel[CIFLevel::current_level]->Init_IFAdapter();
-     return;
-    }
 
 
     float maxx = game_engine->width;
@@ -1006,7 +997,7 @@ namespace Level01{
      //static float direction_x = -1.0;
      //game_body[2]->body->ApplyLinearImpulse((b2Vec2((drand48()*2.0-1.0)* 550.0, (drand48() * -1.0) * 300.0)), game_body[2]->body->GetPosition(), true);
      //float launch_y = drand48()*1000.0 - 500.0;
-     float launch_y = (drand48()) * 150.0 + 100;
+     float launch_y = -((drand48()) * 150.0 + 100);
      game_body[2]->body->ApplyLinearImpulse(b2Vec2(drand48()*500.0 - 500.0, launch_y), game_body[2]->body->GetPosition(), true);
      NetworkNodes[0].Node->IsRunning = false;
      NetworkNodes[1].Node->IsRunning = false;
@@ -1058,6 +1049,18 @@ namespace Level01{
          for (iter = IFAdapter.Bodies.begin(); iter != IFAdapter.Bodies.end(); iter++) {
           if (game_body[5] == *iter) {
            if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {
+
+
+if (abs(score)==1) {
+ score = 0;
+ CIFLevel::NextLevel();
+ Cleanup();
+ IFLevel[CIFLevel::current_level]->Setup_OpenGL(game_engine->width, game_engine->height);
+ IFLevel[CIFLevel::current_level]->Init_IFAdapter();
+ return;
+}
+
+
 
             //if (input_data_sets > 20) {
             //Pong_Learning_Phase = true;

@@ -25,6 +25,8 @@ namespace Level02{
 
  unsigned int first_rock, last_rock;
  bool boat_hit[2] = {false};
+ b2Vec2 last_boat_position[2];
+ b2Vec2 last_train_boat_position[2];
  void ProcessBoatsAndRocks();
  float DeltaTime();//Function returns delta time between calls in milliseconds
 
@@ -36,6 +38,10 @@ namespace Level02{
  void RunBoatAI();
 
  void CRacerLevel::PostOperations() {
+  if (game_initialized) {
+   last_boat_position[0] = ifbodies[1]->body->GetPosition();
+   last_boat_position[1] = last_boat_position[0];
+  }
  }
  void CRacerLevel::AdvanceGame() {
   if(game_initialized){
@@ -147,6 +153,8 @@ namespace Level02{
   for( unsigned int cnt = 0; cnt < 3; cnt++){
    glDeleteTextures(1, &ifbodies[2]->OGL_body->texture_ID);
   }
+  NetworkNodes[0].Save_Fann();
+  NetworkNodes[0].Save_Train_Data();
  }
 
 
@@ -173,9 +181,6 @@ namespace Level02{
      ifbodies[n]->body->SetLinearVelocity(
       b2Vec2(desired_x*desired_x*desired_x, desired_y*desired_y*desired_y));
      //Player may press train button but not more often than once per second       
-     
-     TrainBoatAI();     
-
      if ((input_event_time_stamp - Last_GUI_Click_Time) > 1000000000) {
       Last_GUI_Click_Time = input_event_time_stamp;
       typename std::list<ifCB2Body*>::iterator iter;
@@ -342,7 +347,7 @@ namespace Level02{
   ifbodies[first_rock]->body->SetTransform(b2Vec2(0.0, 0.0), 0.0);
   ifbodies[first_rock]->OGL_body->texture_ID = IFEUtilsLoadTexture::png_texture_load("rock.png", &twidth, &theight);
 
-  last_rock = 9;
+  last_rock = 17;
   for (unsigned int cnt = first_rock + 1; cnt <= last_rock; cnt++) {
    IFAdapter.OrderBody();
    IFAdapter.OrderedBody()->body_def->type = b2_kinematicBody;//b2_dynamicBody;//((drand48() > 0.5) ? b2_staticBody :    
@@ -357,48 +362,53 @@ namespace Level02{
  }
  void ConnectAI(){
   //ifbodies[1]
-  static float train_size_factor = 5.0;
-  static float neuron_count_factor = 7.0;
+  static float train_size_factor = 40.0;
+  static float neuron_count_factor = 50.0;
   ////////////////////////////  Load Nodes START
   int n=0;
-  NetworkNodes[n].FANNOptions.input_neurons = (last_rock - first_rock + 1+1)*3;
+  NetworkNodes[n].FANNOptions.input_neurons = (last_rock - first_rock + 1)*3+2;
   NetworkNodes[n].FANNOptions.output_neurons = 2;
-  NetworkNodes[n].FANNOptions.max_neurons = 30 * neuron_count_factor;
+  NetworkNodes[n].FANNOptions.max_neurons = 10 * neuron_count_factor;
   NetworkNodes[n].FANNOptions.desired_error = 0.000;
-  NetworkNodes[n].FANNOptions.input_scale = 0.1;
-  NetworkNodes[n].FANNOptions.output_scale = 0.1;
+  NetworkNodes[n].epoch_train_desired_eror = 1e-30;
+  NetworkNodes[n].FANNOptions.input_scale = 0.01;
+  NetworkNodes[n].FANNOptions.output_scale = 0.01;
   NetworkNodes[n].node_train_samples = NetworkNodes[n].node_data_counter_limit = 1000 * train_size_factor;
   NetworkNodes[n].Load_Node(Network, "boatandrocks");
   NetworkNodes[n].Load_Train_Data();
   NetworkNodes[n].Node->AddFlag(TNodeStates::E_Training);
   NetworkNodes[n].Node->AddFlag(TNodeStates::E_ContTraining);
-  /////////////////////////////////////////////// Y
-  n=1;
-  NetworkNodes[n].FANNOptions.input_neurons = (last_rock - first_rock + 1)*2;
-  NetworkNodes[n].FANNOptions.max_neurons = 15 * neuron_count_factor;
-  NetworkNodes[n].FANNOptions.desired_error = 0.000;
-  NetworkNodes[n].FANNOptions.input_scale = 0.01;
-  NetworkNodes[n].FANNOptions.output_scale = 0.01;
-  NetworkNodes[n].node_train_samples = NetworkNodes[n].node_data_counter_limit = 1000 * train_size_factor;
-  NetworkNodes[n].Load_Node(Network, "boatandrocksy");
-  NetworkNodes[n].Load_Train_Data();
-  NetworkNodes[n].Node->AddFlag(TNodeStates::E_Training);
-  NetworkNodes[n].Node->AddFlag(TNodeStates::E_ContTraining);
-  /////////////////////////////////////////////// Approaching Rock Avoidance (L/R)
-  n = 2;
-  NetworkNodes[n].FANNOptions.input_neurons = 2*(last_rock - first_rock + 1);
-  NetworkNodes[n].FANNOptions.max_neurons = 15 * neuron_count_factor;
-  NetworkNodes[n].FANNOptions.desired_error = 0.000;
-  NetworkNodes[n].FANNOptions.input_scale = 0.01;
-  NetworkNodes[n].FANNOptions.output_scale = 0.1;
-  NetworkNodes[n].node_train_samples = NetworkNodes[n].node_data_counter_limit = 1000 * train_size_factor;
-  NetworkNodes[n].Load_Node(Network, "boatandrocksavoid");
-  NetworkNodes[n].Load_Train_Data();
-  NetworkNodes[n].Node->AddFlag(TNodeStates::E_Training);
-  NetworkNodes[n].Node->AddFlag(TNodeStates::E_ContTraining);
-
  }
-
+ bool Ifbodies_hit(unsigned int body_index, unsigned int body_test_index = -1){
+  bool ret_val = false;
+  for (b2ContactEdge* ce = ifbodies[body_index]->body->GetContactList(); ce && (boat_hit[body_index] == false); ce = ce->next)
+  {
+   b2Contact* c = ce->contact;
+   b2Fixture *hit_body_fix;
+   if (c->GetFixtureA()->GetBody() == ifbodies[body_index]->body) {
+    hit_body_fix = c->GetFixtureB();
+   }
+   else {
+    hit_body_fix = c->GetFixtureA();
+   }
+   if(body_test_index ==-1){
+    for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
+     if ((hit_body_fix->GetBody() == ifbodies[cnt]->body) && (c->IsTouching())) {
+      ret_val = true;
+      break;
+     }
+    }
+   }else{
+    if ((hit_body_fix->GetBody() == ifbodies[body_test_index]->body) && (c->IsTouching())) {
+     ret_val = true;
+     break;
+    }
+   }
+   if (ret_val)
+    break;
+  }
+  return ret_val;
+ }
 
  void ProcessBoatsAndRocks(){
   float delta_t_ms = DeltaTime();
@@ -415,36 +425,28 @@ namespace Level02{
   wave_t += (1.0 / 30000.0)*delta_t_ms * drand48() * 10.0;*/
   //unsigned int boat_body_index = 1;//0 player 1 AI
   current_velocity -= delta_t_ms * 0.0001;
-  for(unsigned int boat_body_index = 0; boat_body_index < 1; boat_body_index++){
-   boat_hit[boat_body_index] = false;
-   for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
-    if (ifbodies[cnt]->body->GetPosition().y < (bottom*1.3)) {
-     ifbodies[cnt]->body->SetTransform(b2Vec2(drand48()*(right - left) - right, top + top * (drand48() + 1.0)*1.7), 0.0);
-    }
-    ifbodies[cnt]->body->SetLinearVelocity(b2Vec2(0.0, current_velocity));
+  //////////////////////////////////////////////////////////
+  /////     Return rocks from bottom to top
+  //////////////////////////////////////////////////////////
+  for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
+   if (ifbodies[cnt]->body->GetPosition().y < (bottom*1.3)) {
+    ifbodies[cnt]->body->SetTransform(b2Vec2(drand48()*(right - left) - right, top + top * (drand48() + 1.0)*1.7), 0.0);
    }
-   for (b2ContactEdge* ce = ifbodies[boat_body_index]->body->GetContactList(); ce && (boat_hit[boat_body_index] == false); ce = ce->next)
-   {
-    b2Contact* c = ce->contact;
-    b2Fixture *hit_body_fix;
-    if (c->GetFixtureA()->GetBody() == ifbodies[boat_body_index]->body) {
-     hit_body_fix = c->GetFixtureB();
-    }
-    else {
-     hit_body_fix = c->GetFixtureA();
-    }
-    for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
-     if ((hit_body_fix->GetBody() == ifbodies[cnt]->body)&&(c->IsTouching())) {
-      boat_hit[boat_body_index] = true;
-      break;
+   ifbodies[cnt]->body->SetLinearVelocity(b2Vec2(0.0, current_velocity));
+  }
+  //////////////////////////////////////////////////////////
+  /////  //         Check if boats are hitting rocks
+  //////////////////////////////////////////////////////////
+  for(unsigned int boat_body_index = 0; boat_body_index < 2; boat_body_index++){
+   boat_hit[boat_body_index] = Ifbodies_hit(boat_body_index);
+   //////////////////////////////////////////////////////////
+   //     ///  //     If rock hit stop all rocks
+   //////////////////////////////////////////////////////////
+   if ((boat_hit[boat_body_index] == true)&&true) {
+    if((boat_body_index>0)||((boat_body_index==0)&&(User_Data.pointer_down))){
+     for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
+      ifbodies[cnt]->body->SetLinearVelocity(b2Vec2(0.0, -2.0));
      }
-    }
-    if (boat_hit[boat_body_index])
-     break;
-   }
-   if ((boat_hit[boat_body_index] == true)&&false) {
-    for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
-     ifbodies[cnt]->body->SetLinearVelocity(b2Vec2(0.0, 0.0));
     }
    }  
    ifbodies[boat_body_index]->body->SetTransform(ifbodies[boat_body_index]->body->GetPosition(), 0.0);
@@ -453,10 +455,17 @@ namespace Level02{
   //                                                      //
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   RunBoatAI();
+  if(User_Data.pointer_down)
+    TrainBoatAI();
+  static unsigned int last_touch_indicator = 0;
+  //if(last_touch_indicator != User_Data.Event_Indicator_Touch_Input ){   
+  // last_touch_indicator = User_Data.Event_Indicator_Touch_Input;
+  //}  
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  //                                                      //
  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  }
+ 
  void TrainBoatAI(){
   {
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -464,21 +473,56 @@ namespace Level02{
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
    unsigned int n = 0;
    b2Vec2 rock_position;
-   b2Vec2 boat_position = ifbodies[1]->body->GetPosition();
-   fann_type outputs[2];
+   b2Vec2 boat_position = ifbodies[0]->body->GetPosition();
+   
+   fann_type outputs[2];   
+   bool any_rock_too_close = false;
+   unsigned int rock_data_count = 3;
+   float prev_x_position = left;
+   IFGeneralUtils::SMapWrap<float, unsigned int> rocks_by_x;//x, index
    for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
     rock_position = ifbodies[cnt]->body->GetPosition();
-    NetworkNodes[n].Node->inputs[(cnt - first_rock) * 3 + 0] = (rock_position.x) * NetworkNodes[n].FANNOptions.input_scale;
-    NetworkNodes[n].Node->inputs[(cnt - first_rock) * 3 + 1] = (rock_position.y) * NetworkNodes[n].FANNOptions.input_scale;
-    NetworkNodes[n].Node->inputs[(cnt - first_rock) * 3 + 2] = b2Distance(boat_position, rock_position) * NetworkNodes[n].FANNOptions.input_scale;
+    rocks_by_x.Add(rock_position.x, cnt);
    }
-   NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * 3 + 0] = boat_position.x * NetworkNodes[n].FANNOptions.input_scale;;
-   NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * 3 + 1] = boat_position.y * NetworkNodes[n].FANNOptions.input_scale;;
-   NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * 3 + 2] = 0 * NetworkNodes[n].FANNOptions.input_scale;;
+   rocks_by_x.ResetIterator();
+   float x_coord;
+   unsigned int rock_index;
+   unsigned int cnt = first_rock;
+   while(rocks_by_x.GetNextIterator(x_coord, rock_index)>0) {
+    bool rock_too_close = false;
+    rock_position = ifbodies[rock_index]->body->GetPosition();
+    //if ((abs(boat_position.x - rock_position.x) < (boat_width * 1.0)) || (abs(boat_position.y - rock_position.y) < (boat_height * 1.0))) {
+    if(Ifbodies_hit(0, rock_index)){
+     rock_too_close = true;
+     any_rock_too_close = true;
+    }
+    prev_x_position = rock_position.x;
+    fann_type aim_position_x = (prev_x_position + (rock_position.x - prev_x_position)*0.5);
+    NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 0] = aim_position_x * NetworkNodes[n].FANNOptions.input_scale;
+    NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 1] = (rock_position.y) * NetworkNodes[n].FANNOptions.input_scale;
+    NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 2] = rock_too_close;
+    //NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 2] = rock_position.x * NetworkNodes[n].FANNOptions.input_scale;
+    //NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 3] = rock_position.y * NetworkNodes[n].FANNOptions.input_scale;
+    //NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 2] = rock_too_close;
+    cnt++;
+   }
+   NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 0] = ifbodies[1]->body->GetPosition().x * NetworkNodes[n].FANNOptions.input_scale;
+   NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 1] = ifbodies[1]->body->GetPosition().y * NetworkNodes[n].FANNOptions.input_scale;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 2) * rock_data_count + 0] = last_train_boat_position[0].x * NetworkNodes[n].FANNOptions.input_scale;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 2) * rock_data_count + 1] = last_train_boat_position[0].y * NetworkNodes[n].FANNOptions.input_scale;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 3) * rock_data_count + 0] = last_train_boat_position[1].x * NetworkNodes[n].FANNOptions.input_scale;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 3) * rock_data_count + 1] = last_train_boat_position[1].y * NetworkNodes[n].FANNOptions.input_scale;
+   last_train_boat_position[0] = boat_position;
+   last_train_boat_position[1] = last_train_boat_position[0];
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 2] = (boat_hit[0]?1:0) ;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 3] = (any_rock_too_close ? 1 : 0) ;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 4] = ((boat_hit[0] || any_rock_too_close)?1:0);
+  // NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 5] = any_rock_too_close;
    outputs[0] = ifbodies[0]->body->GetPosition().x * NetworkNodes[n].FANNOptions.output_scale;
-   outputs[1] = ifbodies[0]->body->GetPosition().x * NetworkNodes[n].FANNOptions.output_scale;
+   outputs[1] = ifbodies[0]->body->GetPosition().y * NetworkNodes[n].FANNOptions.output_scale;
    //static bool x = true;
-   if(!boat_hit[0]){
+   //if(!boat_hit[0]&& any_rock_too_close){
+   if (!any_rock_too_close) {
     NetworkNodes[n].Add_Data(NetworkNodes[n].Node->inputs, outputs);
     NetworkNodes[n].node_train_error = 1.0;
    }
@@ -494,19 +538,60 @@ namespace Level02{
    unsigned int n = 0;
    b2Vec2 rock_position;
    b2Vec2 boat_position = ifbodies[1]->body->GetPosition();
+   if((boat_position.x!= boat_position.x)|| (boat_position.y != boat_position.y)){
+    boat_position.x = boat_position.y = 0;
+   }
    fann_type outputs[2];
+   bool any_rock_too_close = false;
+   unsigned int rock_data_count = 3;
+   float prev_x_position = left;
+   IFGeneralUtils::SMapWrap<float, unsigned int> rocks_by_x;//x, index
    for (unsigned int cnt = first_rock; cnt <= last_rock; cnt++) {
     rock_position = ifbodies[cnt]->body->GetPosition();
-    NetworkNodes[n].Node->inputs[(cnt - first_rock) * 3 + 0] = (rock_position.x) * NetworkNodes[n].FANNOptions.input_scale;
-    NetworkNodes[n].Node->inputs[(cnt - first_rock) * 3 + 1] = (rock_position.y) * NetworkNodes[n].FANNOptions.input_scale;
-    NetworkNodes[n].Node->inputs[(cnt - first_rock) * 3 + 2] = b2Distance(boat_position, rock_position) * NetworkNodes[n].FANNOptions.input_scale;
+    rocks_by_x.Add(rock_position.x, cnt);
    }
-   NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * 3 + 0] = boat_position.x * NetworkNodes[n].FANNOptions.input_scale;;
-   NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * 3 + 1] = boat_position.y * NetworkNodes[n].FANNOptions.input_scale;;
-   NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * 3 + 2] = 0 * NetworkNodes[n].FANNOptions.input_scale;;
+   rocks_by_x.ResetIterator();
+   float x_coord;
+   unsigned int rock_index;
+   unsigned int cnt = first_rock;
+   while (rocks_by_x.GetNextIterator(x_coord, rock_index) > 0) {
+    bool rock_too_close = false;
+    rock_position = ifbodies[rock_index]->body->GetPosition();
+//    if ((abs(boat_position.x - rock_position.x) < (boat_width * 1.0)) || (abs(boat_position.y - rock_position.y) < (boat_height * 1.0))) {
+    if (Ifbodies_hit(1, rock_index)) {
+     rock_too_close = true;
+     any_rock_too_close = true;
+    }
+    prev_x_position = rock_position.x;
+    fann_type aim_position_x = (prev_x_position + (rock_position.x - prev_x_position)*0.5);
+    NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 0] = aim_position_x * NetworkNodes[n].FANNOptions.input_scale;
+    NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 1] = (rock_position.y) * NetworkNodes[n].FANNOptions.input_scale;
+    NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 2] = rock_too_close;
+    //NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 2] = rock_position.x * NetworkNodes[n].FANNOptions.input_scale;
+    //NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 3] = rock_position.y * NetworkNodes[n].FANNOptions.input_scale;
+    //NetworkNodes[n].Node->inputs[(cnt - first_rock) * rock_data_count + 2] = rock_too_close;
+    
+    cnt++;
+   }
+   NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 0] = ifbodies[1]->body->GetPosition().x * NetworkNodes[n].FANNOptions.input_scale;
+   NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 1] = ifbodies[1]->body->GetPosition().y * NetworkNodes[n].FANNOptions.input_scale;   
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 2) * rock_data_count + 1] = last_train_boat_position[0].y * NetworkNodes[n].FANNOptions.input_scale;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 3) * rock_data_count + 0] = last_train_boat_position[1].x * NetworkNodes[n].FANNOptions.input_scale;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 3) * rock_data_count + 1] = last_train_boat_position[1].y * NetworkNodes[n].FANNOptions.input_scale;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 2] = (boat_hit[0]?1:0) ;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 3] = (any_rock_too_close ? 1 : 0) ;
+   //NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 4] = ((boat_hit[0] || any_rock_too_close)?1:0);
+  // NetworkNodes[n].Node->inputs[(last_rock - first_rock + 1) * rock_data_count + 5] = any_rock_too_close;
+   //////////////////////////////////
+   //////   Run AI
+   /////////////////
    NetworkNodes[n].Node->outputs = IFFANNEngine::Run_Cascade_FANN(&NetworkNodes[n].Node->ifann, NetworkNodes[n].Node->inputs);
+   //////////////////////////////////
    float desired_x = NetworkNodes[n].Node->outputs[0] / NetworkNodes[n].FANNOptions.output_scale - boat_position.x;
    float desired_y = NetworkNodes[n].Node->outputs[1] / NetworkNodes[n].FANNOptions.output_scale - boat_position.y;
+   if ((desired_x != desired_x) || (desired_y != desired_y)) {
+    desired_x = desired_y = 0;
+   }
    ifbodies[1]->body->SetLinearVelocity(b2Vec2(desired_x*desired_x*desired_x, desired_y*desired_y*desired_y));
    ifbodies[1]->body->SetAngularVelocity(0);
    ifbodies[1]->body->SetTransform(ifbodies[1]->body->GetPosition(), 0);   
