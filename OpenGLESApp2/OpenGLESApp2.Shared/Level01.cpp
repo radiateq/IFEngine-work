@@ -1151,7 +1151,8 @@ if (abs(score)==1) {
       for (unsigned int cnt = 0; cnt < 5; cnt++) {
        //if (!trained[cnt]) {
        if (NetworkNodes[cnt].Node->GetFlag(TNodeStates::E_ContTraining)) {
-        trained[cnt] = NetworkNodes[cnt].Epoch_Train();
+        trained[cnt] = NetworkNodes[cnt].Epoch_Train(true, NetworkNodes[cnt].NumTrainData(), 1000);
+        NetworkNodes[cnt].node_train_error = 1.0;
         //}
         //else {
          //trained[cnt] = NetworkNodes[cnt].Train_Node();
@@ -1166,30 +1167,31 @@ if (abs(score)==1) {
       if (AutoPlayer) {
 
        for (unsigned int cnt = 0; cnt < 4; cnt++) {
-        if (!trained[cnt]) {
+        //if (!trained[cnt]) {
          if (NetworkNodes[cnt].Node->GetFlag(TNodeStates::E_ContTraining)) {
-          //trained[cnt] = NetworkNodes[cnt].Epoch_Train();
+          trained[cnt] = NetworkNodes[cnt].Epoch_Train(true, NetworkNodes[cnt].NumTrainData(), 1000);
+          NetworkNodes[cnt].node_train_error = 1.0;
          }
          else {
           trained[cnt] = NetworkNodes[cnt].Train_Node();
          }
-        }
+        //}
        }
-
-       if ((trained[0] == true) &&
-        (trained[1] == true) &&
-        (trained[2] == true) &&
-        (trained[3] == true) &&
-        (trained[4] == true)
-        ) {
-        AutoPlayer = false;
-        game_body[3]->body->SetLinearVelocity(b2Vec2(0, 0));
-       }
+       
+       //if ((trained[0] == true) &&
+       // (trained[1] == true) &&
+       // (trained[2] == true) &&
+       // (trained[3] == true) &&
+       // (trained[4] == true)
+       // ) {
+       // AutoPlayer = false;
+       // game_body[3]->body->SetLinearVelocity(b2Vec2(0, 0));
+       //}
 
       }
       else {
        // CONSTANT TRAINIG UNTIL ERROR REACHED
-       NetworkNodes[3].Epoch_Train(false, NetworkNodes[3].NumTrainData(), 2000);
+       //NetworkNodes[3].Epoch_Train(false, NetworkNodes[3].NumTrainData(), 2000);
       }
 
       //input_data_sets = 0;
@@ -1411,7 +1413,7 @@ if (abs(score)==1) {
         b2Vec2 position = game_body[4]->body->GetPosition();
         float ball_pad_distance = AI_paddle_desired_position_x - game_body[4]->body->GetPosition().x;
         game_body[4]->body->SetLinearVelocity(
-         b2Vec2(ball_pad_distance*ball_pad_distance*ball_pad_distance, 0.0));//+2.0 is to make sure result is larger than 1
+         b2Vec2(ball_pad_distance*ball_pad_distance*ball_pad_distance*ball_pad_distance*ball_pad_distance, 0.0));//+2.0 is to make sure result is larger than 1
         if (game_body[4]->body->GetPosition().x < left*2.0)game_body[4]->body->SetTransform(b2Vec2(left*2.0, position.y), game_body[4]->body->GetAngle());
         if (game_body[4]->body->GetPosition().x > right*2.0)game_body[4]->body->SetTransform(b2Vec2(right*2.0, position.y), game_body[4]->body->GetAngle());
 

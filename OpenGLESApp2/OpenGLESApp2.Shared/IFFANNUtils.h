@@ -17,6 +17,10 @@ struct SFANNOptions {
  float desired_error = 0.05, input_scale = 0.1, output_scale = 10.00;
 };
 
+
+
+
+
 class CNetworkNode {
 public:
  ~CNetworkNode() {
@@ -63,7 +67,7 @@ public:
   }
  }
 
- void Load_Node(IFFANNEngine::CNetwork &Network, char const * const unique_name, bool is_running = true) {
+ void Load_Node(IFFANNEngine::CNetwork &Network, char const * const unique_name, bool is_running = true, bool quick_prorp = false) {
   Free();
   Node = new IFFANNEngine::CNode;
   Node->IsRunning = is_running;
@@ -74,7 +78,7 @@ public:
    Node->NodeStates = IFFANNEngine::CNode::ENodeStates::E_Trained;
   }
   if (!Node->ifann.ann) {
-   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node->ifann), FANNOptions.input_neurons, FANNOptions.output_neurons, unique_name), FANNOptions.max_neurons, FANNOptions.neurons_between_reports, FANNOptions.desired_error, FANNOptions.input_scale, FANNOptions.output_scale);
+   IFFANN::Setup_Train_Cascade_FANN(IFFANN::Create_Cascade_FANN(IFFANN::Init_Cascade_FANN(&Node->ifann), FANNOptions.input_neurons, FANNOptions.output_neurons, unique_name), FANNOptions.max_neurons, FANNOptions.neurons_between_reports, FANNOptions.desired_error, FANNOptions.input_scale, FANNOptions.output_scale, quick_prorp);
    IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
    Node->NodeStates = IFFANNEngine::CNode::ENodeStates::E_FreshTrain;
   }
@@ -135,14 +139,20 @@ public:
       subset_start = 0;
       subset_node_train_samples = Node->ifann.ann_train->train_data->num_data;      
      }
-     train_subset = fann_subset_train_data(Node->ifann.ann_train->train_data, subset_start, subset_node_train_samples);
+     if((subset_start==0)&&(Node->ifann.ann_train->train_data->num_data ==subset_node_train_samples)){
+      train_subset = Node->ifann.ann_train->train_data;
+     }else{
+      train_subset = fann_subset_train_data(Node->ifann.ann_train->train_data, subset_start, subset_node_train_samples);
+     }
      while ((end_time > start_time) && (subset_node_train_samples <= Node->ifann.ann_train->train_data->num_data)) {
       node_train_error = fann_train_epoch(Node->ifann.ann, train_subset);
       if(node_train_error != node_train_error)node_train_error = 2.0;
       clock_gettime(CLOCK_MONOTONIC, &temp_timespec);
       start_time = RQNDKUtils::timespec2us64(&temp_timespec);
      }
-     fann_destroy_train(train_subset);
+     if (!((subset_start == 0) && (Node->ifann.ann_train->train_data->num_data == subset_node_train_samples))) {
+      fann_destroy_train(train_subset);
+     }
      IFFANN::Save_Cascade_FANN(&Node->ifann, IFFANN::CnFinalFannPostscript);
     }
     else {
@@ -187,10 +197,10 @@ public:
   IFFANN::Train_Cascade_FANN(&(Node->ifann), Train_Cascade_FANN_Callback, NumTrainData(), 2, false);
  }
 
- bool Train_Node() {
+ bool Train_Node(bool requires_full_data = true) {
   if (!Node->GetFlag(TNodeStates::E_Training))
    return false;
-  if (!Node->GetFlag(TNodeStates::E_FullData))
+  if (requires_full_data&&!Node->GetFlag(TNodeStates::E_FullData))
    return false;
   if (Node->GetFlag(TNodeStates::E_ContTraining))
    return false;

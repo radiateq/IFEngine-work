@@ -30,7 +30,7 @@ namespace IFFANN {
  }
 
  //It is very important to set input and output scale properly. Network seems to prefer larger numbers, most likely because of accuracy, smaller than 1 numbers increase range, larger decrease it
- IFS_Cascade_FANN *Setup_Train_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int max_neurons, unsigned int neurons_between_reports, fann_type desired_error, fann_type input_scale, fann_type output_scale) {
+ IFS_Cascade_FANN *Setup_Train_Cascade_FANN(IFS_Cascade_FANN *ifann, unsigned int max_neurons, unsigned int neurons_between_reports, fann_type desired_error, fann_type input_scale, fann_type output_scale, bool quick_prop) {
   if (ifann->ann_train) free(ifann->ann_train), ifann->ann_train = NULL;
   ifann->ann_train = (IFS_Cascade_FANN_Train_Struct*)malloc(sizeof(IFS_Cascade_FANN_Train_Struct));
   ///ifann->ann_train->num_data = 0;
@@ -42,7 +42,7 @@ namespace IFFANN {
   ifann->ann_train->train_data = ifann->ann_train->test_data = NULL;
 
   //Setup network
-  fann_set_training_algorithm(ifann->ann, FANN_TRAIN_RPROP);//Option is FANN_TRAIN_QUICKPROP FANN_TRAIN_RPROP
+  fann_set_training_algorithm(ifann->ann, (quick_prop?FANN_TRAIN_QUICKPROP:FANN_TRAIN_RPROP));//Option is FANN_TRAIN_QUICKPROP FANN_TRAIN_RPROP
   fann_set_activation_function_hidden(ifann->ann, FANN_SIGMOID_SYMMETRIC);//FANN_LINEAR FANN_SIGMOID_SYMMETRIC
   fann_set_activation_function_output(ifann->ann, FANN_LINEAR);
   fann_set_train_error_function(ifann->ann, FANN_ERRORFUNC_TANH);

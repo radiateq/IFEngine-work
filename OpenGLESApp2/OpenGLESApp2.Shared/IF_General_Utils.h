@@ -346,6 +346,144 @@ namespace IFGeneralUtils{
   }
  };
 
+ template< typename TKeyType, typename TDataType> struct SMultimapWrap
+ {
+ public:
+  typedef std::multimap< TKeyType, TDataType > TMap;
+  TMap Map;
+  typedef std::pair< TKeyType, TDataType > TMap_KeyData;
+  typename TMap::iterator Iter_Map, Iter_MapGetRef;
+  void Add(TKeyType &Key, TDataType &Data)
+  {
+   Map.insert(TMap_KeyData(Key, Data));
+  }
+  void pAdd(TKeyType &Key, TDataType Data)
+  {
+   Map.insert(TMap_KeyData(Key, Data));
+  }
+  bool AddCheck(TKeyType &Key, TDataType &Data)
+  {
+   if (IsPresent(Key))
+    return false;
+   Map.insert(TMap_KeyData(Key, Data));
+   return true;
+  }
+  //removes element with passed key if exists and then adds passed
+  void AddReplace(TKeyType &Key, TDataType &Data)
+  {
+   if (IsPresent(Key))
+    Remove(Key);
+   Map.insert(TMap_KeyData(Key, Data));
+  }
+  //				IN				OUT
+  bool Get(TKeyType &Key, TDataType &Data)
+  {
+   Iter_Map = Map.find(Key);
+   if (Map.end() == Iter_Map)
+   {
+    return false;
+   }
+   Data = Iter_Map->second;
+   return true;
+  }
+
+  TDataType* GetRef(TKeyType &Key)
+  {
+   Iter_MapGetRef = Map.find(Key);
+   if (Map.end() == Iter_MapGetRef)
+   {
+    return NULL;
+   }
+
+   return &(Iter_MapGetRef->second);
+  }
+  TDataType pGet(TKeyType &Key)
+  {
+   Iter_Map = Map.find(Key);
+   if (Map.end() == Iter_Map)
+   {
+    return NULL;
+   }
+   return Iter_Map->second;
+  }
+  bool IsPresent(TKeyType &Key)
+  {
+   Iter_Map = Map.find(Key);
+   if (Map.end() == Iter_Map)
+   {
+    return false;
+   }
+   return true;
+  }
+  void ResetIterator()
+  {
+   Iter_Map = Map.begin();
+  }
+  int GetNextIterator(TKeyType &Key, TDataType &Data)
+  {
+   if (Map.empty())
+    return -1;
+   if (Iter_Map == Map.end())
+    return -2;
+   Key = Iter_Map->first;
+   Data = Iter_Map->second;
+   ++Iter_Map;
+   return 1;
+  }
+  //Return values
+  //  2 : First element before element with sought key returned
+  //  1 : Element with same key or higher returned - sought key is first in map
+  // -1 : Map Empty
+  int GetFirstBefore(TKeyType &Key, TDataType &Data)
+  {
+   int RetVal = 1;
+   bool KeyAdded = false;
+   if (0 == Map.size())
+    return -1;
+   TKeyType TempKey;
+   Iter_Map = Map.find(Key);
+   //Key not found, add it
+   if (Map.end() == Iter_Map)
+   {
+    Add(Key, Data);
+    KeyAdded = true;
+   }
+   //Get iterator to our key
+   Iter_Map = Map.lower_bound(Key);
+   //Is our key first in map
+   if (Iter_Map == Map.begin())
+   {//Yes
+    //We have at least two elements in map and first element is our temporary key, so move iterator on next element
+    if (KeyAdded)
+    {
+     Iter_Map++;
+    }
+    RetVal = 2;
+   }
+   else
+   {//No
+    Iter_Map--;
+   }
+   TempKey = Iter_Map->first;
+   if (KeyAdded)
+   {
+    Remove(Key);
+   }
+   Iter_Map = Map.lower_bound(TempKey);
+   Data = Iter_Map->first;
+   return RetVal;
+  }
+  bool Remove(TKeyType &Key)
+  {
+   Iter_Map = Map.find(Key);
+   if (Map.end() == Iter_Map)
+   {
+    return false;
+   }
+   Map.erase(Key);
+   return true;
+  }
+ };
 
  template<typename Tptr_type> class RQTCAutoDelete {
  public:
