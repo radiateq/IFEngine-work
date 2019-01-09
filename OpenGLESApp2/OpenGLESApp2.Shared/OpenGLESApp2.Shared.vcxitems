@@ -24,6 +24,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\libpng-libpng16\png.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\lodepng-master\lodepng.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)DrawText.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)game\people.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFBox2DAdapter.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEngine.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEUtils.h" />
@@ -44,6 +45,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)common\External\AudioFile\AudioFile.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)common\External\lodepng-master\lodepng.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)DrawText.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)game\people.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)IFBox2DAdapter.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)IFEngine.c" />
     <ClCompile Include="$(MSBuildThisFileDirectory)IFEUtils.cpp" />

@@ -21,6 +21,9 @@
       <Filter>External</Filter>
     </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)LevelTemplate.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)game\people.cpp">
+      <Filter>game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEngine.h" />
@@ -56,10 +59,16 @@
       <Filter>External</Filter>
     </ClInclude>
     <ClInclude Include="$(MSBuildThisFileDirectory)LevelTemplate.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)game\people.h">
+      <Filter>game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="External">
       <UniqueIdentifier>{d7ef833a-0b64-43af-97d9-5e5b39724347}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game">
+      <UniqueIdentifier>{d4c1e62b-597e-42b1-bb76-97161aae8a3a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
