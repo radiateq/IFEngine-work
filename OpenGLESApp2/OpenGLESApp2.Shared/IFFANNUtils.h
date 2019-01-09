@@ -160,7 +160,7 @@ public:
      IFFANN::Train_Cascade_FANN(&Node->ifann, Train_Cascade_FANN_Callback, NumTrainData(), 1, false);
     }
    }
-   else {
+   else if(Node->ifann.ann_train->train_data){
     if (node_train_error != std::numeric_limits<fann_type>::max()) {
      if ((node_train_error <= epoch_train_desired_eror) && Node->ifann.ann_train->train_data->num_data >= node_data_counter_limit) {
       Setup_Train_Cascade_FANN_Callback(Node->ifann.ann, &node_input_data, &node_output_data);

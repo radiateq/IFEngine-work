@@ -324,14 +324,14 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
     engine->accelerometerSensor);
    // We'd like to get 60 events per second (in us).
    ASensorEventQueue_setEventRate(engine->sensorEventQueue,
-    engine->accelerometerSensor, (1000L / 60) * 1000);
+    engine->accelerometerSensor, (1000L / 1000) * 1000);
   }
   if (engine->sensor2 != NULL) {
    ASensorEventQueue_enableSensor(engine->sensorEventQueue2,
     engine->sensor2);
    // We'd like to get 60 events per second (in us).
    ASensorEventQueue_setEventRate(engine->sensorEventQueue2,
-    engine->sensor2, (1000L / 60) * 1000);
+    engine->sensor2, (1000L / 1000) * 1000);
   }
   // Also stop animating.
   engine->animating = 1;
@@ -468,11 +468,14 @@ void android_main(struct android_app* state) {
     if (engine.accelerometerSensor != NULL) {
      ASensorEvent event;
      while (ASensorEventQueue_getEvents(engine.sensorEventQueue,
-      &event, 1) > 0) {
+      &event, 1) > 0) { 
       //LOGI("accelerometer: x=%f y=%f z=%f",
       //	event.acceleration.x, event.acceleration.y,
       //	event.acceleration.z);
-      //last_x_acceleration = event.acceleration.x;
+      if(CIFLevel::current_level==1){
+       User_Data.accel[0].push_back(event.acceleration.x / 8.f);
+       User_Data.accel[1].push_back(event.acceleration.y / 8.f);
+      }
       //last_y_acceleration = event.acceleration.y;
      }     
     }

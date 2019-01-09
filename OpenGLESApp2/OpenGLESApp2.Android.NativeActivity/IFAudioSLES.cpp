@@ -354,7 +354,7 @@ AudioRecorder::AudioRecorder(SampleFormat *sampleFormat, SLEngineItf slEngine)
   sizeof(id) / sizeof(id[0]), id, req);
  SLASSERT(result);
 
- // Configure the voice recognition preset which has no
+ // Configure the 0voice recognition preset which has no
  // signal processing for lower latency.
  SLAndroidConfigurationItf inputConfig;
  result = (*recObjectItf_)

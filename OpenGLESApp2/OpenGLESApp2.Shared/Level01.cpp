@@ -1051,7 +1051,7 @@ namespace Level01{
            if (B2BodyUtils.RayTestHitpoint(touchx, touchy, *iter)) {
 
 
-if (abs(score)==1) {
+if (abs(score)>=0) {
  score = 0;
  CIFLevel::NextLevel();
  Cleanup();

@@ -20,6 +20,7 @@ typedef struct {
  //GLuint CubeTexture;
  //GLuint Textures[10];
  bool TrainInProgress;
+ std::vector<float> accel[2];
 }TS_User_Data;
 extern TS_User_Data User_Data;
 

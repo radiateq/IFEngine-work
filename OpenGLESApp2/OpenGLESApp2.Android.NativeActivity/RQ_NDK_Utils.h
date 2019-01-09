@@ -26,7 +26,7 @@ void *getAssetFileToBuffer(android_app* state, const char *pFileName, size_t &si
 
  
  char *Make_storageDataPath(char * const path_buffer, int buffer_length, char const * const file_name);
- char *Make_privateeDataPath(char * const path_buffer, int buffer_length, char const * const file_name);
+ char *Make_privateDataPath(char * const path_buffer, int buffer_length, char const * const file_name);
 
 
  int32_t getDensityDpi(android_app* app);

@@ -17,6 +17,9 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)Level01.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)Level02.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)IFFANNUtils.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)common\External\AudioFile\AudioFile.cpp">
+      <Filter>External</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEngine.h" />
@@ -48,6 +51,9 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)Level01.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Level02.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)IFFANNUtils.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)common\External\AudioFile\AudioFile.h">
+      <Filter>External</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="External">

@@ -74,7 +74,7 @@ char *Make_storageDataPath(char * const path_buffer, int buffer_length, char con
  return path_buffer;
 }
 
-char *Make_privateeDataPath(char * const path_buffer, int buffer_length, char const * const file_name){
+char *Make_privateDataPath(char * const path_buffer, int buffer_length, char const * const file_name){
  
  int intpathlen = strlen(User_Data.state->activity->internalDataPath);
 
