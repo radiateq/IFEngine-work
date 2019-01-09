@@ -57,6 +57,17 @@ extern CIFLevel *IFLevel[10];
 
 class CIFLevel {
 public:
+ CIFLevel(){
+  this_level = level_count;
+  IFLevel[this_level] = this;
+  level_count++;
+ }
+ ~CIFLevel(){
+  IFLevel[this_level] = NULL;
+  level_count--;
+ }
+ static int level_count;
+ int this_level;
  static int current_level;
  static void NextLevel(){
   current_level++;

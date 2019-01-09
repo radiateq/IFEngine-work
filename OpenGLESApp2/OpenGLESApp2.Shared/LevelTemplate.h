@@ -1,12 +1,11 @@
 #pragma once
 
 #include "MainProgram.h"
+namespace LevelTemplate{
 
-namespace Level02{
-
- class CRacerLevel : public CIFLevel {
+ class CLevel : public CIFLevel {
  public:
-  CRacerLevel() {   
+  CLevel() {
   }
   void Setup_OpenGL(double width, double height);
   void Init_IFAdapter();

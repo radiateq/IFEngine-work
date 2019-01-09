@@ -11,8 +11,7 @@ namespace Level01{
 
  class CPongLevel : public CIFLevel {
  public:
-  CPongLevel(){
-   IFLevel[0] = this;
+  CPongLevel(){   
   }
   void Setup_OpenGL(double width, double height);
   void Init_IFAdapter();

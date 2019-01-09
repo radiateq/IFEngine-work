@@ -1,23 +1,18 @@
-#include "Level02.h"
-
-
-
-
-Level02::CRacerLevel RacerLevel;
+#include "LevelTemplate.h"
 
 extern ifCB2Adapter IFAdapter;
 extern ifCB2BodyUtils B2BodyUtils;
 
 
-
-
-
-namespace Level02{
+namespace LevelTemplate{
 
 
  
 
+ LevelTemplate::CLevel Level00;
+
  ifCB2Body *ifbodies[100];
+
 
 
 
@@ -29,7 +24,7 @@ namespace Level02{
  float DeltaTime();//Function returns delta time between calls in milliseconds
 
 
- void CRacerLevel::PostOperations() {
+ void CLevel::PostOperations() {
   if (game_initialized) {
   }
  }
@@ -39,7 +34,7 @@ namespace Level02{
 
 
 
- void CRacerLevel::AdvanceGame() {
+ void CLevel::AdvanceGame() {
   if(game_initialized){
 
 
@@ -50,7 +45,7 @@ namespace Level02{
   game_initialized = true;  
  }
 
- void CRacerLevel::Init_IFAdapter() {
+ void CLevel::Init_IFAdapter() {
   if (game_engine->EGL_initialized) {
    IFAdapter.MakeWorld(0.0f, 0.00f);
    //Smallest object box2d can deal with optimally is 0.1 in box coords, so we want smallest of elements to be 1 pixel. This factor will affect zoom in/out
@@ -63,7 +58,7 @@ namespace Level02{
   }
  }
 
- void CRacerLevel::Setup_OpenGL(double width, double height) {
+ void CLevel::Setup_OpenGL(double width, double height) {
   User_Data.screenWidth = width;
   User_Data.screenHeight = height;
   //// Initialize GL state for 3D
@@ -141,7 +136,7 @@ namespace Level02{
  }
 
 
- void CRacerLevel::Cleanup() {
+ void CLevel::Cleanup() {
   game_initialized = false;
  }
 

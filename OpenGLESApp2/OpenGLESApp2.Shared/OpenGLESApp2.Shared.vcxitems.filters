@@ -20,6 +20,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)common\External\AudioFile\AudioFile.cpp">
       <Filter>External</Filter>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)LevelTemplate.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)IFEngine.h" />
@@ -54,6 +55,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)common\External\AudioFile\AudioFile.h">
       <Filter>External</Filter>
     </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)LevelTemplate.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="External">

@@ -12,6 +12,7 @@
 #include <Eigen/Dense>
 
 #include "../OpenGLESApp2.Android.NativeActivity/IFGlobals.h"
+#include "./Common/External/AudioFile/AudioFile.h"
 
 using Eigen::MatrixXf;
 
@@ -763,5 +764,72 @@ namespace IFGeneralUtils{
  };
 
 
+ class CSimpleWav {
+ public:
+  AudioFile<double> audio_file;
+  unsigned int num_channels, num_samples, sample_rate;
+  AudioFile<double>::AudioBuffer buffer;
+  CSimpleWav() {
+   sample_rate = 44100;
+   num_channels = 2;
+   buffer.resize(num_channels);
+   num_samples = 0;
+  }
+  void SetBufferSize(const unsigned int samples_count) {
+   /////////////////////////
+   // // // Buffer Size 
+   /////////////////////////////
+   num_samples = samples_count;
+   buffer[0].resize(num_samples);
+   buffer[1].resize(num_samples);
+  }
+  //////////////////////////////////////
+  // // //          Test Signal
+  //////////////////////////////////////
+  void TestTone() {
+   float _sample_rate = sample_rate;
+   float frequency = 440.f;
+   for (int i = 0; i < num_samples; i++)
+   {
+    float sample = sinf(2. * M_PI * ((float)i / _sample_rate) * frequency);
+
+    for (int channel = 0; channel < num_channels; channel++)
+     buffer[channel][i] = sample * 0.5;
+   }
+  }
+  void AddSample(float sampleL, float sampleR) {
+   if (buffer[0].size() <= num_samples) {
+    buffer[0].push_back(sampleL);
+    buffer[1].push_back(sampleR);
+   }
+  }
+  void SaveFile(char const * const _file_name) {
+   audio_file.setAudioBuffer(buffer);
+   // Set both the number of channels and number of samples per channel
+   audio_file.setAudioBufferSize(num_channels, num_samples);
+   // Set the number of samples per channel
+   audio_file.setNumSamplesPerChannel(num_samples);
+   // Set the number of channels
+   audio_file.setNumChannels(num_channels);
+   audio_file.setBitDepth(24);
+   audio_file.setSampleRate(sample_rate);
+   char file_name[BUFSIZ + 1];
+   RQNDKUtils::Make_storageDataPath(file_name, BUFSIZ, _file_name);
+   audio_file.save(file_name);
+  }
+ };
+ //Usage example
+ //IFGeneralUtils::CSimpleWav SensorWav;
+ /////////////////////////////////
+ //SensorWav.SetBufferSize(SensorWav.buffer[0].size() + User_Data.accel[0].size() );
+ //for( size_t cnt = 0; cnt < User_Data.accel[0].size(); cnt++){       
+ // SensorWav.AddSample(User_Data.accel[0].at(cnt), User_Data.accel[1].at(cnt));
+ //}
+ //if(User_Data.accel[0].size()){
+ // User_Data.accel[0].clear();
+ // User_Data.accel[1].clear();
+ //}
+ //////////////////////////
+ //SensorWav.SaveFile("shake.wav");
 
 }
