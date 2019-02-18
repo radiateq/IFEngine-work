@@ -131,11 +131,45 @@ crisis can be economic, illegal drugs can be introduced, crimerate can be allowe
 to rise by introducing alien citizens to allow easier introduction of drugs.
  /////////////////////////////////////////////////////////////
  Level 3 keep the voters happy
- In level 3 you have to keep the balance between voters happines
- and bosses happiness. You will need to influence some target
- groups to raise their government approval. 
-
-
+ In level 3  You will need to influence some target
+ groups to raise their government approval. Since this is a small
+ city you can recruit people with agents who you can command
+ and receive messages from. You will have two agents, one for youth 
+ and one for rest of population. You will also be able to post adds
+ online and have agents with fake profiles. 
+ Your task is to aquire trust of leading memebers of society in their
+ age group and use female agents to implicate them in to sensitive activities.
+ That way you can take over police, banks and other facilities.
+ //////////////////////////////////////////////////////////////////////////
+ Level 4 Make money
+ You have to keep the balance between voters happines and bosses happiness.
+ Bosses will require from you to control the population. You will have to use 
+ influence of police, banks and industry to take the money away from people using
+ not just taxes, lower wages and tough laws but also silence or eliminate those
+ who want to oppose the you. Using influence you have to infiltrate media, radio
+ TV and news stations by buying editors and journalists.
+ /////////////////////////////////////////////////////////////////////////////
+ Level 5 Take the region
+ You have to find a way to move the masses. Organize concerts, create stars,
+ make movies, create propaganda and in general buy everybody out, mostly delivering
+ expensive life style to those you want on your side.
+ ////////////////////////////////////////////////////////////////////////////
+ Level 6 Take the country
+ You are now entitled to officially using army and police to protect your interests.
+ On this level you can create anarchy and chaos or complete order in either case this
+ is where direction and end game get set.
+ ////////////////////////////////////////////////////////////////////////////
+ Level 6 Balance
+ in short you have to kill parts of population you don't like in order to create
+ type of population you want to have in end game
+ ////////////////////////////////////////////////////////////////////////////
+ Level 7 Endgame
+ A war breaks out and your country either is part of it or not. If you get attacked
+ or if you decide to attack you become part of the war. Also if you own money you
+ have to kill of vast ammounts of your population.
+ ////////////////////////////////////////////////////////////////////////////
+ At the end you are left with population and parameters and description of what
+ your society is like and also a judge of your own character.
 */
 
 namespace People{
